@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "pollinations": {
+      "type": "local",
+      "command": ["cmd", "/c", "npx", "-y", "@pollinations/model-context-protocol"],
+      "enabled": true
+    }
+  },
+  "experimental": {
+    "mcp_timeout": 60000
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "three.js exporter"
+  },
+  "scene": "0",
+  "scenes": [
+    {
+      "name": "T-Shirt",
+      "nodes": [0]
+    }
+  ],
+  "nodes": [
+    {
+      "mesh": 0,
+      "name": "T-Shirt Body"
+    }
+  ],
+  "meshes": [
+    {
+      "name": "T-Shirt Mesh",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": "accessor-0",
+            "TEXCOORD_0": "accessor-1"
+          },
+          "indices": "accessor-2",
+          "material": "material-0"
+        }
+      ]
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": "bufferView-0",
+      "componentType": 5126,
+      "count": 36,
+      "max": [1, 1, 1],
+      "min": [-1, -1, 0],
+      "type": "triangle"
+    },
+    {
+      "bufferView": "bufferView-1",
+      "componentType": 5126,
+      "count": 36,
+      "type": "Float32",
+      "type": "2D",
+      "max": [1, 1],
+      "min": [0, 0]
+    },
+    {
+      "bufferView": "bufferView-2",
+      "componentType": 5126,
+      "count": 36,
+      "type": "Float32"
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": "buffer-0",
+      "byteOffset": 0,
+      "byteLength": 432,
+      "target": 34962
+    },
+    {
+      "buffer": "buffer-0",
+      "byteOffset": 432,
+      "byteLength": 288,
+      "target": 34962
+    },
+    {
+      "buffer": "buffer-0",
+      "byteOffset": 720,
+      "byteLength": 432,
+      "target": 34962
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 1152,
+      "uri": "tshirt.bin"
+    }
+  ],
+  "materials": [
+    {
+      "name": "shirtMaterial",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [1, 1, 1, 1],
+        "metallicFactor": 0.0,
+        "roughnessFactor": 0.5
+      },
+      "emissiveFactor": [0, 0, 0]
+    }
+  ]
+}

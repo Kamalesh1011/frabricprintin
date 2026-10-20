@@ -1,0 +1,222 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --bg-main: #FEFBF1;
+    --bg-secondary: #F9F6ED;
+    --bg-tertiary: #F3F0E8;
+    --text-main: #0F100F;
+    --text-muted: #8A8883;
+    --card-bg: #FFFFFF;
+    --card-border: #ECECEC;
+    --accent-ochre: #AC7900;
+    --accent-coral: #EE6352;
+    --brand-dark: #0F100F;
+  }
+
+  html.dark {
+    --bg-main: #0F100F;
+    --bg-secondary: #161716;
+    --bg-tertiary: #1F201F;
+    --text-main: #FFFFFF;
+    --text-muted: #A3A3A3;
+    --card-bg: #1A1C1A;
+    --card-border: #2B2D2B;
+    --accent-ochre: #D4AF37;
+    --accent-coral: #EE6352;
+    --brand-dark: #FFFFFF;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-x: hidden;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Luxury Editorial & Serif Typography Classes */
+.font-display {
+  font-family: 'Playfair Display', Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+.font-serif-luxury {
+  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  letter-spacing: -0.015em;
+}
+
+.font-editorial {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.font-mono-luxury {
+  font-family: 'Space Grotesk', monospace, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Luxury Letter Spacing Helpers */
+.tracking-luxury {
+  letter-spacing: 0.12em;
+}
+
+.tracking-tight-editorial {
+  letter-spacing: -0.035em;
+}
+
+/* Fabriclore Signature Card Shadow */
+.shadow-fabriclore {
+  box-shadow: 0px 0px 50px 0px rgba(0, 0, 0, 0.06);
+}
+
+html.dark .shadow-fabriclore {
+  box-shadow: 0px 0px 50px 0px rgba(0, 0, 0, 0.4);
+}
+
+.shadow-fabriclore-hover {
+  box-shadow: 0px 20px 60px 0px rgba(0, 0, 0, 0.12);
+}
+
+html.dark .shadow-fabriclore-hover {
+  box-shadow: 0px 20px 60px 0px rgba(0, 0, 0, 0.6);
+}
+
+/* Subtle Woven Fabric Pattern Background */
+.bg-fabric-grain {
+  background-image: radial-gradient(rgba(172, 121, 0, 0.05) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+html.dark .bg-fabric-grain {
+  background-image: radial-gradient(rgba(212, 175, 55, 0.05) 1px, transparent 0);
+}
+
+/* Marquee Infinite Smooth Scroll */
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: 200%;
+  animation: marquee 35s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Smooth Cloth Wave Animation */
+@keyframes clothWave {
+  0%, 100% {
+    transform: perspective(1000px) rotateX(1.5deg) rotateY(-1.5deg) translateY(0px);
+  }
+  50% {
+    transform: perspective(1000px) rotateX(-1.5deg) rotateY(1.5deg) translateY(-4px);
+  }
+}
+
+.animate-cloth-drape {
+  animation: clothWave 5s ease-in-out infinite;
+}
+
+/* Shimmer Highlight Effect */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
+}
+
+/* Classical gold shimmer headline */
+@keyframes goldSheen {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gold-sheen-text {
+  background: linear-gradient(100deg, #966900 0%, #D4AF37 20%, #FFF3C4 40%, #D4AF37 60%, #966900 80%, #D4AF37 100%);
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: goldSheen 6s ease-in-out infinite;
+}
+
+/* Slow rotating mandala ring for heritage hero */
+@keyframes spinSlower {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slower {
+  animation: spinSlower 60s linear infinite;
+}
+
+/* Jaali lattice pattern (classical Indian screen motif) */
+.jaali-pattern {
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(212, 175, 55, 0.10) 1.2px, transparent 1.3px),
+    radial-gradient(circle at 0 0, rgba(212, 175, 55, 0.05) 1px, transparent 1.1px),
+    radial-gradient(circle at 24px 24px, rgba(212, 175, 55, 0.05) 1px, transparent 1.1px);
+  background-size: 28px 28px, 48px 48px, 48px 48px;
+}
+
+/* Custom Luxury Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(138, 136, 131, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #AC7900;
+}
+
+/* 📱 Dynamic Responsive & Touch Utilities */
+@layer utilities {
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Safe Area Inset Helpers for Notch / Home Indicator Phones */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0.5rem);
+  }
+
+  /* Fluid Responsive Grid Helpers (Bootstrap-style responsiveness) */
+  .grid-fluid-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+    gap: 1.25rem;
+  }
+
+  /* Smooth Momentum Scrolling on iOS / Android */
+  .scroll-touch {
+    -webkit-overflow-scrolling: touch;
+  }
+}

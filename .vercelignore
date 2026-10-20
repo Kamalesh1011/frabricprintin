@@ -1,0 +1,12 @@
+*.exe
+*.zip
+*.tar.gz
+final-round-desktop*
+node_modules
+dist
+.env*
+!.env.example
+.git
+.vscode
+.idea
+*.log
