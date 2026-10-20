@@ -252,14 +252,14 @@ export const FabricListingPage: React.FC<FabricListingPageProps> = ({
       return 'Heavyweight, abrasion-tested natural and blended fabrics crafted for luxury upholstery, sofa covers, drapery, and interior living spaces.';
     }
     if (filters.category && filters.category !== 'All') {
-      return `Explore authentic Surat direct mill ${filters.category.toLowerCase()} qualities with lab-tested GSM calibrations, reactive print compatibility, and continuous cut guarantees.`;
+      return `Explore authentic direct mill ${filters.category.toLowerCase()} qualities with lab-tested GSM calibrations, reactive print compatibility, and continuous cut guarantees.`;
     }
-    return 'Browse 100% verified natural, cellulosic, and silk base fabrics direct from Surat master looms for custom reactive digital printing and wholesale tailoring.';
+    return 'Browse 100% verified natural, cellulosic, and silk base fabrics direct from master looms for custom reactive digital printing and wholesale tailoring.';
   }, [filters.category, filters.usages]);
 
   return (
-    <div className="min-h-screen py-6 bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <div className="min-h-screen pt-4 pb-32 lg:py-6 bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5 sm:space-y-6">
         
         {/* 1. Breadcrumbs */}
         <nav className="flex items-center space-x-1.5 text-xs text-gray-500 dark:text-gray-400">
@@ -286,14 +286,14 @@ export const FabricListingPage: React.FC<FabricListingPageProps> = ({
         </nav>
 
         {/* 2. Hero Category Header Banner (Tex India Mart / Sahni Fabrics Style) */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-[#111827] via-[#1E293B] to-[#0F172A] rounded-3xl p-6 sm:p-8 shadow-lg text-white border border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="relative overflow-hidden bg-gradient-to-r from-[#111827] via-[#1E293B] to-[#0F100F] rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-lg text-white border border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6">
           <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center space-x-1.5 border border-white/20 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-[#D4AF37] uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span>Surat Direct Mill Looms • 300 DPI Reactive Print Ready</span>
+            <div className="inline-flex items-center space-x-1.5 border border-white/20 bg-white/10 backdrop-blur-md px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold text-[#D4AF37] uppercase tracking-wider">
+              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#D4AF37]" />
+              <span>Certified Mill Looms • 300 DPI Reactive Print</span>
             </div>
 
-            <h1 className="text-2xl sm:text-4xl font-black text-white font-editorial tracking-tight">
+            <h1 className="text-xl sm:text-3xl md:text-4xl font-black text-white font-editorial tracking-tight leading-tight">
               {categoryTitle}
             </h1>
 
@@ -301,7 +301,7 @@ export const FabricListingPage: React.FC<FabricListingPageProps> = ({
               {categoryDescription}
             </p>
 
-            <div className="pt-1 flex items-center space-x-3 text-xs text-gray-400">
+            <div className="pt-1 flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-gray-400">
               <span>
                 Matching <strong className="text-white font-bold">{filteredProducts.length}</strong> qualities
               </span>
@@ -310,14 +310,14 @@ export const FabricListingPage: React.FC<FabricListingPageProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto shrink-0">
             <button
               type="button"
               onClick={() => {
                 setComparisonBaseProduct(filteredProducts[0] || products[0]);
                 setComparatorModalOpen(true);
               }}
-              className="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center space-x-1.5 transition shadow-sm backdrop-blur-sm"
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition shadow-sm backdrop-blur-sm"
             >
               <Scale className="w-4 h-4 text-[#D4AF37]" />
               <span>Compare Fabrics</span>
@@ -326,7 +326,7 @@ export const FabricListingPage: React.FC<FabricListingPageProps> = ({
             <button
               type="button"
               onClick={() => setSwatchModalOpen(true)}
-              className="bg-[#D4AF37] hover:bg-[#C29B27] text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center space-x-1.5 transition shadow-sm"
+              className="bg-[#D4AF37] hover:bg-[#C29B27] text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition shadow-sm"
             >
               <BookOpen className="w-4 h-4 text-slate-950" />
               <span>Order Swatch Book (₹499)</span>
@@ -568,20 +568,22 @@ export const FabricListingPage: React.FC<FabricListingPageProps> = ({
                     Previous
                   </button>
 
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
-                    <button
-                      key={pg}
-                      type="button"
-                      onClick={() => handleFilterChange({ page: pg })}
-                      className={`w-8 h-8 rounded-xl font-bold transition ${
-                        currentPage === pg
-                          ? 'bg-[#2D325A] text-white shadow-xs'
-                          : 'bg-white dark:bg-[#1A1C1E] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-100'
-                      }`}
-                    >
-                      {pg}
-                    </button>
-                  ))}
+                  <div className="hidden sm:flex items-center space-x-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+                      <button
+                        key={pg}
+                        type="button"
+                        onClick={() => handleFilterChange({ page: pg })}
+                        className={`w-8 h-8 rounded-xl font-bold transition ${
+                          currentPage === pg
+                            ? 'bg-[#2D325A] text-white shadow-xs'
+                            : 'bg-white dark:bg-[#1A1C1E] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-100'
+                        }`}
+                      >
+                        {pg}
+                      </button>
+                    ))}
+                  </div>
 
                   <button
                     type="button"

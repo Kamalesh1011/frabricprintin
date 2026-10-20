@@ -45,6 +45,7 @@ import { SpotlightCard } from '../components/ui/spotlight-card';
 import { ShimmerButton } from '../components/ui/shimmer-button';
 import { PopularDesignsSection } from '../components/PopularDesignsSection';
 import { PreloadedDesignModal } from '../components/PreloadedDesignModal';
+import { WhatsAppOrderSection } from '../components/WhatsAppOrderSection';
 
 interface HomePageProps {
   categories: Category[];
@@ -160,34 +161,34 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
 
               {/* Main Headline */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black font-editorial tracking-tight leading-[1.08] text-[#0F100F] dark:text-white">
-                Customized Digital Printing at Low MOQ
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black font-editorial tracking-tight leading-[1.1] text-[#0F100F] dark:text-white">
+                Custom Fabric Printing <span className="text-[#AC7900] dark:text-[#D4AF37]">from 1 Meter</span>
               </h1>
 
-              {/* Subtitle */}
-              <p className="text-sm sm:text-base text-[#8A8883] dark:text-gray-300 max-w-xl leading-relaxed font-normal">
-                Direct mill digital textile printing for modern fashion brands, independent designers, and studios. Print your own artwork onto <strong>certified Cotton, Mulberry Silk, French Flax Linen & Modal</strong> with reactive color-lock technology.
+              {/* Subtitle - Simplified & Friendly */}
+              <p className="text-xs sm:text-base text-[#8A8883] dark:text-gray-300 max-w-xl leading-relaxed font-normal">
+                Direct mill custom printing with zero minimum order. Print your own artwork onto <strong>certified Cotton, Mulberry Silk, Linen &amp; Modal</strong> with reactive color-lock technology.
               </p>
 
               {/* Action Buttons & Quick URL Extractor Bar */}
-              <div className="space-y-4 pt-2">
-                <div className="flex flex-wrap items-center gap-3.5">
+              <div className="space-y-3.5 pt-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3.5">
 
                   {/* Explore Fabrics Button with circular arrow */}
                   <button
                     onClick={onGoToFabrics}
-                    className="group h-[50px] pl-6 pr-1.5 rounded-full inline-flex items-center justify-center gap-3 bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] text-sm font-semibold shadow-md hover:opacity-90 hover:scale-[1.01] active:scale-98 transition"
+                    className="group h-[46px] sm:h-[50px] pl-5 sm:pl-6 pr-1.5 rounded-full inline-flex items-center justify-between sm:justify-center gap-3 bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] text-xs sm:text-sm font-semibold shadow-md hover:opacity-90 hover:scale-[1.01] active:scale-98 transition w-full sm:w-auto"
                   >
                     <span>Explore 250+ Fabric Qualities</span>
-                    <span className="w-9 h-9 rounded-full bg-white dark:bg-[#0F100F] text-[#0F100F] dark:text-white flex items-center justify-center">
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                    <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white dark:bg-[#0F100F] text-[#0F100F] dark:text-white flex items-center justify-center shrink-0">
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                     </span>
                   </button>
 
                   {/* Order Swatch Sample Book Button */}
                   <button
                     onClick={() => setSwatchModalOpen(true)}
-                    className="h-[50px] px-6 rounded-full border border-[#ECECEC] dark:border-white/[0.15] bg-white dark:bg-[#1A1C1A] text-[#0F100F] dark:text-white text-sm font-semibold hover:border-[#AC7900] transition flex items-center space-x-2 shadow-sm"
+                    className="h-[46px] sm:h-[50px] px-5 sm:px-6 rounded-full border border-[#ECECEC] dark:border-white/[0.15] bg-white dark:bg-[#1A1C1A] text-[#0F100F] dark:text-white text-xs sm:text-sm font-semibold hover:border-[#AC7900] transition flex items-center justify-center space-x-2 shadow-sm w-full sm:w-auto"
                   >
                     <BookOpen className="w-4 h-4 text-[#AC7900] dark:text-[#D4AF37]" />
                     <span>Order Swatch Books (₹499)</span>
@@ -198,22 +199,23 @@ export const HomePage: React.FC<HomePageProps> = ({
                 {/* Google Image URL Extractor Trigger Bar */}
                 <div
                   onClick={() => setUrlModalOpen(true)}
-                  className="bg-white dark:bg-[#1A1C1A] border border-[#ECECEC] dark:border-white/[0.12] rounded-2xl p-3 flex items-center justify-between cursor-pointer hover:border-[#AC7900] dark:hover:border-[#D4AF37] transition shadow-sm max-w-md group"
+                  className="bg-white dark:bg-[#1A1C1A] border border-[#ECECEC] dark:border-white/[0.12] rounded-2xl p-2.5 sm:p-3 flex items-center justify-between cursor-pointer hover:border-[#AC7900] dark:hover:border-[#D4AF37] transition shadow-xs max-w-md group"
                 >
-                  <div className="flex items-center space-x-2.5 text-xs text-[#8A8883] dark:text-gray-400">
-                    <Globe className="w-4 h-4 text-[#AC7900] dark:text-[#D4AF37] shrink-0" />
-                    <span className="truncate">Have an image URL? Paste to extract & drape in 3D...</span>
+                  <div className="flex items-center space-x-2 text-xs text-[#8A8883] dark:text-gray-400 truncate">
+                    <Globe className="w-3.5 h-3.5 text-[#AC7900] dark:text-[#D4AF37] shrink-0" />
+                    <span className="truncate">Have an image URL? Paste to preview in 3D</span>
                   </div>
-                  <span className="text-xs font-bold text-[#AC7900] dark:text-[#D4AF37] group-hover:underline shrink-0">
+                  <span className="text-[11px] sm:text-xs font-bold text-[#AC7900] dark:text-[#D4AF37] group-hover:underline shrink-0 ml-2">
                     Extract →
                   </span>
                 </div>
               </div>
 
-              {/* Quote Speech Bubble */}
-              <div className="bg-[#F9F6ED] dark:bg-[#1C1E1C] border border-[#ECECEC] dark:border-white/[0.08] p-5 rounded-[28px] shadow-sm max-w-lg">
-                <p className="text-xs sm:text-sm text-[#0F100F] dark:text-gray-200 leading-relaxed italic">
-                  "The go-to digital printing partner for 500+ fashion labels. Tested colorfastness, verification strike-offs, and express dispatch."
+              {/* Trust Badge Bar */}
+              <div className="bg-[#F9F6ED] dark:bg-[#1C1E1C] border border-[#ECECEC] dark:border-white/[0.08] p-3.5 sm:p-4 rounded-2xl sm:rounded-[24px] shadow-xs max-w-lg flex items-center space-x-3">
+                <span className="text-base sm:text-lg shrink-0">⭐</span>
+                <p className="text-[11px] sm:text-xs text-[#0F100F] dark:text-gray-200 leading-snug">
+                  <strong>Trusted by 500+ fashion labels:</strong> Verified colorfastness strike-offs, skin-safe OEKO-TEX dyes, and express mill dispatch.
                 </p>
               </div>
 
@@ -400,6 +402,9 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
 
       </section>
+
+      {/* 🟢 FAST TRACK: ORDER DIRECT ON WHATSAPP OR CALL WITH REQUIREMENT & DOCUMENT UPLOAD */}
+      <WhatsAppOrderSection />
 
       {/* 👑 3.4 POPULAR DESIGNS SHOWCASE (Curated 300 DPI Motifs & Seamless Patterns) */}
       <PopularDesignsSection

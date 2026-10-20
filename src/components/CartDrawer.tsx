@@ -80,7 +80,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onGoToCheckout, onGoToFa
         onClick={() => setIsCartOpen(false)}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-6 sm:pl-10">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
         <div className="w-screen max-w-md bg-[#FEFBF1] dark:bg-[#161716] text-[#0F100F] dark:text-white shadow-2xl flex flex-col border-l border-black/10 dark:border-white/[0.08] transition-colors duration-300">
           
           {/* Drawer Header */}
@@ -299,7 +299,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onGoToCheckout, onGoToFa
 
           {/* Drawer Footer */}
           {cart.length > 0 && (
-            <div className="p-4 border-t border-black/10 dark:border-white/[0.08] bg-white dark:bg-[#121312] space-y-3 shadow-lg">
+            <div className="p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] border-t border-black/10 dark:border-white/[0.08] bg-white dark:bg-[#121312] space-y-3 shadow-lg">
               
               {/* Promo code form */}
               <form onSubmit={handleApplyCoupon} className="flex gap-2">

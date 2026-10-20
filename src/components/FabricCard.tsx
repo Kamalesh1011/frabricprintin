@@ -266,48 +266,64 @@ export const FabricCard: React.FC<FabricCardProps> = ({
             {product.name}
           </h3>
 
-          {/* 📊 Technical Mill Specification Matrix */}
-          <div className="mt-2.5 grid grid-cols-2 gap-x-2 gap-y-1 text-xs border-t border-b border-gray-100 dark:border-white/5 py-2">
-            <div className="flex items-center justify-between pr-2 border-r border-gray-100 dark:border-white/5">
-              <span className="text-gray-500 dark:text-gray-400 text-[11px]">Color</span>
-              <span className="font-semibold text-gray-800 dark:text-gray-200 text-[11px] truncate max-w-[70px]" title={product.color}>
-                {product.color.includes('White') ? product.color.replace('Natural Soft ', '').replace('Bleached Optic ', '') : product.color}
+          {/* 📊 Technical Mill Specification Matrix (Mobile-Clean Spec Chips, Desktop 6-field Matrix) */}
+          <div className="mt-2 text-xs border-t border-b border-gray-100 dark:border-white/5 py-1.5 sm:py-2">
+            {/* Mobile View: High-Impact Compact Spec Badges */}
+            <div className="flex sm:hidden flex-wrap items-center gap-1">
+              <span className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-[#1E3A8A] dark:text-blue-300 font-bold text-[10px]">
+                {product.gsm} GSM
               </span>
-            </div>
-
-            <div className="flex items-center justify-between pl-1">
-              <span className="text-gray-500 dark:text-gray-400 text-[11px]">Count</span>
-              <span className="font-semibold text-gray-800 dark:text-gray-200 text-[11px] truncate max-w-[70px]" title={product.count}>
-                {product.count ? product.count.replace(' Combed Yarn', '').replace(' Combed', '') : 'NAxNA'}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between pr-2 border-r border-gray-100 dark:border-white/5">
-              <span className="text-gray-500 dark:text-gray-400 text-[11px]">Cons</span>
-              <span className="font-semibold text-gray-800 dark:text-gray-200 text-[11px] truncate max-w-[70px]">
-                {product.cons || 'NA'}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between pl-1">
-              <span className="text-gray-500 dark:text-gray-400 text-[11px]">Width</span>
-              <span className="font-semibold text-gray-800 dark:text-gray-200 text-[11px] truncate max-w-[70px]">
+              <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-medium text-[10px]">
                 {product.width.split(' ')[0]}
               </span>
-            </div>
-
-            <div className="flex items-center justify-between pr-2 border-r border-gray-100 dark:border-white/5">
-              <span className="text-gray-500 dark:text-gray-400 text-[11px]">GSM</span>
-              <span className="font-bold text-[#1E3A8A] dark:text-blue-400 text-[11px]">
-                {product.gsm}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between pl-1">
-              <span className="text-gray-500 dark:text-gray-400 text-[11px]">Weave</span>
-              <span className="font-semibold text-gray-800 dark:text-gray-200 text-[11px] truncate max-w-[70px]">
+              <span className="px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-medium text-[10px] truncate max-w-[85px]">
                 {product.weave_type ? product.weave_type.replace(' Weave', '') : 'Plain'}
               </span>
+            </div>
+
+            {/* Tablet & Desktop View: Complete 6-Parameter Mill Spec Matrix */}
+            <div className="hidden sm:grid grid-cols-2 gap-x-2 gap-y-1">
+              <div className="flex items-center justify-between pr-2 border-r border-gray-100 dark:border-white/5">
+                <span className="text-gray-500 dark:text-gray-400 text-[11px]">Color</span>
+                <span className="font-semibold text-gray-800 dark:text-gray-200 text-[11px] truncate max-w-[70px]" title={product.color}>
+                  {product.color.includes('White') ? product.color.replace('Natural Soft ', '').replace('Bleached Optic ', '') : product.color}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pl-1">
+                <span className="text-gray-500 dark:text-gray-400 text-[11px]">Count</span>
+                <span className="font-semibold text-gray-800 dark:text-gray-200 text-[11px] truncate max-w-[70px]" title={product.count}>
+                  {product.count ? product.count.replace(' Combed Yarn', '').replace(' Combed', '') : 'NAxNA'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pr-2 border-r border-gray-100 dark:border-white/5">
+                <span className="text-gray-500 dark:text-gray-400 text-[11px]">Cons</span>
+                <span className="font-semibold text-gray-800 dark:text-gray-200 text-[11px] truncate max-w-[70px]">
+                  {product.cons || 'NA'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pl-1">
+                <span className="text-gray-500 dark:text-gray-400 text-[11px]">Width</span>
+                <span className="font-semibold text-gray-800 dark:text-gray-200 text-[11px] truncate max-w-[70px]">
+                  {product.width.split(' ')[0]}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pr-2 border-r border-gray-100 dark:border-white/5">
+                <span className="text-gray-500 dark:text-gray-400 text-[11px]">GSM</span>
+                <span className="font-bold text-[#1E3A8A] dark:text-blue-400 text-[11px]">
+                  {product.gsm}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pl-1">
+                <span className="text-gray-500 dark:text-gray-400 text-[11px]">Weave</span>
+                <span className="font-semibold text-gray-800 dark:text-gray-200 text-[11px] truncate max-w-[70px]">
+                  {product.weave_type ? product.weave_type.replace(' Weave', '') : 'Plain'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -316,21 +332,21 @@ export const FabricCard: React.FC<FabricCardProps> = ({
         <div className="pt-1 flex flex-col space-y-2">
           <div className="flex items-baseline justify-between">
             <div>
-              <span className="text-base font-extrabold text-[#9B1B30] dark:text-[#EF4444] tracking-tight">
+              <span className="text-sm sm:text-base font-extrabold text-[#9B1B30] dark:text-[#EF4444] tracking-tight">
                 ₹{product.price_per_meter.toFixed(2)}
               </span>
-              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">/m</span>
+              <span className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400">/m</span>
             </div>
 
-            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/40">
+            <span className="text-[9px] sm:text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/40">
               In Stock
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-1.5 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5">
             <button
               onClick={() => onSelect(product)}
-              className="w-full py-2 bg-[#0F172A] hover:bg-[#1E293B] dark:bg-white dark:hover:bg-gray-100 text-white dark:text-slate-900 font-bold text-xs rounded-xl transition flex items-center justify-center space-x-1 shadow-sm"
+              className="w-full py-2 bg-[#0F172A] hover:bg-[#1E293B] dark:bg-white dark:hover:bg-gray-100 text-white dark:text-slate-900 font-bold text-xs rounded-xl transition flex items-center justify-center space-x-1 shadow-xs"
             >
               <Palette className="w-3.5 h-3.5" />
               <span>Customize</span>
@@ -338,7 +354,7 @@ export const FabricCard: React.FC<FabricCardProps> = ({
 
             <button
               onClick={() => onSelect(product)}
-              className="w-full py-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] dark:bg-[#26282B] dark:hover:bg-[#323539] text-[#1E293B] dark:text-gray-200 font-bold text-xs rounded-xl transition flex items-center justify-center space-x-1 border border-black/5 dark:border-white/5"
+              className="hidden sm:flex w-full py-2 bg-[#F1F5F9] hover:bg-[#E2E8F0] dark:bg-[#26282B] dark:hover:bg-[#323539] text-[#1E293B] dark:text-gray-200 font-bold text-xs rounded-xl transition items-center justify-center space-x-1 border border-black/5 dark:border-white/5"
             >
               <span>Order Swatch</span>
             </button>

@@ -16,8 +16,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   const { cart, setIsCartOpen } = useCart();
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const isFabricsActive = activeTab === 'fabrics' || activeTab === 'product-detail';
-  const isApparelActive = activeTab === 'apparel' || activeTab === 'apparel-studio' || activeTab === 'jersey';
+  // Hide bottom nav in customizer studio & product detail view so dedicated mobile buy bar has full focus
+  if (activeTab === 'apparel-studio' || activeTab === 'product-detail') {
+    return null;
+  }
+
+  const isFabricsActive = activeTab === 'fabrics';
+  const isApparelActive = activeTab === 'apparel' || activeTab === 'jersey';
   const isTrainingActive = activeTab === 'training';
   const isHomeActive = activeTab === 'home';
 

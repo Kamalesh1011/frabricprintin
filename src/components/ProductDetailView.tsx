@@ -3,6 +3,8 @@ import {
   Printer,
   Upload,
   Check,
+  MessageCircle,
+  Phone,
   Heart,
   ShieldCheck,
   Truck,
@@ -97,6 +99,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   const [termsAccepted, setTermsAccepted] = useState<boolean>(true);
   const [buyingOption, setBuyingOption] = useState<'printed' | 'plain'>('printed');
   const [activeInfoTab, setActiveInfoTab] = useState<'order' | 'specs' | 'guidelines' | 'wholesale'>('order');
+  const [isSpecsExpanded, setIsSpecsExpanded] = useState<boolean>(false);
 
   // Artwork state
   const [uploadedDesignUrl, setUploadedDesignUrl] = useState<string>('');
@@ -212,6 +215,21 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     return calculatedUnitPrice;
   }, [calculatedUnitPrice, selectedSizeType, meters]);
 
+  // Direct WhatsApp Order URL with prefilled fabric and length specifications
+  const whatsappOrderUrl = useMemo(() => {
+    const quantityText = selectedSizeType === 'swatch_test' ? 'Sample Swatch' : `${meters} meter(s)`;
+    const printText = buyingOption === 'printed' ? 'Custom Printed' : 'Plain / RFD Base';
+    const artworkText = uploadedDesignUrl ? `\n- Artwork attached: ${uploadedDesignName}` : '';
+    const text = `Hi Fabric Print, I want to order:\n- Fabric: ${currentProduct.name} (${currentProduct.gsm} GSM, ${currentProduct.width})\n- Quantity: ${quantityText}\n- Option: ${printText}\n- Total: ₹${calculatedTotalPrice.toFixed(0)}${artworkText}\n\nPlease confirm my order.`;
+    return `https://wa.me/918903120006?text=${encodeURIComponent(text)}`;
+  }, [currentProduct, meters, selectedSizeType, buyingOption, uploadedDesignUrl, uploadedDesignName, calculatedTotalPrice]);
+
+  // Quick WhatsApp artwork upload
+  const whatsappArtworkUrl = useMemo(() => {
+    const text = `Hi Fabric Print, I am ordering ${currentProduct.name} and want to send my design artwork directly here.`;
+    return `https://wa.me/918903120006?text=${encodeURIComponent(text)}`;
+  }, [currentProduct]);
+
   const handleAddToCart = (directCheckout = false) => {
     if (!termsAccepted) {
       setUploadError('Please accept the Terms & Conditions to proceed.');
@@ -259,7 +277,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
   const baseFabricImage = currentProduct.images[0] || '/mockups/tcftbw650_swatch.jpg';
 
   return (
-    <div className="min-h-screen py-8 text-[#0F100F] dark:text-white transition-colors duration-300">
+    <div className="min-h-screen pt-4 pb-32 lg:py-8 text-[#0F100F] dark:text-white transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         
         {/* Top Breadcrumb Navigation & Quick Tools */}
@@ -282,7 +300,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
             <span className="font-semibold text-gray-700 dark:text-gray-300">SKU: {currentProduct.sku || `TIM${currentProduct.category.slice(0,3).toUpperCase()}${currentProduct.gsm}`}</span>
             <span>•</span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold">Surat Mill Direct</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold">100% Quality Guaranteed</span>
           </div>
         </div>
 
@@ -313,8 +331,8 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
               }}
             />
 
-            {/* Quick Comparator Banner Callout */}
-            <div className="p-3.5 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-2xl border border-blue-200/80 dark:border-blue-800/30 flex items-center justify-between text-xs">
+            {/* Quick Comparator Banner Callout - Desktop Only to prevent mobile overcrowding */}
+            <div className="hidden lg:flex p-3.5 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-2xl border border-blue-200/80 dark:border-blue-800/30 items-center justify-between text-xs">
               <div className="space-y-0.5">
                 <span className="font-extrabold text-blue-950 dark:text-blue-200 block">
                   Not sure if {currentProduct.name} is right for your garment?
@@ -337,207 +355,70 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
           {/* ════════════════════════════════════════════════════════════════
               RIGHT COLUMN: AMAZON-GRADE SIMPLICITY BUY BOX & SPECS TABS
              ════════════════════════════════════════════════════════════════ */}
-          <div className="lg:col-span-6 bg-white dark:bg-[#1A1C1E] rounded-3xl border border-gray-200 dark:border-white/10 p-5 sm:p-7 shadow-sm space-y-5">
+          <div className="lg:col-span-6 bg-white dark:bg-[#1A1C1E] rounded-3xl border border-gray-200 dark:border-white/10 p-5 sm:p-7 shadow-sm space-y-4">
             
-            {/* 1. Amazon-style Brand, Title, Rating, & In Stock Row */}
-            <div className="border-b border-gray-100 dark:border-white/10 pb-4 space-y-1.5">
+            {/* 1. Clean Title & Fabric Highlights */}
+            <div className="border-b border-gray-100 dark:border-white/10 pb-3.5 space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-[#007185] dark:text-[#56D7EA] hover:underline cursor-pointer">
-                  Visit the FabricPrint Certified Mill Direct Store
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>In Stock • Direct Dispatch</span>
                 </span>
                 <span className="font-mono text-[11px] font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded">
-                  SKU: {currentProduct.sku || 'TCFTBW650'}
+                  SKU: {currentProduct.sku || 'TIMFAB'}
                 </span>
               </div>
 
-              <h1 className="text-xl sm:text-2xl font-extrabold text-[#0F1111] dark:text-white leading-tight">
-                {currentProduct.name} ({currentProduct.gsm} GSM • {currentProduct.width})
+              <h1 className="text-xl sm:text-2xl font-black text-[#0F1111] dark:text-white leading-tight">
+                {currentProduct.name}
               </h1>
 
-              <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-                <div className="flex items-center space-x-1 text-amber-500">
-                  <div className="flex items-center">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star key={i} className="w-3.5 h-3.5 fill-current text-[#DE7921]" />
-                    ))}
-                  </div>
-                  <span className="font-bold text-gray-900 dark:text-white ml-1">
-                    {currentProduct.rating || 4.9}
-                  </span>
-                </div>
-                <span className="text-gray-300 dark:text-gray-600">|</span>
-                <span className="text-[#007185] dark:text-[#56D7EA] hover:underline cursor-pointer">
-                  {currentProduct.reviews_count || 142} ratings
-                </span>
-                <span className="text-gray-300 dark:text-gray-600">|</span>
-                <span className="text-gray-600 dark:text-gray-400 font-medium">
-                  500+ meters sold this month
-                </span>
-              </div>
-            </div>
-
-            {/* 2. Amazon-style Price & Deal Block */}
-            <div className="space-y-1.5 bg-gray-50/80 dark:bg-[#141517] p-4 rounded-2xl border border-gray-200/80 dark:border-white/10">
-              <div className="flex items-baseline space-x-2">
-                <span className="text-red-700 dark:text-red-400 text-lg font-light">-20%</span>
-                <span className="text-2xl sm:text-3xl font-black text-[#0F1111] dark:text-white tracking-tight">
-                  ₹{calculatedTotalPrice.toFixed(2)}
-                </span>
-                {selectedSizeType === 'meter' && meters > 1 && (
-                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                    (₹{calculatedUnitPrice.toFixed(2)} / meter)
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
-                <span>M.R.P.: <span className="line-through">₹{Math.round(calculatedTotalPrice * 1.25)}</span></span>
+              <div className="flex items-center gap-2 pt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                <span className="font-bold text-gray-800 dark:text-gray-200">{currentProduct.gsm} GSM</span>
                 <span>•</span>
-                <span className="text-emerald-700 dark:text-emerald-400 font-bold">Inclusive of all taxes</span>
-              </div>
-
-              {/* Delivery Promise */}
-              <div className="pt-2 text-xs text-gray-800 dark:text-gray-200 flex items-start space-x-2 border-t border-gray-200/60 dark:border-white/5 mt-2">
-                <Truck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-bold text-gray-900 dark:text-white">FREE delivery</span> on orders above ₹999.
-                  <span className="block text-gray-500 dark:text-gray-400 text-[11px]">
-                    Direct dispatch from Surat Mill within <strong>48-72 hours</strong>.
-                  </span>
-                </div>
+                <span>{currentProduct.width}</span>
+                <span>•</span>
+                <span className="text-amber-500 font-bold flex items-center gap-0.5">
+                  <Star className="w-3.5 h-3.5 fill-current text-amber-500" />
+                  <span>{currentProduct.rating || 4.9}</span>
+                </span>
               </div>
             </div>
 
-            {/* 3. Buying Configuration Choice (Printed vs Plain RFD) */}
-            <div className="space-y-2">
-              <label className="text-xs font-extrabold uppercase tracking-wider text-gray-600 dark:text-gray-400">
-                Choose Printing Option:
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setBuyingOption('printed')}
-                  className={`p-3 rounded-xl border text-left transition flex flex-col justify-between ${
-                    buyingOption === 'printed'
-                      ? 'border-[#2D325A] bg-[#2D325A]/5 dark:bg-blue-950/20 ring-2 ring-[#2D325A]'
-                      : 'border-gray-200 dark:border-white/10 hover:border-gray-300'
-                  }`}
-                >
-                  <span className="text-xs font-bold text-gray-900 dark:text-white flex items-center space-x-1.5">
-                    <span>🎨 Custom Printed Fabric</span>
+            {/* 2. Simplified Clean Price Block */}
+            <div className="flex items-center justify-between bg-gray-50 dark:bg-[#141517] p-3 sm:p-4 rounded-2xl border border-gray-200/80 dark:border-white/10">
+              <div>
+                <div className="flex items-baseline space-x-2">
+                  <span className="text-2xl sm:text-3xl font-black text-[#0F1111] dark:text-white">
+                    ₹{calculatedTotalPrice.toFixed(0)}
                   </span>
-                  <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                    Upload your design or pick from catalog
+                  <span className="text-xs text-gray-400 line-through">
+                    ₹{Math.round(calculatedTotalPrice * 1.25)}
                   </span>
-                </button>
+                  {selectedSizeType === 'meter' && meters > 1 && (
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                      (₹{calculatedUnitPrice.toFixed(0)}/m)
+                    </span>
+                  )}
+                </div>
+                <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
+                  ✓ Free delivery above ₹999 • 48-72h Mill Dispatch
+                </div>
+              </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBuyingOption('plain');
-                    setUploadedDesignUrl('');
-                    setUploadedDesignName('');
-                  }}
-                  className={`p-3 rounded-xl border text-left transition flex flex-col justify-between ${
-                    buyingOption === 'plain'
-                      ? 'border-[#2D325A] bg-[#2D325A]/5 dark:bg-blue-950/20 ring-2 ring-[#2D325A]'
-                      : 'border-gray-200 dark:border-white/10 hover:border-gray-300'
-                  }`}
-                >
-                  <span className="text-xs font-bold text-gray-900 dark:text-white flex items-center space-x-1.5">
-                    <span>🧵 Plain / RFD Base Fabric</span>
-                  </span>
-                  <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                    Pure white/natural, ready for sewing/dyeing
-                  </span>
-                </button>
+              <div className="text-right">
+                <span className="text-xs font-bold text-[#AC7900] dark:text-[#D4AF37] bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+                  {selectedSizeType === 'swatch_test' ? 'Sample Swatch' : `${meters}m Selected`}
+                </span>
               </div>
             </div>
 
-            {/* 4. Artwork Section (When in Printed Mode) */}
-            {buyingOption === 'printed' && (
-              <div className="p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-[#15171A] space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-gray-800 dark:text-gray-200 flex items-center space-x-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-[#AC7900]" />
-                    <span>Attach Your Print Artwork</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setIsGoogleModalOpen(true)}
-                    className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center space-x-1"
-                  >
-                    <Globe className="w-3 h-3" />
-                    <span>Google/URL Extractor</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="py-2.5 px-3 bg-[#B91C1C] hover:bg-[#991B1B] text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center justify-center space-x-1.5"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload file</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsPreloadedModalOpen(true)}
-                    className="py-2.5 px-3 bg-[#2D325A] hover:bg-[#232747] text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center justify-center space-x-1.5"
-                  >
-                    <MousePointerClick className="w-3.5 h-3.5" />
-                    <span>Select design</span>
-                  </button>
-                </div>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".jpg,.jpeg,.png,.tiff,.tif,.psd,.pdf"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-
-                {/* Active Upload Card */}
-                {uploadedDesignUrl ? (
-                  <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-between text-xs">
-                    <div className="flex items-center space-x-2 truncate">
-                      <img src={uploadedDesignUrl} alt="Design" className="w-8 h-8 rounded object-cover border border-emerald-300" />
-                      <div className="truncate">
-                        <span className="font-bold text-emerald-900 dark:text-emerald-300 block truncate max-w-[170px]">
-                          {uploadedDesignName}
-                        </span>
-                        <span className="text-[10px] text-emerald-700 dark:text-emerald-400">
-                          {calculatedDpi} DPI • Ready for reactive print
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUploadedDesignUrl('');
-                        setUploadedDesignName('');
-                      }}
-                      className="text-red-600 hover:underline text-[11px] font-bold ml-2 shrink-0"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    💡 Tip: We recommend 150-300 DPI for ultra-crisp results (PSD, TIFF, PNG, JPG up to 50MB).
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* 5. Amazon-style Quick Length / Meters Selector */}
-            <div className="space-y-3">
+            {/* STEP 1: Fabric Selection & Quantity (Meters / Swatch) */}
+            <div className="space-y-3 p-3.5 sm:p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-[#141517]">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                  Select Quantity (Meters):
+                <label className="text-xs font-extrabold uppercase tracking-wider text-gray-800 dark:text-gray-200 flex items-center space-x-1.5">
+                  <span className="w-5 h-5 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center text-[10px] font-black">1</span>
+                  <span>Select Quantity / Meters:</span>
                 </label>
                 <button
                   type="button"
@@ -545,7 +426,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                   className="text-[11px] font-bold text-red-600 dark:text-red-400 hover:underline flex items-center space-x-1"
                 >
                   <Edit2 className="w-3 h-3" />
-                  <span>Change Fabric Quality</span>
+                  <span>Change Fabric</span>
                 </button>
               </div>
 
@@ -562,7 +443,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                     className={`px-3 py-1.5 rounded-lg font-bold text-xs transition ${
                       selectedSizeType === 'meter' && meters === m
                         ? 'bg-[#0F1111] text-white dark:bg-white dark:text-black shadow-sm'
-                        : 'bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                        : 'bg-white dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 border border-gray-200 dark:border-white/10'
                     }`}
                   >
                     {m}m
@@ -575,161 +456,239 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                   onClick={() => setSelectedSizeType('swatch_test')}
                   className={`px-3 py-1.5 rounded-lg font-bold text-xs transition border ${
                     selectedSizeType === 'swatch_test'
-                      ? 'border-[#2D325A] bg-[#2D325A] text-white'
-                      : 'border-dashed border-gray-300 dark:border-white/20 text-gray-600 dark:text-gray-300 hover:bg-gray-100'
+                      ? 'border-[#2D325A] bg-[#2D325A] text-white shadow-sm'
+                      : 'border-dashed border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-100'
                   }`}
                 >
                   📐 Sample Swatch (₹{currentProduct.swatch_test_price || 150})
                 </button>
               </div>
 
-              {/* Custom Stepper & Total Breakdown */}
+              {/* Custom Stepper */}
               {selectedSizeType === 'meter' && (
-                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#141517] rounded-xl border border-gray-200 dark:border-white/10">
+                <div className="flex items-center justify-between pt-1">
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs font-bold text-gray-600 dark:text-gray-400">Custom Meters:</span>
-                    <div className="flex items-center space-x-1 bg-white dark:bg-[#1E2023] border border-gray-300 dark:border-white/10 rounded-lg p-0.5">
+                    <span className="text-xs font-bold text-gray-600 dark:text-gray-400">Custom Length:</span>
+                    <div className="flex items-center space-x-1 bg-white dark:bg-black/30 border border-gray-300 dark:border-white/10 rounded-lg p-0.5">
                       <button
                         type="button"
                         onClick={() => setMeters(Math.max(1, meters - 1))}
                         disabled={meters <= 1}
-                        className="w-6 h-6 rounded flex items-center justify-center text-gray-600 hover:bg-gray-100 dark:hover:bg-white/10 disabled:opacity-30"
+                        className="w-7 h-7 rounded flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 disabled:opacity-30"
                       >
-                        <Minus className="w-3 h-3" />
+                        <Minus className="w-3.5 h-3.5" />
                       </button>
                       <input
                         type="number"
                         min={1}
                         value={meters}
                         onChange={(e) => setMeters(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-12 text-center font-bold text-xs bg-transparent focus:outline-none"
+                        className="w-12 text-center font-bold text-xs bg-transparent focus:outline-none text-gray-900 dark:text-white"
                       />
                       <button
                         type="button"
                         onClick={() => setMeters(meters + 1)}
-                        className="w-6 h-6 rounded flex items-center justify-center text-gray-600 hover:bg-gray-100 dark:hover:bg-white/10"
+                        className="w-7 h-7 rounded flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10"
                       >
-                        <Plus className="w-3 h-3" />
+                        <Plus className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
 
-                  <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
-                    Total: ₹{calculatedTotalPrice.toFixed(2)}
-                  </span>
+                  {meters >= 21 && (
+                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                      🎉 Wholesale Discount Active!
+                    </span>
+                  )}
                 </div>
               )}
+            </div>
 
-              {/* Continuous Cut Guarantee Box */}
-              <div className="flex items-center space-x-2 p-2.5 bg-blue-50/70 dark:bg-blue-950/20 rounded-xl border border-blue-200/80 dark:border-blue-800/30 text-[11px] text-blue-900 dark:text-blue-300">
-                <Scissors className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>
-                  <strong>Continuous Cut Guaranteed:</strong> Ordered {meters} {meters > 1 ? 'meters' : 'meter'} will be cut in one single uncut piece.
-                </span>
+            {/* STEP 2: Choose Printing Option */}
+            <div className="space-y-2">
+              <label className="text-xs font-extrabold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center space-x-1.5">
+                <span className="w-5 h-5 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center text-[10px] font-black">2</span>
+                <span>Printing Option:</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setBuyingOption('printed')}
+                  className={`p-3 rounded-xl border text-left transition ${
+                    buyingOption === 'printed'
+                      ? 'border-[#2D325A] bg-[#2D325A]/5 dark:bg-blue-950/30 ring-2 ring-[#2D325A]'
+                      : 'border-gray-200 dark:border-white/10 hover:border-gray-300 bg-white dark:bg-[#141517]'
+                  }`}
+                >
+                  <div className="text-xs font-bold text-gray-900 dark:text-white">
+                    🎨 Custom Printed
+                  </div>
+                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                    Print your design or artwork
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBuyingOption('plain');
+                    setUploadedDesignUrl('');
+                    setUploadedDesignName('');
+                  }}
+                  className={`p-3 rounded-xl border text-left transition ${
+                    buyingOption === 'plain'
+                      ? 'border-[#2D325A] bg-[#2D325A]/5 dark:bg-blue-950/30 ring-2 ring-[#2D325A]'
+                      : 'border-gray-200 dark:border-white/10 hover:border-gray-300 bg-white dark:bg-[#141517]'
+                  }`}
+                >
+                  <div className="text-xs font-bold text-gray-900 dark:text-white">
+                    🧵 Plain / RFD Base
+                  </div>
+                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                    White natural base for sewing
+                  </div>
+                </button>
               </div>
             </div>
 
-            {/* Wholesale Tier Notice */}
-            {selectedSizeType === 'meter' && (
-              <div className="p-2.5 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800/40 text-[11px] text-amber-900 dark:text-amber-300 flex items-center justify-between font-medium">
-                <span>
-                  {meters >= 101 ? '🏆 Mill Bulk 25% OFF active!' : meters >= 51 ? '🚀 Wholesale 18% OFF active!' : meters >= 21 ? '🎉 Wholesale 10% OFF active!' : '💡 Order 21+ meters to unlock 10% wholesale discount'}
-                </span>
-                <span className="font-bold">
-                  {meters}m selected
-                </span>
+            {/* STEP 3: Artwork Section */}
+            {buyingOption === 'printed' && (
+              <div className="p-3.5 sm:p-4 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-[#15171A] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-gray-800 dark:text-gray-200 flex items-center space-x-1.5">
+                    <span className="w-5 h-5 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center text-[10px] font-black">3</span>
+                    <span>Attach Artwork (Or Send on WhatsApp):</span>
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="py-2 px-2 bg-[#B91C1C] hover:bg-[#991B1B] text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center justify-center space-x-1"
+                  >
+                    <Upload className="w-3.5 h-3.5 shrink-0" />
+                    <span>Upload File</span>
+                  </button>
+
+                  <a
+                    href={whatsappArtworkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="py-2 px-2 bg-[#25D366] hover:bg-[#20BD5A] text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center justify-center space-x-1"
+                    title="Send design image directly on WhatsApp"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5 fill-current shrink-0" />
+                    <span>WhatsApp</span>
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsPreloadedModalOpen(true)}
+                    className="py-2 px-2 bg-[#2D325A] hover:bg-[#232747] text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center justify-center space-x-1"
+                  >
+                    <MousePointerClick className="w-3.5 h-3.5 shrink-0" />
+                    <span>Catalog</span>
+                  </button>
+                </div>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.tiff,.tif,.psd,.pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+
+                {/* Active Upload Card */}
+                {uploadedDesignUrl && (
+                  <div className="p-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-between text-xs">
+                    <div className="flex items-center space-x-2 truncate">
+                      <img src={uploadedDesignUrl} alt="Design" className="w-7 h-7 rounded object-cover border border-emerald-300" />
+                      <span className="font-bold text-emerald-900 dark:text-emerald-300 truncate max-w-[170px]">
+                        {uploadedDesignName}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUploadedDesignUrl('');
+                        setUploadedDesignName('');
+                      }}
+                      className="text-red-600 hover:underline text-[11px] font-bold ml-2 shrink-0"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* 6. Amazon-Grade Iconic Buy Box CTAs */}
+            {/* 4. High-Converting Instant Buy Box */}
             <div className="space-y-2 pt-1">
-              <button
-                type="button"
-                onClick={() => handleAddToCart(false)}
-                className="w-full py-3 px-4 bg-[#FFD814] hover:bg-[#F7CA00] text-gray-950 font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-sm flex items-center justify-center space-x-2 border border-[#FCD200]"
+              
+              {/* PRIMARY: WhatsApp Quick Order Button */}
+              <a
+                href={whatsappOrderUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3.5 px-4 bg-[#25D366] hover:bg-[#20BD5A] text-white font-black text-xs uppercase tracking-wider rounded-xl transition shadow-md flex items-center justify-center space-x-2 hover:scale-[1.01] active:scale-98"
               >
-                <Package className="w-4 h-4" />
-                <span>Add to Cart</span>
-              </button>
+                <MessageCircle className="w-4 h-4 fill-current shrink-0" />
+                <span>Order on WhatsApp (Instant Help)</span>
+              </a>
 
-              <button
-                type="button"
-                onClick={() => handleAddToCart(true)}
-                className="w-full py-3 px-4 bg-[#FFA41C] hover:bg-[#FA8900] text-gray-950 font-black text-xs uppercase tracking-wider rounded-xl transition shadow-md flex items-center justify-center space-x-2 border border-[#FF8F00]"
+              {/* Instant Call Option */}
+              <a
+                href="tel:918903120006"
+                className="w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-800 dark:text-gray-200 font-bold text-xs rounded-xl transition flex items-center justify-center space-x-2"
               >
-                <span>Buy Now</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+                <Phone className="w-3.5 h-3.5 text-[#AC7900] dark:text-[#D4AF37]" />
+                <span>Or Call Specialist: +91 89031 20006</span>
+              </a>
+
+              {/* SECONDARY: Add to Cart & Buy Now */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleAddToCart(false)}
+                  className="py-3 px-3 bg-[#FFD814] hover:bg-[#F7CA00] text-gray-950 font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-xs flex items-center justify-center space-x-1.5 border border-[#FCD200]"
+                >
+                  <Package className="w-4 h-4 shrink-0" />
+                  <span>Add to Cart</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleAddToCart(true)}
+                  className="py-3 px-3 bg-[#FFA41C] hover:bg-[#FA8900] text-gray-950 font-black text-xs uppercase tracking-wider rounded-xl transition shadow-sm flex items-center justify-center space-x-1.5 border border-[#FF8F00]"
+                >
+                  <span>Buy Now</span>
+                  <ArrowRight className="w-4 h-4 shrink-0" />
+                </button>
+              </div>
+
             </div>
 
-            {/* 7. Amazon-style Trust Assurances */}
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-white/10 text-[11px] text-gray-600 dark:text-gray-400">
-              <div className="flex items-center space-x-1.5">
-                <Truck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Fast 48-72h Mill Dispatch</span>
-              </div>
-              <div className="flex items-center space-x-1.5">
-                <Scissors className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span>Single Continuous Piece</span>
-              </div>
-              <div className="flex items-center space-x-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span>100% Tested Natural Fiber</span>
-              </div>
-              <div className="flex items-center space-x-1.5">
-                <Lock className="w-3.5 h-3.5 text-gray-600 shrink-0" />
-                <span>Secure Checkout &amp; GST Bill</span>
-              </div>
-            </div>
+            {/* 5. Collapsible Specifications Accordion (Zero Visual Clutter) */}
+            <div className="border-t border-gray-100 dark:border-white/10 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsSpecsExpanded(!isSpecsExpanded)}
+                className="w-full flex items-center justify-between py-2 text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white transition"
+              >
+                <span>Fabric Details &amp; Specifications</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isSpecsExpanded ? 'rotate-180' : ''}`} />
+              </button>
 
-            {/* 8. Amazon-style Details & Guidelines Accordion / Tabs */}
-            <div className="border-t border-gray-100 dark:border-white/10 pt-4 space-y-3">
-              <div className="flex items-center space-x-2 border-b border-gray-200 dark:border-white/10 pb-2">
-                {[
-                  { id: 'specs', label: 'Specifications' },
-                  { id: 'guidelines', label: 'Print Guidelines' },
-                  { id: 'wholesale', label: 'Wholesale Tiers' }
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveInfoTab(tab.id as any)}
-                    className={`text-xs font-bold px-2.5 py-1 rounded-lg transition ${
-                      activeInfoTab === tab.id
-                        ? 'bg-[#0F1111] text-white dark:bg-white dark:text-black'
-                        : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              {activeInfoTab === 'specs' && (
-                <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 dark:bg-[#141517] p-3 rounded-xl border border-gray-100 dark:border-white/5">
+              {isSpecsExpanded && (
+                <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 dark:bg-[#141517] p-3 rounded-xl border border-gray-100 dark:border-white/5 mt-2 animate-in fade-in duration-200">
                   <div><strong>GSM:</strong> {currentProduct.gsm}</div>
                   <div><strong>Width:</strong> {currentProduct.width}</div>
                   <div><strong>Count:</strong> {currentProduct.count || 'Combed 30s'}</div>
-                  <div><strong>Cons:</strong> {currentProduct.cons || 'Standard'}</div>
+                  <div><strong>Weave:</strong> {currentProduct.weave_type || 'Plain'}</div>
                   <div><strong>Composition:</strong> {currentProduct.composition}</div>
-                  <div><strong>Shrinkage:</strong> {currentProduct.shrinkage || '2-3%'}</div>
-                </div>
-              )}
-
-              {activeInfoTab === 'guidelines' && (
-                <div className="text-xs space-y-1.5 bg-gray-50 dark:bg-[#141517] p-3 rounded-xl border border-gray-100 dark:border-white/5">
-                  <p>• <strong>Resolution:</strong> 150 DPI - 300 DPI for high definition clarity</p>
-                  <p>• <strong>Formats:</strong> PSD, TIFF, PNG, JPEG</p>
-                  <p>• <strong>Dyes:</strong> Skin-safe OEKO-TEX Standard 100 reactive digital inks</p>
-                </div>
-              )}
-
-              {activeInfoTab === 'wholesale' && (
-                <div className="text-xs space-y-1 bg-gray-50 dark:bg-[#141517] p-3 rounded-xl border border-gray-100 dark:border-white/5">
-                  <div className="flex justify-between py-0.5"><span>1 - 20 meters:</span><span className="font-bold">Standard Price</span></div>
-                  <div className="flex justify-between py-0.5"><span>21 - 50 meters:</span><span className="font-bold text-emerald-600">10% OFF</span></div>
-                  <div className="flex justify-between py-0.5"><span>51 - 100 meters:</span><span className="font-bold text-emerald-600">18% OFF</span></div>
-                  <div className="flex justify-between py-0.5"><span>100+ meters:</span><span className="font-bold text-emerald-600">25% OFF</span></div>
+                  <div><strong>Dyes:</strong> Skin-safe OEKO-TEX Standard 100</div>
                 </div>
               )}
             </div>
@@ -738,6 +697,39 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
 
         </div>
 
+      </div>
+
+      {/* 📱 Mobile Sticky Buy Bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#111211]/95 backdrop-blur-xl border-t border-black/10 dark:border-white/10 px-4 py-2.5 pb-[calc(env(safe-area-inset-bottom)+0.625rem)] shadow-[0_-4px_25px_rgba(0,0,0,0.12)] flex items-center justify-between gap-2.5 animate-in slide-in-from-bottom duration-300">
+        <div className="min-w-0">
+          <div className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider truncate">
+            {selectedSizeType === 'swatch_test' ? 'Sample Swatch' : `${meters}m • ${currentProduct.name}`}
+          </div>
+          <div className="text-base font-black text-[#0F100F] dark:text-white leading-tight">
+            ₹{calculatedTotalPrice.toFixed(0)}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <a
+            href={whatsappOrderUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-2 bg-[#25D366] text-white font-extrabold text-[11px] rounded-xl flex items-center space-x-1 shadow-xs"
+          >
+            <MessageCircle className="w-3.5 h-3.5 fill-current" />
+            <span>WhatsApp</span>
+          </a>
+
+          <button
+            type="button"
+            onClick={() => handleAddToCart(true)}
+            className="px-3.5 py-2 bg-[#FFA41C] hover:bg-[#FA8900] text-gray-950 font-black text-[11px] uppercase tracking-wider rounded-xl transition shadow-md flex items-center space-x-1 border border-[#FF8F00]"
+          >
+            <span>Buy Now</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* 📁 Modal 1: Select Fabric Picker */}
@@ -751,7 +743,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                   Select Base Fabric Quality
                 </h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Choose from Surat mill verified natural and cellulose qualities
+                  Choose from premium verified natural and cellulose qualities
                 </p>
               </div>
               <button

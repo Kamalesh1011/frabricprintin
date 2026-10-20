@@ -79,7 +79,7 @@ export const FabricComparisonModal: React.FC<FabricComparisonModalProps> = ({
               <h2 className="text-lg font-black tracking-tight uppercase font-editorial flex items-center space-x-2">
                 <span>Fabric Quality Comparator</span>
                 <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-sans font-bold">
-                  Surat Direct Mill Specs
+                  Mill Quality Specs
                 </span>
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">

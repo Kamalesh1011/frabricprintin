@@ -158,7 +158,7 @@ export const UniformPage: React.FC<UniformPageProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#FEFBF1] dark:bg-[#0F100F] text-[#0F100F] dark:text-white transition-colors duration-300">
+    <div className="w-full bg-[#FEFBF1] dark:bg-[#0F100F] text-[#0F100F] dark:text-white transition-colors duration-300 pb-32 lg:pb-12">
       
       {/* 🧭 TOP HEADER BAR: NAVIGATION & DIRECT CALL/WHATSAPP */}
       <div className="border-b border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#121312] sticky top-0 z-30 shadow-sm">

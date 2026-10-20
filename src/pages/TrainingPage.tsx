@@ -366,7 +366,7 @@ export const TrainingPage: React.FC<TrainingPageProps> = ({ onGoToHome, onOpenBu
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] dark:bg-[#121412] text-[#0F100F] dark:text-white transition-colors duration-300">
+    <div className="min-h-screen pb-32 lg:pb-16 bg-[#FDFBF7] dark:bg-[#121412] text-[#0F100F] dark:text-white transition-colors duration-300">
       
       {/* 1. HERITAGE HERO — classical mill-craft proscenium */}
       <section ref={heroRef} className="relative overflow-hidden bg-[#0B0B09] text-white py-14 sm:py-20 border-b border-[#D4AF37]/15">

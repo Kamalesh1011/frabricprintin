@@ -112,7 +112,7 @@ export const CustomMerchPage: React.FC<CustomMerchPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#FEFBF1] dark:bg-[#0F100F] text-[#0F100F] dark:text-white transition-colors duration-300 pb-20">
+    <div className="min-h-screen bg-[#FEFBF1] dark:bg-[#0F100F] text-[#0F100F] dark:text-white transition-colors duration-300 pb-32 lg:pb-16">
       
       {/* 🧭 1. BREADCRUMBS BAR */}
       <div className="border-b border-black/[0.06] dark:border-white/[0.08] bg-white/40 dark:bg-white/[0.02]">

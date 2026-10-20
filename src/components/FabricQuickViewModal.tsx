@@ -31,8 +31,8 @@ export const FabricQuickViewModal: React.FC<FabricQuickViewModalProps> = ({
   const baseImage = product.images[0] || '/mockups/tcftbw650_swatch.jpg';
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#15171A] text-gray-900 dark:text-white w-full max-w-3xl rounded-3xl shadow-2xl border border-gray-200 dark:border-white/10 overflow-hidden relative">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white dark:bg-[#15171A] text-gray-900 dark:text-white w-full max-w-3xl rounded-3xl shadow-2xl border border-gray-200 dark:border-white/10 overflow-hidden relative max-h-[90vh] overflow-y-auto">
         
         {/* Close button */}
         <button
@@ -58,7 +58,7 @@ export const FabricQuickViewModal: React.FC<FabricQuickViewModalProps> = ({
             </div>
 
             <div className="flex items-center space-x-2 text-[11px] text-gray-500">
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">✓ Surat Mill Direct</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">✓ Certified Mill Quality</span>
               <span>•</span>
               <span>100% Tested Quality</span>
             </div>

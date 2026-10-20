@@ -905,27 +905,7 @@ export const LiveDesignMockupCanvas: React.FC<LiveDesignMockupCanvasProps> = ({
         </div>
       )}
 
-      {/* 5. "HOW YOUR FABRIC IS DELIVERED IN REAL LIFE" CONFIDENCE BANNER */}
-      <div className="p-4 bg-gradient-to-r from-emerald-50/80 via-teal-50/70 to-blue-50/80 dark:from-emerald-950/20 dark:via-teal-950/20 dark:to-blue-950/20 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/30 text-xs space-y-2">
-        <div className="flex items-center space-x-2 text-emerald-900 dark:text-emerald-300 font-extrabold">
-          <Package className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span>Real Life Delivery & Quality Guarantee:</span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 text-[11px] text-gray-700 dark:text-gray-300">
-          <div className="flex items-start space-x-1.5">
-            <span className="text-emerald-600 font-bold">✓</span>
-            <span><strong>Continuous Single Cut:</strong> Ordered 5m? You receive 1 seamless 5m length (no breaks).</span>
-          </div>
-          <div className="flex items-start space-x-1.5">
-            <span className="text-emerald-600 font-bold">✓</span>
-            <span><strong>300+ DPI Industrial Print:</strong> Wash-fast, steam-cured reactive dyes with vivid depth.</span>
-          </div>
-          <div className="flex items-start space-x-1.5">
-            <span className="text-emerald-600 font-bold">✓</span>
-            <span><strong>Hard-Core Tube Rolling:</strong> Rolled crease-free, ready for master cutting & tailoring.</span>
-          </div>
-        </div>
-      </div>
+
 
     </div>
   );

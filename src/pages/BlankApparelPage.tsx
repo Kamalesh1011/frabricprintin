@@ -665,7 +665,7 @@ export const BlankApparelPage: React.FC<BlankApparelPageProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#FAF8F5] dark:bg-[#0D0E0D] text-[#0F100F] dark:text-white transition-colors duration-300 min-h-screen pb-20 sm:pb-0 font-sans">
+    <div className="w-full bg-[#FAF8F5] dark:bg-[#0D0E0D] text-[#0F100F] dark:text-white transition-colors duration-300 min-h-screen pb-32 lg:pb-12 font-sans">
       
       {/* 🧭 TOP BREADCRUMB & DIRECT CONTACT BAR */}
       <div className="border-b border-black/[0.06] dark:border-white/[0.08] bg-white/95 dark:bg-[#121312]/95 backdrop-blur-md sticky top-0 z-30 shadow-sm">
@@ -780,18 +780,18 @@ export const BlankApparelPage: React.FC<BlankApparelPageProps> = ({
               </div>
             </div>
 
-            {/* Garment Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6">
+            {/* Garment Cards Grid - 2 cols on mobile, 4 on desktop */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
               {displayedCatalogGarments.map(garment => {
                 return (
                   <div
                     key={garment.id}
                     onClick={() => handleOpen3DStudio(garment)}
-                    className="group rounded-2xl border border-black/10 dark:border-white/10 transition-all duration-300 p-4 flex flex-col justify-between bg-white dark:bg-[#141514] hover:shadow-xl hover:-translate-y-1 cursor-pointer relative overflow-hidden"
+                    className="group rounded-xl sm:rounded-2xl border border-black/10 dark:border-white/10 transition-all duration-300 p-3 sm:p-4 flex flex-col justify-between bg-white dark:bg-[#141514] hover:shadow-xl hover:-translate-y-1 cursor-pointer relative overflow-hidden"
                   >
                     <div>
                       {/* Product Mockup Preview */}
-                      <div className="aspect-square sm:aspect-[4/3] rounded-2xl bg-[#FAF8F5] dark:bg-stone-900/60 p-3 sm:p-4 mb-3 border border-black/5 dark:border-white/5 flex items-center justify-center relative overflow-hidden group-hover:bg-stone-100 dark:group-hover:bg-stone-900 transition-colors">
+                      <div className="aspect-square sm:aspect-[4/3] rounded-xl sm:rounded-2xl bg-[#FAF8F5] dark:bg-stone-900/60 p-2 sm:p-4 mb-2 sm:mb-3 border border-black/5 dark:border-white/5 flex items-center justify-center relative overflow-hidden group-hover:bg-stone-100 dark:group-hover:bg-stone-900 transition-colors">
                         <GarmentMockup
                           type={garment.modelType}
                           colorHex={garment.colors[0]?.hex || '#111827'}
@@ -802,32 +802,32 @@ export const BlankApparelPage: React.FC<BlankApparelPageProps> = ({
                       </div>
 
                       {/* Product Name */}
-                      <h3 className="text-base font-bold text-[#0F100F] dark:text-white group-hover:text-[#AC7900] dark:group-hover:text-[#D4AF37] transition-colors mb-1 line-clamp-1">
+                      <h3 className="text-xs sm:text-base font-bold text-[#0F100F] dark:text-white group-hover:text-[#AC7900] dark:group-hover:text-[#D4AF37] transition-colors mb-1 line-clamp-1">
                         {garment.name}
                       </h3>
 
                       {/* Rating */}
-                      <div className="flex items-center space-x-1 text-amber-500 text-xs mb-2">
-                        <Star className="w-3.5 h-3.5 fill-amber-500" />
+                      <div className="flex items-center space-x-1 text-amber-500 text-[10px] sm:text-xs mb-1.5 sm:mb-2">
+                        <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-500" />
                         <span className="font-bold text-slate-800 dark:text-slate-200">{garment.rating}</span>
                         <span className="text-slate-400 font-normal">({garment.reviewCount})</span>
                       </div>
 
                       {/* Price Section (Amazon Style) */}
-                      <div className="flex items-baseline space-x-2 mb-3">
-                        <span className="text-xl font-black text-[#0F100F] dark:text-white">
+                      <div className="flex flex-wrap items-baseline gap-1 sm:gap-2 mb-2 sm:mb-3">
+                        <span className="text-sm sm:text-xl font-black text-[#0F100F] dark:text-white">
                           ₹{garment.price}
                         </span>
-                        <span className="text-xs line-through text-slate-400">
-                          M.R.P: ₹{garment.originalPrice}
+                        <span className="text-[10px] sm:text-xs line-through text-slate-400">
+                          ₹{garment.originalPrice}
                         </span>
-                        <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        <span className="text-[10px] sm:text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
                           (50% off)
                         </span>
                       </div>
 
                       {/* Color Preview Dots */}
-                      <div className="flex items-center space-x-1.5 mb-2">
+                      <div className="hidden sm:flex items-center space-x-1.5 mb-2">
                         <span className="text-[11px] text-slate-400 font-medium">Colors:</span>
                         <div className="flex items-center space-x-1 overflow-hidden">
                           {garment.colors.slice(0, 5).map(c => (
@@ -846,16 +846,16 @@ export const BlankApparelPage: React.FC<BlankApparelPageProps> = ({
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="pt-3 mt-2 border-t border-black/5 dark:border-white/5 flex items-center space-x-2">
+                    <div className="pt-2 sm:pt-3 mt-1.5 sm:mt-2 border-t border-black/5 dark:border-white/5 flex items-center space-x-1.5 sm:space-x-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleOpen3DStudio(garment);
                         }}
-                        className="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 shadow-sm bg-[#0F100F] dark:bg-white text-white dark:text-black hover:opacity-90 group-hover:bg-[#AC7900] group-hover:text-white"
+                        className="flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center space-x-1 sm:space-x-1.5 shadow-sm bg-[#0F100F] dark:bg-white text-white dark:text-black hover:opacity-90 group-hover:bg-[#AC7900] group-hover:text-white"
                       >
-                        <span>Customize in 3D</span>
-                        <ArrowRight className="w-3.5 h-3.5 text-[#D4AF37]" />
+                        <span className="truncate">Customize</span>
+                        <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#D4AF37] shrink-0" />
                       </button>
 
                       <button
@@ -863,10 +863,10 @@ export const BlankApparelPage: React.FC<BlankApparelPageProps> = ({
                           e.stopPropagation();
                           handleAddToCart(garment, 1);
                         }}
-                        className="p-2.5 rounded-xl border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 transition text-slate-700 dark:text-slate-300"
+                        className="p-2 sm:p-2.5 rounded-xl border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 transition text-slate-700 dark:text-slate-300 shrink-0"
                         title="Add 1 Piece to Cart"
                       >
-                        <ShoppingCart className="w-4 h-4" />
+                        <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </button>
                     </div>
                   </div>

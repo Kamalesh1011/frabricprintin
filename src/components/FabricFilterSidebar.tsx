@@ -234,8 +234,14 @@ export const FabricFilterSidebar: React.FC<FabricFilterSidebarProps> = ({
   // If rendering inside mobile modal/drawer
   if (isMobileDrawer) {
     return (
-      <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex justify-end">
-        <div className="bg-white dark:bg-[#1A1C1E] text-gray-900 dark:text-white w-full max-w-sm h-full flex flex-col p-5 shadow-2xl">
+      <div
+        className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-200"
+        onClick={onCloseMobileDrawer}
+      >
+        <div
+          className="bg-white dark:bg-[#1A1C1E] text-gray-900 dark:text-white w-full max-w-sm h-full flex flex-col p-5 shadow-2xl animate-in slide-in-from-right duration-300"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-white/10">
             <h3 className="font-extrabold text-base uppercase tracking-tight font-editorial">
               Fabric Filter Panel
@@ -252,21 +258,21 @@ export const FabricFilterSidebar: React.FC<FabricFilterSidebarProps> = ({
             {content}
           </div>
 
-          <div className="pt-4 border-t border-gray-200 dark:border-white/10 flex items-center space-x-2">
+          <div className="pt-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] border-t border-gray-200 dark:border-white/10 flex items-center space-x-2">
             <button
               type="button"
               onClick={() => {
                 onResetFilters();
                 onCloseMobileDrawer?.();
               }}
-              className="flex-1 py-2.5 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-bold rounded-xl text-xs"
+              className="flex-1 py-3 bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-bold rounded-xl text-xs hover:bg-gray-200 transition"
             >
               Reset All
             </button>
             <button
               type="button"
               onClick={onCloseMobileDrawer}
-              className="flex-1 py-2.5 bg-[#2D325A] text-white font-bold rounded-xl text-xs shadow-md"
+              className="flex-1 py-3 bg-[#2D325A] text-white font-bold rounded-xl text-xs shadow-md hover:bg-[#1F2342] transition"
             >
               Apply Filters
             </button>

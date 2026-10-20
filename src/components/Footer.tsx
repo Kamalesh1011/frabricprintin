@@ -42,8 +42,8 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, setSelectedCategor
             <Truck className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="font-bold text-xs font-editorial text-[#0F100F] dark:text-white">Direct Surat Dispatch</h4>
-            <p className="text-[11px] text-[#8A8883] dark:text-gray-400 mt-0.5">Express delivery for sample swatches & rolls.</p>
+            <h4 className="font-bold text-xs font-editorial text-[#0F100F] dark:text-white">Express Pan-India Dispatch</h4>
+            <p className="text-[11px] text-[#8A8883] dark:text-gray-400 mt-0.5">Fast delivery for sample swatches & rolls.</p>
           </div>
         </div>
 
@@ -76,7 +76,7 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, setSelectedCategor
             </span>
           </div>
           <p className="text-xs leading-relaxed text-[#8A8883] dark:text-gray-400">
-            Custom digital textile printing and wholesale sustainable fabric supplier. Direct Surat mill production, sample swatches, and 3D simulation.
+            Custom digital textile printing and wholesale sustainable fabric supplier. Direct mill production, sample swatches, and 3D simulation.
           </p>
         </div>
 
@@ -88,8 +88,8 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, setSelectedCategor
           <div className="text-xs text-[#8A8883] dark:text-gray-400 space-y-2">
             <p className="flex items-center space-x-2">
               <Phone className="w-3.5 h-3.5 text-[#AC7900] shrink-0" />
-              <a href="tel:+919000011223" className="hover:text-[#AC7900] transition font-semibold text-[#0F100F] dark:text-white">
-                +91 90000 11223
+              <a href="tel:+918903120006" className="hover:text-[#AC7900] transition font-semibold text-[#0F100F] dark:text-white">
+                +91 89031 20006
               </a>
             </p>
             <p className="flex items-center space-x-2">
@@ -242,7 +242,7 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, setSelectedCategor
       {/* Copyright Sub-footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-[#ECECEC] dark:border-white/[0.08] flex flex-col sm:flex-row items-center justify-between text-xs text-[#8A8883] dark:text-gray-400 gap-4">
         <div>
-          © {new Date().getFullYear()} Fabric Print Mill India. All rights reserved. Surat, Gujarat.
+          © {new Date().getFullYear()} Fabric Print Mill India. All rights reserved.
         </div>
         <div className="flex items-center space-x-4">
           <span className="text-emerald-700 dark:text-emerald-400 font-semibold">● Direct Mill Dispatch</span>

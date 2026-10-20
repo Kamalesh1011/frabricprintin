@@ -11,6 +11,7 @@ import { BulkInquiryModal } from './components/BulkInquiryModal';
 import { WhatsAppButton } from './components/WhatsAppButton';
 import { ChatBotWidget } from './components/ChatBot/ChatBotWidget';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { EntryWhatsAppModal } from './components/EntryWhatsAppModal';
 
 import { HomePage } from './pages/HomePage';
 import { FabricListingPage } from './pages/FabricListingPage';
@@ -361,26 +362,31 @@ export function MainAppContent() {
       </main>
 
       {/* Global Modals & Drawers */}
+      <EntryWhatsAppModal />
       <CartDrawer onGoToCheckout={handleGoToCheckout} onGoToFabrics={handleGoToFabrics} />
-      <BulkInquiryModal isOpen={bulkInquiryOpen} onClose={() => setBulkInquiryOpen(false)} />
-      <WhatsAppButton />
-      <ChatBotWidget
-        onNavigate={(tab) => {
-          setActiveTab(tab);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        onOpenBulkInquiry={() => setBulkInquiryOpen(true)}
-      />
+      {/* Floating Buttons: Hide on mobile when on product-detail to prevent overlapping controls */}
+      <div className={activeTab === 'product-detail' ? 'hidden lg:block' : 'block'}>
+        <WhatsAppButton />
+        <ChatBotWidget
+          onNavigate={(tab) => {
+            setActiveTab(tab);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onOpenBulkInquiry={() => setBulkInquiryOpen(true)}
+        />
+      </div>
 
       {/* Global Footer */}
       <Footer setActiveTab={setActiveTab} setSelectedCategory={setSelectedCategory} />
 
-      {/* 📱 Mobile & Tablet Bottom Navigation Bar (Persistent UX) */}
-      <MobileBottomNav
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onGoToFabrics={handleGoToFabrics}
-      />
+      {/* 📱 Mobile & Tablet Bottom Navigation Bar: Hide on product-detail because it has its own dedicated sticky buy bar */}
+      {activeTab !== 'product-detail' && (
+        <MobileBottomNav
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onGoToFabrics={handleGoToFabrics}
+        />
+      )}
     </div>
   );
 }

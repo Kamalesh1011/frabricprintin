@@ -236,7 +236,7 @@ export const ChatBotWidget: React.FC<ChatBotWidgetProps> = ({
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-20 lg:bottom-6 right-4 sm:right-6 z-40 p-3.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-xl border border-slate-700/80 transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center group focus:outline-none focus:ring-2 focus:ring-cyan-400/40"
+          className="fixed bottom-20 lg:bottom-6 right-3 sm:right-6 z-40 w-11 h-11 sm:w-auto sm:h-auto p-0 sm:p-3.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-xl border border-slate-700/80 transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center group focus:outline-none focus:ring-2 focus:ring-cyan-400/40"
           aria-label="Open AI Assistant"
         >
           <div className="relative flex items-center justify-center">

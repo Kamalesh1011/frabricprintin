@@ -9,6 +9,8 @@ import {
   Printer,
   Sparkles,
   ChevronDown,
+  ChevronRight,
+  Layers,
   Globe,
   BookOpen,
   Sun,
@@ -51,6 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
   const { isDark, toggleTheme } = useTheme();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileAccordion, setMobileAccordion] = useState<string | null>('fabrics');
   const [currency, setCurrency] = useState<string>('INR');
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [apparelMenuOpen, setApparelMenuOpen] = useState(false);
@@ -329,7 +332,7 @@ export const Header: React.FC<HeaderProps> = ({
                 FABRIC<span className="text-[#AC7900] dark:text-[#D4AF37]">PRINT</span>
               </div>
               <p className="text-[9px] text-[#8A8883] uppercase tracking-widest font-bold leading-none">
-                Direct Mill · Surat
+                Custom Fabric Printing
               </p>
             </div>
           </div>
@@ -1025,135 +1028,385 @@ export const Header: React.FC<HeaderProps> = ({
 
         </div>
 
-        {/* MOBILE MENU DRAWER */}
+        {/* MOBILE MENU FULL DRAWER (NO BACKGROUND BLEED-THROUGH) */}
         {mobileMenuOpen && (
-          <div className="lg:hidden mt-3 pt-3 border-t border-black/10 dark:border-white/10 space-y-2 text-xs font-semibold animate-in fade-in duration-200">
+          <div className="lg:hidden fixed inset-x-0 top-[96px] bottom-0 z-50 bg-[#FEFBF1] dark:bg-[#111211] border-t border-black/10 dark:border-white/10 overflow-y-auto px-4 py-4 space-y-3.5 text-xs font-semibold shadow-2xl animate-in fade-in duration-200 pb-36">
 
             {/* Mobile Search Bar */}
             <form onSubmit={handleSearchSubmit} className="mb-2">
-              <div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-full px-3 py-2">
-                <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-full px-3.5 py-2.5">
+                <Search className="w-4 h-4 text-slate-400 shrink-0" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search fabrics, apparel, uniforms..."
+                  placeholder="Search 250+ fabrics, tees, jerseys, uniforms..."
                   className="w-full bg-transparent text-xs text-black dark:text-white placeholder-slate-400 focus:outline-none"
                 />
+                {searchQuery && (
+                  <button
+                    type="submit"
+                    className="p-1 rounded-full bg-black text-white dark:bg-white dark:text-black shrink-0"
+                  >
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                )}
               </div>
             </form>
 
+            {/* Home Link */}
             <button
               onClick={() => {
                 setActiveTab('home');
                 setMobileMenuOpen(false);
               }}
-              className={`w-full text-left py-2 px-3 rounded-xl transition ${activeTab === 'home' ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'hover:bg-black/5 dark:hover:bg-white/5'
-                }`}
-            >
-              Home
-            </button>
-
-            <button
-              onClick={() => {
-                setSelectedCategory('All');
-                setActiveTab('fabrics');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full text-left py-2 px-3 rounded-xl transition ${activeTab === 'fabrics' || activeTab === 'product-detail' ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'hover:bg-black/5 dark:hover:bg-white/5'
-                }`}
-            >
-              Fabric
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('apparel');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full text-left py-2 px-3 rounded-xl transition flex items-center justify-between ${activeTab === 'apparel' ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'hover:bg-black/5 dark:hover:bg-white/5'
-                }`}
-            >
-              <div className="flex items-center space-x-2">
-                <Shirt className="w-4 h-4" />
-                <span>T-Shirt</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('jersey');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full text-left py-2 px-3 rounded-xl transition flex items-center justify-between ${activeTab === 'jersey' ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'hover:bg-black/5 dark:hover:bg-white/5'
-                }`}
-            >
-              <div className="flex items-center space-x-2">
-                <Trophy className="w-4 h-4 text-[#AC7900] dark:text-[#D4AF37]" />
-                <span>Sports</span>
-              </div>
-              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-[#AC7900] text-white dark:bg-[#D4AF37] dark:text-black">
-                TEAM
-              </span>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('uniforms');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full text-left py-2 px-3 rounded-xl transition flex items-center justify-between ${activeTab === 'uniforms' ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'hover:bg-black/5 dark:hover:bg-white/5'
-                }`}
-            >
-              <div className="flex items-center space-x-2">
-                <GraduationCap className="w-4 h-4" />
-                <span>Uniforms & Institutional Fabrics</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('merch');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full text-left py-2 px-3 rounded-xl transition flex items-center justify-between ${
-                activeTab === 'merch' ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'hover:bg-black/5 dark:hover:bg-white/5'
+              className={`w-full text-left py-2.5 px-3.5 rounded-xl transition flex items-center justify-between ${
+                activeTab === 'home'
+                  ? 'bg-black text-white dark:bg-white dark:text-black font-bold shadow-sm'
+                  : 'hover:bg-black/5 dark:hover:bg-white/5 text-gray-800 dark:text-gray-200'
               }`}
             >
-              <div className="flex items-center space-x-2">
-                <ShoppingBag className="w-4 h-4 text-[#AC7900] dark:text-[#D4AF37]" />
-                <span>Other Products (Caps, Bottles, Totes)</span>
-              </div>
+              <span>🏠 Home</span>
+              <ChevronRight className="w-3.5 h-3.5 opacity-40" />
             </button>
 
+            {/* SECTION 1: FABRICS (250+ QUALITIES) ACCORDION */}
+            <div className="border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden bg-white/60 dark:bg-white/5">
+              <button
+                type="button"
+                onClick={() => setMobileAccordion(mobileAccordion === 'fabrics' ? null : 'fabrics')}
+                className="w-full text-left py-3 px-3.5 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 transition"
+              >
+                <div className="flex items-center space-x-2">
+                  <Layers className="w-4 h-4 text-[#AC7900] dark:text-[#D4AF37]" />
+                  <span className="font-bold text-gray-900 dark:text-white">Fabrics &amp; Textiles</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#AC7900]/15 dark:bg-[#D4AF37]/20 text-[#AC7900] dark:text-[#D4AF37]">
+                    250+ QUALITIES
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${mobileAccordion === 'fabrics' ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+
+              {mobileAccordion === 'fabrics' && (
+                <div className="p-2 pt-0 border-t border-black/5 dark:border-white/5 space-y-1">
+                  {[
+                    { name: 'Pure Cotton', desc: 'Cambric 60s, Poplin, Voile, Satin', cat: 'Cotton' },
+                    { name: 'Mulberry Silk', desc: 'Silk Crepe, Satin, Raw Silk, Organza', cat: 'Silk' },
+                    { name: 'French Flax Linen', desc: '140 GSM Pure Slub Linen', cat: 'Linen' },
+                    { name: 'Modal Satin Luster', desc: 'Ultra-Fluid Beechwood Drape', cat: 'Modal' },
+                    { name: 'Viscose & Rayon', desc: 'Georgette, Crepe & Slub Weaves', cat: 'Viscose' },
+                    { name: 'Bamboo & Spandex', desc: 'Eco-Soft Antibacterial Knit', cat: 'Bamboo' },
+                    { name: 'Organic GOTS Cotton', desc: 'Chemical-Free Sustainable Cotton', cat: 'Organic Cotton' },
+                    { name: 'Tencel & Lyocell', desc: 'Lenzing Closed-Loop Silky Twill', cat: 'Tencel' },
+                    { name: 'Sheer Silk Organza', desc: 'Lightweight Ethereal Transparency', cat: 'Organza' },
+                    { name: 'Fabric Blends & Poly', desc: 'Cotton-Viscose & Sublimation Canvas', cat: 'Fabric Blends' }
+                  ].map((item) => (
+                    <button
+                      key={item.cat}
+                      onClick={() => {
+                        setSelectedCategory(item.cat);
+                        setActiveTab('fabrics');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition flex items-center justify-between group"
+                    >
+                      <div>
+                        <span className="font-bold text-gray-900 dark:text-white block group-hover:text-[#AC7900] transition-colors">{item.name}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 font-normal">{item.desc}</span>
+                      </div>
+                      <ChevronRight className="w-3 h-3 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => {
+                      setSelectedCategory('All');
+                      setActiveTab('fabrics');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full mt-2 py-2.5 px-3 bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold rounded-xl text-center flex items-center justify-center space-x-1.5 shadow-sm"
+                  >
+                    <span>Explore All 250+ Fabrics →</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* SECTION 2: APPAREL & T-SHIRTS (14 STYLES) ACCORDION */}
+            <div className="border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden bg-white/60 dark:bg-white/5">
+              <button
+                type="button"
+                onClick={() => setMobileAccordion(mobileAccordion === 'apparel' ? null : 'apparel')}
+                className="w-full text-left py-3 px-3.5 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 transition"
+              >
+                <div className="flex items-center space-x-2">
+                  <Shirt className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="font-bold text-gray-900 dark:text-white">Apparel &amp; T-Shirts</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                    14 STYLES
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${mobileAccordion === 'apparel' ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+
+              {mobileAccordion === 'apparel' && (
+                <div className="p-2 pt-0 border-t border-black/5 dark:border-white/5 space-y-1">
+                  {[
+                    { name: "Unisex Round Neck T-Shirt", desc: "180 GSM Combed Cotton • from ₹175" },
+                    { name: "Oversized Streetwear Tee", desc: "240 GSM Heavy Drop Shoulder • from ₹240" },
+                    { name: "Cotton Collar Polo", desc: "220 GSM Matty Pique Knit • from ₹249" },
+                    { name: "Heavy Fleece Hoodie", desc: "320 GSM Brushed Winter Fleece • from ₹499" },
+                    { name: "Women's Fitted Crop Top", desc: "180 GSM Lycra Ribbed • from ₹165" },
+                    { name: "Kids Soft Tee", desc: "0 to 14 Years Combed Cotton • from ₹129" }
+                  ].map((style, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setActiveTab('apparel');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition flex items-center justify-between group"
+                    >
+                      <div>
+                        <span className="font-bold text-gray-900 dark:text-white block group-hover:text-emerald-600 transition-colors">{style.name}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 font-normal">{style.desc}</span>
+                      </div>
+                      <ChevronRight className="w-3 h-3 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                  ))}
+
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <button
+                      onClick={() => {
+                        setActiveTab('apparel');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="py-2 px-2.5 bg-black/5 dark:bg-white/10 rounded-xl font-bold text-center text-gray-800 dark:text-gray-200 text-[11px]"
+                    >
+                      View All Styles
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveTab('apparel-studio');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="py-2 px-2.5 bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold rounded-xl text-center text-[11px]"
+                    >
+                      Open 3D Studio →
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* SECTION 3: SPORTS & TEAM KITS (SUBLIMATION) ACCORDION */}
+            <div className="border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden bg-white/60 dark:bg-white/5">
+              <button
+                type="button"
+                onClick={() => setMobileAccordion(mobileAccordion === 'sports' ? null : 'sports')}
+                className="w-full text-left py-3 px-3.5 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 transition"
+              >
+                <div className="flex items-center space-x-2">
+                  <Trophy className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span className="font-bold text-gray-900 dark:text-white">Sports &amp; Team Kits</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                    TEAM
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${mobileAccordion === 'sports' ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+
+              {mobileAccordion === 'sports' && (
+                <div className="p-2 pt-0 border-t border-black/5 dark:border-white/5 space-y-1">
+                  {[
+                    { name: "Full Sublimation Cricket Kit", desc: "180 GSM Moisture-Wicking DryFit" },
+                    { name: "Football Tournament Jersey", desc: "Full Front/Back/Sleeves Player Customizer" },
+                    { name: "Active Running & Training Shorts", desc: "Lightweight Breathable Mesh" }
+                  ].map((kit, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setActiveTab('jersey');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition flex items-center justify-between group"
+                    >
+                      <div>
+                        <span className="font-bold text-gray-900 dark:text-white block group-hover:text-amber-600 transition-colors">{kit.name}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 font-normal">{kit.desc}</span>
+                      </div>
+                      <ChevronRight className="w-3 h-3 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => {
+                      setActiveTab('jersey');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full mt-2 py-2.5 px-3 bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold rounded-xl text-center flex items-center justify-center space-x-1.5 shadow-sm"
+                  >
+                    <span>Launch Sports Team Customizer →</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* SECTION 4: UNIFORMS & INSTITUTIONAL FABRICS ACCORDION */}
+            <div className="border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden bg-white/60 dark:bg-white/5">
+              <button
+                type="button"
+                onClick={() => setMobileAccordion(mobileAccordion === 'uniforms' ? null : 'uniforms')}
+                className="w-full text-left py-3 px-3.5 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 transition"
+              >
+                <div className="flex items-center space-x-2">
+                  <GraduationCap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="font-bold text-gray-900 dark:text-white">Institutional Uniforms</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-500/15 text-blue-700 dark:text-blue-300">
+                    ISO 9001
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${mobileAccordion === 'uniforms' ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+
+              {mobileAccordion === 'uniforms' && (
+                <div className="p-2 pt-0 border-t border-black/5 dark:border-white/5 space-y-1">
+                  {[
+                    { name: "School Weaves & Yarn-Dyed Checks", desc: "155 GSM • Anti-Pilling • from ₹135/m" },
+                    { name: "Matty PV Suiting & Trousers", desc: "265 GSM Wrinkle Resistant • from ₹215/m" },
+                    { name: "Corporate Fil-a-Fil Shirting", desc: "140 GSM Premium Non-Iron" },
+                    { name: "Anti-Microbial Medical Scrubs", desc: "175 GSM Silver-Ion Protected" },
+                    { name: "Boiler Suit Industrial Drill", desc: "280 GSM Heavy Oil & Flame Repellent" },
+                    { name: "MasterChef Poplin & Aprons", desc: "210 GSM Stain Shield Treated" }
+                  ].map((uni, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setActiveTab('uniforms');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition flex items-center justify-between group"
+                    >
+                      <div>
+                        <span className="font-bold text-gray-900 dark:text-white block group-hover:text-blue-600 transition-colors">{uni.name}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 font-normal">{uni.desc}</span>
+                      </div>
+                      <ChevronRight className="w-3 h-3 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => {
+                      setActiveTab('uniforms');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full mt-2 py-2.5 px-3 bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold rounded-xl text-center flex items-center justify-center space-x-1.5 shadow-sm"
+                  >
+                    <span>View All Uniform Textiles →</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* SECTION 5: OTHER PRODUCTS & MERCH ACCORDION */}
+            <div className="border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden bg-white/60 dark:bg-white/5">
+              <button
+                type="button"
+                onClick={() => setMobileAccordion(mobileAccordion === 'merch' ? null : 'merch')}
+                className="w-full text-left py-3 px-3.5 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 transition"
+              >
+                <div className="flex items-center space-x-2">
+                  <ShoppingBag className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="font-bold text-gray-900 dark:text-white">Other Products &amp; Merch</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-500/15 text-purple-700 dark:text-purple-300">
+                    BAGS &amp; CAPS
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${mobileAccordion === 'merch' ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+
+              {mobileAccordion === 'merch' && (
+                <div className="p-2 pt-0 border-t border-black/5 dark:border-white/5 space-y-1">
+                  {[
+                    { name: "Heavy Canvas & Poly Tote Bags", desc: "DTF & Sublimation • Reusable Eco Bags" },
+                    { name: "Athletic & Trucker Snapback Caps", desc: "Structured Embroidered / DTF Caps" },
+                    { name: "Outdoor Promotional Flags", desc: "Teardrop, Feather & Event Banners" },
+                    { name: "Resort & Formal Printed Shirts", desc: "Rayon & Cotton Digital Button-Downs" }
+                  ].map((merch, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setActiveTab('merch');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition flex items-center justify-between group"
+                    >
+                      <div>
+                        <span className="font-bold text-gray-900 dark:text-white block group-hover:text-purple-600 transition-colors">{merch.name}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 font-normal">{merch.desc}</span>
+                      </div>
+                      <ChevronRight className="w-3 h-3 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => {
+                      setActiveTab('merch');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full mt-2 py-2.5 px-3 bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold rounded-xl text-center flex items-center justify-center space-x-1.5 shadow-sm"
+                  >
+                    <span>View All Other Products →</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* SECTION 6: TRAINING ACADEMY */}
             <button
               onClick={() => {
                 setActiveTab('training');
                 setMobileMenuOpen(false);
               }}
-              className={`w-full text-left py-2 px-3 rounded-xl transition flex items-center justify-between ${
-                activeTab === 'training' ? 'bg-black text-white dark:bg-white dark:text-black font-bold' : 'hover:bg-black/5 dark:hover:bg-white/5'
+              className={`w-full text-left py-3 px-3.5 rounded-2xl border transition flex items-center justify-between ${
+                activeTab === 'training'
+                  ? 'bg-black text-white dark:bg-white dark:text-black font-bold border-black dark:border-white shadow-sm'
+                  : 'bg-white/60 dark:bg-white/5 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10'
               }`}
             >
               <div className="flex items-center space-x-2">
                 <GraduationCap className="w-4 h-4 text-[#AC7900] dark:text-[#D4AF37]" />
-                <span>Printing &amp; Craft Training Academy</span>
+                <span className="font-bold text-gray-900 dark:text-white">Training Academy</span>
               </div>
-              <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-[#AC7900] text-white dark:bg-[#D4AF37] dark:text-black">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#AC7900] text-white dark:bg-[#D4AF37] dark:text-black">
                 7 TRACKS
               </span>
             </button>
 
-            <div className="pt-2 border-t border-black/5 dark:border-white/5 grid grid-cols-2 gap-2">
+            {/* ESSENTIAL TOOLS BAR */}
+            <div className="pt-2 border-t border-black/10 dark:border-white/10 grid grid-cols-2 gap-2">
               <button
                 onClick={() => {
                   setUrlModalOpen(true);
                   setMobileMenuOpen(false);
                 }}
-                className="py-2 px-3 rounded-xl bg-black/5 dark:bg-white/5 text-left flex items-center space-x-1.5 hover:bg-black/10"
+                className="py-2.5 px-3 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-left flex items-center space-x-2 hover:bg-black/5 shadow-xs"
               >
-                <Globe className="w-3.5 h-3.5 text-[#AC7900]" />
-                <span>Extract URL</span>
+                <Globe className="w-4 h-4 text-[#AC7900]" />
+                <div>
+                  <span className="block font-bold text-gray-900 dark:text-white text-[11px]">Extract URL</span>
+                  <span className="block text-[9px] text-gray-500">3D Draping</span>
+                </div>
               </button>
 
               <button
@@ -1161,10 +1414,35 @@ export const Header: React.FC<HeaderProps> = ({
                   setSwatchModalOpen(true);
                   setMobileMenuOpen(false);
                 }}
-                className="py-2 px-3 rounded-xl bg-black/5 dark:bg-white/5 text-left flex items-center space-x-1.5 font-bold hover:bg-black/10"
+                className="py-2.5 px-3 rounded-xl bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 text-left flex items-center space-x-2 hover:bg-black/5 shadow-xs"
               >
-                <BookOpen className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span>Swatch Book</span>
+                <BookOpen className="w-4 h-4 text-[#D4AF37]" />
+                <div>
+                  <span className="block font-bold text-gray-900 dark:text-white text-[11px]">Swatch Book</span>
+                  <span className="block text-[9px] text-gray-500">₹499 Complete</span>
+                </div>
+              </button>
+            </div>
+
+            {/* Quick Master Studio & User Account links */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  setActiveTab('customizer');
+                  setMobileMenuOpen(false);
+                }}
+                className="py-2 px-3 rounded-xl bg-black/5 dark:bg-white/5 text-left text-gray-700 dark:text-gray-300 font-bold hover:bg-black/10 transition text-[11px]"
+              >
+                🎨 Master Studio
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('dashboard');
+                  setMobileMenuOpen(false);
+                }}
+                className="py-2 px-3 rounded-xl bg-black/5 dark:bg-white/5 text-left text-gray-700 dark:text-gray-300 font-bold hover:bg-black/10 transition text-[11px]"
+              >
+                👤 My Account
               </button>
             </div>
 
