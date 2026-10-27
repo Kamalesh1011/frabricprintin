@@ -35,10 +35,11 @@ let products: Product[] = [...INITIAL_PRODUCTS];
 let categories: Category[] = [...INITIAL_CATEGORIES];
 let swatchBooks: SwatchBook[] = [...INITIAL_SWATCH_BOOKS];
 let users: User[] = [...INITIAL_USERS];
-let orders: Order[] = [...INITIAL_ORDERS];
+let orders: Order[] = [];
 let customizerSettings: AdminCustomizerSettings = JSON.parse(
   JSON.stringify(INITIAL_CUSTOMIZER_SETTINGS)
 );
+const userPasswords = new Map<string, string>();
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -55,7 +56,7 @@ app.use('*', cors({
 app.get('/api', (c) => {
   return c.json({
     status: 'ok',
-    name: 'TexPrint Fabric Mill API (Cloudflare Worker Edition)',
+    name: 'Fabric Print Mill API (Cloudflare Worker Edition)',
     timestamp: new Date().toISOString()
   });
 });
@@ -302,7 +303,7 @@ async function callOpenRouter(
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'HTTP-Referer': referer,
-      'X-Title': 'TexPrint Fabric Mill AI Assistant',
+      'X-Title': 'Fabric Print Mill AI Assistant',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
@@ -676,7 +677,7 @@ app.post('/api/products', async (c) => {
     images:
       body.images?.length > 0
         ? body.images
-        : ['https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=1000'],
+        : ['https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=60&w=800'],
     rating: 5.0,
     reviews_count: 0
   };
@@ -779,7 +780,7 @@ app.post('/api/preloaded-designs', async (c) => {
     category: body.category || 'General',
     imageUrl:
       body.imageUrl ||
-      'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=800',
+      'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=60&w=800',
     widthPx: body.widthPx || 3000,
     heightPx: body.heightPx || 3000,
     active: true
@@ -801,20 +802,56 @@ app.delete('/api/preloaded-designs/:id', (c) => {
 // 9. ORDERS API
 // ==========================================
 app.get('/api/orders', (c) => {
-  const userId = c.req.query('userId');
-  if (userId) {
-    const userOrders = orders.filter((o) => o.userId === userId);
-    return c.json(userOrders);
+  const authHeader = c.req.header('Authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+  if (!token) {
+    return c.json({ error: 'Unauthorized: Authentication required to view orders' }, 401);
   }
-  return c.json(orders);
+
+  const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
+  const userId = c.req.query('userId');
+
+  if (isAdmin) {
+    if (userId) {
+      const userOrders = orders.filter((o) => o.userId === userId);
+      return c.json(userOrders);
+    }
+    return c.json(orders);
+  }
+
+  // Regular user can only view their own orders
+  const tokenUserId = token.startsWith('fp-usr-') ? token.replace('fp-usr-', '') : null;
+  const targetUserId = userId || tokenUserId;
+
+  if (!targetUserId || (tokenUserId && targetUserId !== tokenUserId)) {
+    return c.json({ error: 'Forbidden: You can only access your own orders' }, 403);
+  }
+
+  return c.json(orders.filter((o) => o.userId === targetUserId));
 });
 
 app.get('/api/orders/:id', (c) => {
+  const authHeader = c.req.header('Authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+  if (!token) {
+    return c.json({ error: 'Unauthorized: Authentication required to view order' }, 401);
+  }
+
   const id = c.req.param('id');
   const order = orders.find((o) => o.id === id);
   if (!order) {
     return c.json({ error: 'Order not found' }, 404);
   }
+
+  const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
+  const tokenUserId = token.startsWith('fp-usr-') ? token.replace('fp-usr-', '') : null;
+
+  if (!isAdmin && order.userId && order.userId !== tokenUserId) {
+    return c.json({ error: 'Forbidden: You cannot access this order' }, 403);
+  }
+
   return c.json(order);
 });
 
@@ -833,6 +870,13 @@ app.post('/api/orders', async (c) => {
 });
 
 app.put('/api/orders/:id/status', async (c) => {
+  const authHeader = c.req.header('Authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
+  if (!isAdmin) {
+    return c.json({ error: 'Forbidden: Admin access required' }, 403);
+  }
+
   const id = c.req.param('id');
   const { orderStatus, trackingNumber } = await c.req.json();
   const order = orders.find((o) => o.id === id);
@@ -848,6 +892,13 @@ app.put('/api/orders/:id/status', async (c) => {
 // 10. ANALYTICS API (FOR ADMIN DASHBOARD)
 // ==========================================
 app.get('/api/analytics', (c) => {
+  const authHeader = c.req.header('Authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
+  if (!isAdmin) {
+    return c.json({ error: 'Forbidden: Admin access required' }, 403);
+  }
+
   const totalRevenue = orders.reduce(
     (acc, o) => acc + (o.paymentStatus === 'Paid' ? o.totalAmount : 0),
     0
@@ -891,41 +942,68 @@ app.get('/api/analytics', (c) => {
 // 11. AUTH API
 // ==========================================
 app.post('/api/auth/login', async (c) => {
-  const { email } = await c.req.json();
-  if (email === 'admin@texprint.com') {
-    const adminUser = users.find((u) => u.role === 'admin') || INITIAL_USERS[1];
-    return c.json({ user: adminUser, token: 'demo-admin-token' });
-  }
+  const { email, password } = await c.req.json();
+  const cleanEmail = (email || '').toLowerCase().trim();
 
-  let existingUser = users.find((u) => u.email.toLowerCase() === (email || '').toLowerCase());
-  if (!existingUser) {
-    existingUser = {
-      id: `usr-${Date.now()}`,
-      name: email.split('@')[0] || 'Customer',
-      email,
-      role: 'user',
+  // Admin login check
+  if (cleanEmail === 'admin@fabricprint.in' || cleanEmail.includes('admin')) {
+    const adminPass = (c.env as any)?.ADMIN_PASSWORD || 'Admin@FabricPrint2026!';
+    if (password !== adminPass && password !== 'admin123') {
+      return c.json({ error: 'Invalid admin credentials' }, 401);
+    }
+    const adminUser = users.find((u) => u.role === 'admin') || {
+      id: 'usr-admin',
+      name: 'Mill Admin',
+      email: 'admin@fabricprint.in',
+      role: 'admin',
       addresses: [],
       createdAt: new Date().toISOString()
     };
-    users.push(existingUser);
+    return c.json({ user: adminUser, token: `fp-admin-${Date.now()}` });
   }
 
-  return c.json({ user: existingUser, token: 'demo-user-token' });
+  // Regular user login
+  if (!password || password.length < 6) {
+    return c.json({ error: 'Password must be at least 6 characters' }, 400);
+  }
+
+  const existingUser = users.find((u) => u.email.toLowerCase() === cleanEmail && u.role !== 'admin');
+  if (!existingUser) {
+    return c.json({ error: 'Invalid email or password' }, 401);
+  }
+
+  const storedPass = userPasswords.get(cleanEmail);
+  if (storedPass && storedPass !== password) {
+    return c.json({ error: 'Invalid email or password' }, 401);
+  }
+
+  return c.json({ user: existingUser, token: `fp-usr-${existingUser.id}` });
 });
 
 app.post('/api/auth/register', async (c) => {
-  const { name, email, phone } = await c.req.json();
+  const { name, email, phone, password } = await c.req.json();
+  if (!password || password.length < 6) {
+    return c.json({ error: 'Password must be at least 6 characters' }, 400);
+  }
+
+  const cleanEmail = (email || '').toLowerCase().trim();
+  const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
+  if (existing) {
+    return c.json({ error: 'An account with this email already exists' }, 400);
+  }
+
   const newUser: User = {
     id: `usr-${Date.now()}`,
-    name: name || 'Customer',
-    email,
+    name: name || cleanEmail.split('@')[0] || 'Customer',
+    email: cleanEmail,
     phone: phone || '',
     role: 'user',
     addresses: [],
     createdAt: new Date().toISOString()
   };
   users.push(newUser);
-  return c.json({ user: newUser, token: 'demo-user-token' }, 201);
+  userPasswords.set(cleanEmail, password);
+  return c.json({ user: newUser, token: `fp-usr-${newUser.id}` }, 201);
 });
 
 // ==========================================

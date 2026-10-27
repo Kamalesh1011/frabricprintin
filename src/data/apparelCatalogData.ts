@@ -132,7 +132,7 @@ export const APPAREL_DEMOGRAPHICS: ApparelDemographic[] = [
     title: 'ALL APPAREL',
     badge: 'All Styles',
     subtitle: 'Browse all plain blanks, oversized tees, polos, hoodies & kidswear',
-    heroImage: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=800',
+    heroImage: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=60&w=800',
     ageRange: 'Complete Collection',
     description: 'Premium plain blanks, oversized tees, polos, hoodies & kidswear with instant custom printing.'
   },
@@ -141,7 +141,7 @@ export const APPAREL_DEMOGRAPHICS: ApparelDemographic[] = [
     title: 'MEN',
     badge: '180–240 GSM Classics',
     subtitle: 'Round neck blanks, regular combed cotton, collar tees & polo shirts',
-    heroImage: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=800',
+    heroImage: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=60&w=800',
     ageRange: 'Adult S to 4XL',
     description: '180 GSM Single Jersey & 240 GSM Air Tech knit with bio-wash finish and invisible stitching.'
   },
@@ -150,7 +150,7 @@ export const APPAREL_DEMOGRAPHICS: ApparelDemographic[] = [
     title: 'WOMEN',
     badge: 'Round Neck & Crop Tops',
     subtitle: 'Contoured round neck tees & 180/220/240 GSM crop tops',
-    heroImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=800',
+    heroImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=60&w=800',
     ageRange: 'Adult S to 2XL',
     description: '100% Super-Combed bio-wash tees and street-fashion crop tops in lightweight and French Terry.'
   },
@@ -159,7 +159,7 @@ export const APPAREL_DEMOGRAPHICS: ApparelDemographic[] = [
     title: 'OVERSIZED',
     badge: 'Streetwear 180–260 GSM',
     subtitle: 'French terry oversized, combed cotton drop-shoulder & acid wash tees',
-    heroImage: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=800',
+    heroImage: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=60&w=800',
     ageRange: 'XS to 2XL',
     description: 'Heavyweight drop-shoulder street silhouettes in 240 GSM French Terry and 260 GSM vintage Acid Wash.'
   },
@@ -168,7 +168,7 @@ export const APPAREL_DEMOGRAPHICS: ApparelDemographic[] = [
     title: 'POLO',
     badge: 'Air Tech & Mars Polestar',
     subtitle: '240 GSM Air Tech Cotton Collar, Cotton Polo & Mars Polestar Polos',
-    heroImage: 'https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?auto=format&fit=crop&q=80&w=800',
+    heroImage: 'https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?auto=format&fit=crop&q=60&w=800',
     ageRange: 'S to 4XL',
     description: 'Structured pique knitwear, anti-curl collars and durable Mars Polestar corporate blanks.'
   },
@@ -177,7 +177,7 @@ export const APPAREL_DEMOGRAPHICS: ApparelDemographic[] = [
     title: 'WINTER WEAR',
     badge: '300 GSM Heavy Fleece',
     subtitle: 'Unisex heavyweight fleece hoodies & bio-silicon washed sweatshirts',
-    heroImage: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&q=80&w=800',
+    heroImage: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&q=60&w=800',
     ageRange: 'S to 4XL',
     description: '300 GSM plush thermal interior fleece with double-layered hoods and Lycra ribbed cuffs.'
   },
@@ -186,7 +186,7 @@ export const APPAREL_DEMOGRAPHICS: ApparelDemographic[] = [
     title: 'KIDS & BOYS',
     badge: 'Ages 0 to 14 Years',
     subtitle: '180–240 GSM infant envelope tees, kids crewnecks & boys tees',
-    heroImage: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&q=80&w=800',
+    heroImage: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&q=60&w=800',
     ageRange: '0–5 yrs & 6–14 yrs',
     description: 'Hypoallergenic bio-washed cotton engineered for active durability, play wear, and print batches.'
   }
@@ -916,10 +916,10 @@ export const APPAREL_PRINT_GUIDE = [
 // 🎨 SAMPLE GRAPHICS LIBRARY FOR 3D STUDIO
 export const SAMPLE_GRAPHICS_LIBRARY = [
   { id: 'sg-0', name: 'Brand Leaf Logo', url: '/leaf-logo.png' },
-  { id: 'sg-1', name: 'Neo Cyber Tiger', url: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=400' },
-  { id: 'sg-2', name: 'Atelier Gold Crest', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=400' },
-  { id: 'sg-3', name: 'California Surf Club', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=400' },
-  { id: 'sg-4', name: 'Bauhaus Modernism', url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=400' },
-  { id: 'sg-5', name: 'Dark Tokyo Cyberpunk', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=400' },
-  { id: 'sg-6', name: 'Retro Sunset Horizon', url: 'https://images.unsplash.com/photo-1509728148871-303c28062828?auto=format&fit=crop&q=80&w=400' }
+  { id: 'sg-1', name: 'Neo Cyber Tiger', url: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=60&w=400' },
+  { id: 'sg-2', name: 'Atelier Gold Crest', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=60&w=400' },
+  { id: 'sg-3', name: 'California Surf Club', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=60&w=400' },
+  { id: 'sg-4', name: 'Bauhaus Modernism', url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=60&w=400' },
+  { id: 'sg-5', name: 'Dark Tokyo Cyberpunk', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=60&w=400' },
+  { id: 'sg-6', name: 'Retro Sunset Horizon', url: 'https://images.unsplash.com/photo-1509728148871-303c28062828?auto=format&fit=crop&q=60&w=400' }
 ];

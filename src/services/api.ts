@@ -92,7 +92,7 @@ export async function extractImageFromUrl(url: string): Promise<ExtractedImageIn
     });
 
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
+      const errData: any = await res.json().catch(() => ({}));
       throw new Error(errData.error || 'Failed to extract image from the URL.');
     }
 
@@ -140,7 +140,7 @@ export async function fetchProducts(category?: string, search?: string, certifie
 
     const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch products');
-    const apiProducts = await res.json();
+    const apiProducts: Product[] = await res.json();
     
     const locals = getLocalProducts();
     const deletedIds = getDeletedProductIds();
@@ -202,11 +202,11 @@ export async function createProduct(product: Partial<Product>): Promise<Product>
   try {
     const res = await fetch('/api/products', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
       body: JSON.stringify(product)
     });
     if (!res.ok) throw new Error('Failed to create product');
-    const created = await res.json();
+    const created = (await res.json()) as Product;
     saveToLocalProducts(created);
     return created;
   } catch (err) {
@@ -215,7 +215,7 @@ export async function createProduct(product: Partial<Product>): Promise<Product>
       ...product,
       id: `p-${Date.now()}`,
       in_stock: product.in_stock ?? true,
-      images: product.images && product.images.length > 0 ? product.images : ['https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=1000'],
+      images: product.images && product.images.length > 0 ? product.images : ['https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=60&w=800'],
       rating: 5.0,
       reviews_count: 0
     } as Product;
@@ -228,11 +228,11 @@ export async function updateProduct(id: string, product: Partial<Product>): Prom
   try {
     const res = await fetch(`/api/products/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
       body: JSON.stringify(product)
     });
     if (!res.ok) throw new Error('Failed to update product');
-    const updated = await res.json();
+    const updated = (await res.json()) as Product;
     updateLocalProduct(updated);
     return updated;
   } catch (err) {
@@ -255,7 +255,10 @@ export async function updateProduct(id: string, product: Partial<Product>): Prom
 
 export async function deleteProduct(id: string): Promise<void> {
   try {
-    const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/products/${id}`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeader() }
+    });
     if (!res.ok) throw new Error('Failed to delete product');
   } catch (err) {
     console.warn('API deleteProduct failed, deleting from local storage:', err);
@@ -298,7 +301,7 @@ export async function uploadDesignFile(file: File): Promise<{ url: string; fileN
           return;
         }
 
-        const data = await res.json();
+        const data: any = await res.json();
         resolve({ url: data.url, fileName: file.name });
       } catch (err) {
         resolve({ url: base64Data, fileName: file.name });
@@ -368,21 +371,34 @@ export async function createOrder(order: Partial<Order>): Promise<Order> {
   return await res.json();
 }
 
+function getAuthHeader(): Record<string, string> {
+  const legacy = localStorage.getItem('texprint_token');
+  if (legacy) localStorage.removeItem('texprint_token');
+  const token = localStorage.getItem('fabricprint_token') || legacy;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function fetchOrders(userId?: string): Promise<Order[]> {
   try {
+    const authHeaders = getAuthHeader();
+    if (!authHeaders.Authorization) {
+      return [];
+    }
     const url = userId ? `/api/orders?userId=${userId}` : '/api/orders';
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to fetch orders');
+    const res = await fetch(url, {
+      headers: { ...authHeaders }
+    });
+    if (!res.ok) return [];
     return await res.json();
   } catch (err) {
-    return userId ? INITIAL_ORDERS.filter(o => o.userId === userId) : INITIAL_ORDERS;
+    return [];
   }
 }
 
 export async function updateOrderStatus(orderId: string, orderStatus: string, trackingNumber?: string): Promise<Order> {
   const res = await fetch(`/api/orders/${orderId}/status`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify({ orderStatus, trackingNumber })
   });
   if (!res.ok) throw new Error('Failed to update order status');
@@ -390,31 +406,11 @@ export async function updateOrderStatus(orderId: string, orderStatus: string, tr
 }
 
 export async function fetchAdminAnalytics(): Promise<AdminAnalytics> {
-  try {
-    const res = await fetch('/api/analytics');
-    if (!res.ok) throw new Error('Failed to fetch analytics');
-    return await res.json();
-  } catch (err) {
-    return {
-      totalRevenue: 9922.50,
-      totalOrders: INITIAL_ORDERS.length,
-      totalCustomers: INITIAL_USERS.filter(u => u.role === 'user').length,
-      totalProducts: INITIAL_PRODUCTS.length,
-      recentOrders: INITIAL_ORDERS,
-      salesByCategory: [
-        { category: 'Cotton', sales: 9450 },
-        { category: 'Silk', sales: 4200 },
-        { category: 'Linen', sales: 2800 }
-      ],
-      monthlyRevenue: [
-        { month: 'Apr', revenue: 42000 },
-        { month: 'May', revenue: 58500 },
-        { month: 'Jun', revenue: 74000 },
-        { month: 'Jul', revenue: 91000 },
-        { month: 'Aug', revenue: 9922.50 }
-      ]
-    };
-  }
+  const res = await fetch('/api/analytics', {
+    headers: { ...getAuthHeader() }
+  });
+  if (!res.ok) throw new Error('Failed to fetch analytics');
+  return await res.json();
 }
 
 // Master Data Management in-memory store
@@ -429,7 +425,7 @@ export async function createMasterCategory(cat: Partial<Category>): Promise<Cate
     id: `cat-${Date.now()}`,
     name: (cat.name as any) || 'Cotton',
     slug: cat.slug || (cat.name || 'category').toLowerCase().replace(/\s+/g, '-'),
-    image: cat.image || 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=600',
+    image: cat.image || 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=60&w=600',
     description: cat.description || '',
     itemCount: 0
   };

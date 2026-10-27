@@ -17,15 +17,15 @@ const PRODUCTION_STEPS: StepData[] = [
     description: 'Upload your high-res design files (JPG, PNG, TIFF, PDF) or paste any Google Image Search / Pinterest URL. Our smart parser extracts motifs and creates 5 Pantone colorway swatches.',
     icon: <Globe className="w-5 h-5 text-[#AC7900] dark:text-[#D4AF37]" />,
     tags: ['Google URL Extraction', 'Pantone Swatches', '300 DPI Validation'],
-    previewImage: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=80&w=800'
+    previewImage: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=60&w=800'
   },
   {
     stepNumber: '02',
-    title: 'Select Certified Base Fabric Quality',
-    description: 'Choose from 250+ ready-stock textile bases in Surat: GOTS Organic Cotton Mulmul, Pure Mulberry Silk (16 Momme), French Flax Linen, Modal Satin, and Viscose Georgette.',
+    title: 'Select Premium Base Fabric Quality',
+    description: 'Choose from 250+ ready-stock textile bases: Pure Cotton Mulmul, Pure Mulberry Silk (16 Momme), French Flax Linen, Modal Satin, and Viscose Georgette.',
     icon: <Layers className="w-5 h-5 text-[#AC7900] dark:text-[#D4AF37]" />,
-    tags: ['250+ Qualities', 'GOTS & OEKO-TEX 100', 'Lab Dip Tested'],
-    previewImage: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=800'
+    tags: ['250+ Qualities', 'Color-Lock Inks', 'Lab Dip Tested'],
+    previewImage: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=60&w=800'
   },
   {
     stepNumber: '03',
@@ -33,15 +33,15 @@ const PRODUCTION_STEPS: StepData[] = [
     description: 'Preview seamless repeat layouts (Grid, Half-Drop, Brick, Mirror) on interactive 3D cloth models with real-time lighting. Order a 20×20 cm test swatch to verify color before bulk meterage.',
     icon: <Sparkles className="w-5 h-5 text-[#AC7900] dark:text-[#D4AF37]" />,
     tags: ['3D Cloth Simulator', 'Centimeter Calibration', 'Test Swatches (₹200)'],
-    previewImage: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=800'
+    previewImage: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=60&w=800'
   },
   {
     stepNumber: '04',
     title: 'Reactive Steaming & 7–10 Day Dispatch',
-    description: 'Printed on high-speed industrial reactive digital presses in Surat. Steam-cured and bio-washed for silky hand feel, inspected for GSM consistency, and dispatched express across India.',
+    description: 'Printed on high-speed industrial reactive digital presses in our Tirupur mill. Steam-cured and bio-washed for silky hand feel, inspected for GSM consistency, and dispatched express across India.',
     icon: <Truck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />,
     tags: ['Steam Washing', 'Color Lock Fastness', 'Doorstep Express Courier'],
-    previewImage: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&q=80&w=800'
+    previewImage: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&q=60&w=800'
   }
 ];
 

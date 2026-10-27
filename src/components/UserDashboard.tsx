@@ -9,15 +9,28 @@ import { FabricCard } from './FabricCard';
 interface UserDashboardProps {
   onSelectProduct: (product: Product) => void;
   onGoToFabrics: () => void;
+  onGoToLogin?: () => void;
+  initialTab?: 'orders' | 'profile' | 'addresses' | 'wishlist';
 }
 
-export const UserDashboard: React.FC<UserDashboardProps> = ({ onSelectProduct, onGoToFabrics }) => {
-  const { currentUser, isAdmin, toggleAdminMode, logout } = useAuth();
+export const UserDashboard: React.FC<UserDashboardProps> = ({
+  onSelectProduct,
+  onGoToFabrics,
+  onGoToLogin,
+  initialTab = 'orders'
+}) => {
+  const { currentUser, isAdmin, logout } = useAuth();
   const { wishlist } = useWishlist();
 
-  const [activeTab, setActiveTab] = useState<'orders' | 'profile' | 'addresses' | 'wishlist'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'profile' | 'addresses' | 'wishlist'>(initialTab);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   useEffect(() => {
     async function loadUserOrders() {
@@ -31,18 +44,84 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onSelectProduct, o
     loadUserOrders();
   }, [currentUser]);
 
+  // Guest viewing Saved Swatches
+  if (!currentUser && activeTab === 'wishlist') {
+    return (
+      <div className="min-h-[70vh] py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-[#1A1C1A] p-6 rounded-[28px] border border-[#ECECEC] dark:border-white/[0.08] shadow-fabriclore">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold font-editorial text-[#0F100F] dark:text-white flex items-center gap-2">
+              <Heart className="w-6 h-6 text-[#EE6352] fill-[#EE6352]" />
+              Saved Fabric Swatches ({wishlist.length})
+            </h1>
+            <p className="text-xs text-[#8A8883] dark:text-gray-400 mt-1">
+              Sample swatches saved locally during your session.
+            </p>
+          </div>
+          {onGoToLogin && (
+            <button
+              onClick={onGoToLogin}
+              className="bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold px-5 py-2.5 rounded-full text-xs hover:opacity-90 transition shadow-sm"
+            >
+              Sign In to Sync Across Devices
+            </button>
+          )}
+        </div>
+
+        {wishlist.length === 0 ? (
+          <div className="bg-white dark:bg-[#1A1C1A] rounded-[32px] p-12 text-center border border-[#ECECEC] dark:border-white/[0.08] shadow-fabriclore space-y-4 max-w-md mx-auto">
+            <Heart className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto" />
+            <h3 className="font-bold text-base font-editorial">No Saved Swatches Yet</h3>
+            <p className="text-xs text-[#8A8883] dark:text-gray-400">
+              Browse our catalog of 250+ certified fabrics and tap the heart icon on any fabric card to save sample swatches.
+            </p>
+            <button
+              onClick={onGoToFabrics}
+              className="bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold px-6 py-3 rounded-full text-xs hover:opacity-90 transition shadow-md"
+            >
+              Browse 250+ Fabrics
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {wishlist.map((prod) => (
+              <FabricCard
+                key={prod.id}
+                product={prod}
+                onSelect={onSelectProduct}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Guest viewing Account / Orders / Addresses
   if (!currentUser) {
     return (
       <div className="max-w-md mx-auto my-16 p-8 bg-white dark:bg-[#1A1C1A] text-[#0F100F] dark:text-white rounded-[32px] border border-[#ECECEC] dark:border-white/[0.08] shadow-fabriclore text-center space-y-4">
         <UserIcon className="w-12 h-12 text-[#AC7900] mx-auto" />
-        <h2 className="text-xl font-bold font-editorial">Welcome to Fabric Print</h2>
-        <p className="text-xs text-[#8A8883] dark:text-gray-400">Sign in to track custom fabric printing orders.</p>
-        <button
-          onClick={onGoToFabrics}
-          className="w-full bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold py-3 rounded-full text-xs transition"
-        >
-          Explore Fabrics
-        </button>
+        <h2 className="text-xl font-bold font-editorial">Sign in to Fabric Print</h2>
+        <p className="text-xs text-[#8A8883] dark:text-gray-400">
+          Sign in or create an account to view your custom fabric orders, swatch history, and saved designs.
+        </p>
+        <div className="flex flex-col gap-2 pt-2">
+          {onGoToLogin && (
+            <button
+              onClick={onGoToLogin}
+              className="w-full bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold py-3 rounded-full text-xs hover:opacity-90 transition shadow-md"
+            >
+              Sign In / Register
+            </button>
+          )}
+          <button
+            onClick={onGoToFabrics}
+            className="w-full bg-[#F9F6ED] dark:bg-[#242624] text-[#0F100F] dark:text-white font-bold py-3 rounded-full text-xs border border-[#ECECEC] dark:border-white/[0.1] hover:border-[#AC7900] transition"
+          >
+            Explore Fabric Collection
+          </button>
+        </div>
       </div>
     );
   }
@@ -61,7 +140,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onSelectProduct, o
               <div className="flex items-center space-x-2">
                 <h1 className="text-xl sm:text-2xl font-bold font-editorial">{currentUser.name}</h1>
                 <span className="bg-[#AC7900] text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-                  Verified Buyer
+                  {isAdmin ? 'Mill Admin' : 'Verified Buyer'}
                 </span>
               </div>
               <p className="text-xs text-gray-300 mt-0.5">{currentUser.email} • {currentUser.phone || 'No phone set'}</p>
@@ -70,18 +149,12 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({ onSelectProduct, o
 
           <div className="flex items-center space-x-3">
             <button
-              onClick={toggleAdminMode}
-              className="bg-[#AC7900] text-white font-bold px-4 py-2 rounded-full text-xs hover:bg-[#c28900] transition flex items-center space-x-1.5 shadow-sm"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>{isAdmin ? 'Customer View' : 'Admin Panel'}</span>
-            </button>
-            <button
               onClick={logout}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white/80 transition"
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-white/90 text-xs font-bold transition flex items-center space-x-1.5"
               title="Logout"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Sign Out</span>
             </button>
           </div>
         </div>

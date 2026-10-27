@@ -60,7 +60,15 @@ export const VelocityRibbon: React.FC<{ items: string[]; className?: string }> =
   }
 
   return (
-    <div className={`overflow-hidden whitespace-nowrap ${className}`}>
+    <div
+      className={`overflow-hidden whitespace-nowrap ${className}`}
+      style={{
+        maskImage:
+          'linear-gradient(to right, transparent, black 6%, black 94%, transparent)',
+        WebkitMaskImage:
+          'linear-gradient(to right, transparent, black 6%, black 94%, transparent)',
+      }}
+    >
       <motion.div style={{ x }} className="flex w-max items-center">
         {row(0, false)}
         {row(1, true)}

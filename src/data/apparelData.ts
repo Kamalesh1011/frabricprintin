@@ -611,31 +611,31 @@ export const SPORTS_KIT_PRESETS = [
   {
     sport: 'Cricket',
     subtitle: 'Whites, coloured kit, training tees',
-    image: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&q=80&w=600',
+    image: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&q=60&w=600',
     tag: 'Collared & raglan'
   },
   {
     sport: 'Football',
     subtitle: 'Club, academy and five-a-side kits',
-    image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=600',
+    image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=60&w=600',
     tag: 'V-neck & breathable'
   },
   {
     sport: 'Basketball',
     subtitle: 'Reversible-look tanks and shorts',
-    image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=80&w=600',
+    image: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=60&w=600',
     tag: 'Sleeveless tank'
   },
   {
     sport: 'Volleyball',
     subtitle: 'Light dry-fit for indoor and beach',
-    image: 'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&q=80&w=600',
+    image: 'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&q=60&w=600',
     tag: 'Stretch comfort'
   },
   {
     sport: 'Athletics',
     subtitle: 'Club vests, singlets and warm-ups',
-    image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&q=80&w=600',
+    image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&q=60&w=600',
     tag: 'Ultralight 130 GSM'
   }
 ];
@@ -645,25 +645,25 @@ export const SAMPLE_GRAPHICS_LIBRARY = [
     id: 'tiger-cyber',
     name: 'Cyberpunk Tiger Head',
     category: 'Streetwear',
-    url: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=500'
+    url: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=60&w=500'
   },
   {
     id: 'tokyo-neon',
     name: 'Neo Tokyo Typography',
     category: 'Typography',
-    url: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=80&w=500'
+    url: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=60&w=500'
   },
   {
     id: 'botanical-crest',
     name: 'Vintage Floral Crest',
     category: 'Vintage',
-    url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=500'
+    url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=60&w=500'
   },
   {
     id: 'retro-sunset',
     name: 'Retro 80s Sunset Wave',
     category: 'Retro',
-    url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=500'
+    url: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=60&w=500'
   }
 ];
 

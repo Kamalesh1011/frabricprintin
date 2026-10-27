@@ -25,15 +25,10 @@ export const EntryWhatsAppModal: React.FC<EntryWhatsAppModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Only show if user hasn't dismissed in this browser session
-    const hasSeen = sessionStorage.getItem('fabric_print_entry_modal_seen');
-    if (!hasSeen) {
-      const timer = setTimeout(() => {
-        setIsOpen(true);
-      }, 1200); // Gentle 1.2s delay for page to render first
-
-      return () => clearTimeout(timer);
-    }
+    // Listen for explicit user clicks to open quick order modal
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener('open-quick-order-modal', handleOpen);
+    return () => window.removeEventListener('open-quick-order-modal', handleOpen);
   }, []);
 
   const handleClose = () => {

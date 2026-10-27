@@ -465,14 +465,16 @@ export const JerseyPage: React.FC<JerseyPageProps> = ({
     const pin = pincode.trim();
     if (pin.length === 6 && /^\d+$/.test(pin)) {
       const cities: Record<string, string> = {
+        '641602': 'Tirupur, Tamil Nadu (Same-Day Direct Mill Dispatch)',
+        '641601': 'Tirupur, Tamil Nadu (Same-Day Direct Mill Dispatch)',
+        '600001': 'Chennai, Tamil Nadu (Next-Day Delivery)',
         '560001': 'Bengaluru, Karnataka (Express 2-Day Delivery)',
         '110001': 'New Delhi, NCR (3-Day Delivery)',
         '400001': 'Mumbai, Maharashtra (2-3 Day Delivery)',
-        '600001': 'Chennai, Tamil Nadu (3-Day Delivery)',
         '700001': 'Kolkata, West Bengal (3-Day Delivery)',
         '500001': 'Hyderabad, Telangana (2-3 Day Delivery)',
-        '395001': 'Surat, Gujarat (Same-Day Direct Mill Dispatch)',
-        '380001': 'Ahmedabad, Gujarat (Next-Day Delivery)',
+        '395001': 'Surat, Gujarat (3-Day Delivery)',
+        '380001': 'Ahmedabad, Gujarat (3-Day Delivery)',
         '411001': 'Pune, Maharashtra (2-3 Day Delivery)',
       };
       const city = cities[pin] || `PIN ${pin} (Free Standard Pan-India Delivery in 3-5 days)`;
@@ -2269,7 +2271,7 @@ export const JerseyPage: React.FC<JerseyPageProps> = ({
               </div>
               <div className="py-2.5 flex justify-between">
                 <span className="text-slate-500">Country of Origin</span>
-                <span className="font-bold">India (Surat Mill Direct)</span>
+                <span className="font-bold">India (Tirupur Mill Direct)</span>
               </div>
             </div>
           </div>

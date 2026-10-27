@@ -63,42 +63,42 @@ export const SAMPLE_FABRIC_PRINTS = [
     id: 'sp-floral',
     name: 'Jaipur Botanical Floral',
     category: 'Floral',
-    url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80',
+    url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=60',
     color: '#D9534F'
   },
   {
     id: 'sp-tropical',
     name: 'Monstera Jungle Palm',
     category: 'Botanical',
-    url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+    url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=60',
     color: '#2E7D32'
   },
   {
     id: 'sp-geo',
     name: 'Bauhaus Modern Geometric',
     category: 'Geometric',
-    url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
+    url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=60',
     color: '#1565C0'
   },
   {
     id: 'sp-indigo',
     name: 'Indigo Shibori Tie-Dye',
     category: 'Traditional',
-    url: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=800&q=80',
+    url: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=800&q=60',
     color: '#1A237E'
   },
   {
     id: 'sp-abstract',
     name: 'Pastel Watercolor Swirl',
     category: 'Abstract',
-    url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=800&q=80',
+    url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=800&q=60',
     color: '#E91E63'
   },
   {
     id: 'sp-minimal',
     name: 'Minimalist Line Art',
     category: 'Modern',
-    url: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?auto=format&fit=crop&w=800&q=80',
+    url: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?auto=format&fit=crop&w=800&q=60',
     color: '#212121'
   }
 ];

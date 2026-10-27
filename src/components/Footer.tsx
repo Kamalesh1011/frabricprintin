@@ -1,5 +1,6 @@
 import React from 'react';
 import { Printer, Mail, Phone, MapPin, Shield, Truck, Award, Sparkles, Globe, BookOpen, Shirt, GraduationCap } from 'lucide-react';
+import { BUSINESS_INFO } from '../config/businessInfo';
 
 interface FooterProps {
   setActiveTab: (tab: string) => void;
@@ -100,8 +101,23 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, setSelectedCategor
             </p>
             <p className="flex items-start space-x-2 text-[11px]">
               <MapPin className="w-3.5 h-3.5 text-[#AC7900] shrink-0 mt-0.5" />
-              <span>Tex Print Mill Complex, Ring Road Textile Market, Surat, Gujarat, 395002</span>
+              <span>{BUSINESS_INFO.address.fullFormatted}</span>
             </p>
+            <div className="pt-2 flex items-center space-x-3 text-xs">
+              <button
+                onClick={() => setActiveTab('about')}
+                className="font-bold text-[#0F100F] dark:text-white hover:text-[#AC7900] transition"
+              >
+                About Us
+              </button>
+              <span className="text-gray-300 dark:text-gray-600">•</span>
+              <button
+                onClick={() => setActiveTab('contact')}
+                className="font-bold text-[#0F100F] dark:text-white hover:text-[#AC7900] transition"
+              >
+                Contact Mill
+              </button>
+            </div>
           </div>
         </div>
 
@@ -190,48 +206,40 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, setSelectedCategor
                 <span>Printing &amp; Craft Training</span>
               </button>
             </li>
-            {/* 
-            <li>
-              <button
-                onClick={() => setActiveTab('customizer')}
-                className="hover:text-[#AC7900] dark:hover:text-white transition flex items-center space-x-1.5 font-bold"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-[#AC7900] dark:text-[#D4AF37]" />
-                <span>Customize All Studio</span>
-              </button>
-            </li>
-            */}
           </ul>
         </div>
 
-        {/* SECTION 5: CERTIFICATIONS */}
+        {/* SECTION 5: MILL QUALITY STANDARDS */}
         <div className="space-y-3 lg:col-span-1">
           <h4 className="text-[#0F100F] dark:text-white font-bold text-xs uppercase tracking-wider border-l-2 border-emerald-600 pl-2 font-editorial">
-            Certifications
+            Mill Standards
           </h4>
           <ul className="text-xs space-y-2 text-[#8A8883] dark:text-gray-400">
             <li>
-              <span className="text-emerald-700 dark:text-emerald-400 font-semibold block">GOTS Organic Certified</span>
-              <span className="text-[10px] text-[#8A8883]">100% sustainable fibers</span>
+              <span className="text-emerald-700 dark:text-emerald-400 font-semibold block">Direct Mill Inspection</span>
+              <span className="text-[10px] text-[#8A8883]">Strict GSM &amp; colorfast testing</span>
             </li>
             <li>
-              <span className="text-[#0F100F] dark:text-white font-semibold block">OEKO-TEX Standard 100</span>
-              <span className="text-[10px] text-[#8A8883]">Non-toxic reactive inks</span>
+              <span className="text-[#0F100F] dark:text-white font-semibold block">Skin-Safe Reactive Inks</span>
+              <span className="text-[10px] text-[#8A8883]">Molecular bonding &amp; permanent dye lock</span>
             </li>
             <li>
+              <span className="text-[#0F100F] dark:text-white font-semibold block">1m Sampling Strike-Offs</span>
+              <span className="text-[10px] text-[#8A8883]">Test quality before bulk roll runs</span>
+            </li>
+            <li className="pt-1 flex items-center space-x-2 text-[11px]">
               <button
                 onClick={() => setActiveTab('privacy')}
-                className="hover:text-[#0F100F] dark:hover:text-white transition text-[11px]"
+                className="hover:text-[#0F100F] dark:hover:text-white transition"
               >
                 Privacy Policy
               </button>
-            </li>
-            <li>
+              <span className="text-gray-400">•</span>
               <button
                 onClick={() => setActiveTab('terms')}
-                className="hover:text-[#0F100F] dark:hover:text-white transition text-[11px]"
+                className="hover:text-[#0F100F] dark:hover:text-white transition"
               >
-                Terms & Conditions
+                Terms
               </button>
             </li>
           </ul>

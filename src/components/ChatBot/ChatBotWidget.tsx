@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useIsScrolling } from '../../hooks/useIsScrolling';
 import {
   MessageSquare,
   X,
@@ -23,7 +24,8 @@ import {
   saveChatHistory,
   clearStoredChatHistory,
   fetchChatConfig,
-  sendChatMessage
+  sendChatMessage,
+  getSmartAssistantFallbackResponse
 } from '../../services/chatService';
 
 interface ChatBotWidgetProps {
@@ -129,24 +131,31 @@ export const ChatBotWidget: React.FC<ChatBotWidgetProps> = ({
       };
 
       setMessages((prev) => [...prev, botMsg]);
-    } catch (err: any) {
-      const errMsg = err?.message || 'Unable to connect to AI. Please try again.';
-      const errorBotMsg: ChatMessage = {
-        id: `bot-err-${Date.now()}`,
+    } catch (_err: any) {
+      // Graceful fallback to smart textile knowledge assistant without showing error banners
+      const fallbackText = getSmartAssistantFallbackResponse(text);
+      const fallbackBotMsg: ChatMessage = {
+        id: `bot-${Date.now()}`,
         role: 'assistant',
-        content: `⚠️ ${errMsg}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        content: fallbackText,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        modelUsed: 'FabricPrint Mill Assistant'
       };
-      setMessages((prev) => [...prev, errorBotMsg]);
+      setMessages((prev) => [...prev, fallbackBotMsg]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const [apiKeyInput, setApiKeyInput] = useState(settings.openRouterApiKey || settings.nimApiKey || '');
+
   const handleSaveSettings = () => {
+    const trimmedKey = apiKeyInput.trim();
     const updated = saveChatSettings({
       model: selectedModel,
-      temperature: Number(temperature)
+      temperature: Number(temperature),
+      openRouterApiKey: !trimmedKey.startsWith('nvapi-') ? trimmedKey : '',
+      nimApiKey: trimmedKey.startsWith('nvapi-') ? trimmedKey : settings.nimApiKey
     });
     setSettings(updated);
     setShowSettings(false);
@@ -230,13 +239,18 @@ export const ChatBotWidget: React.FC<ChatBotWidgetProps> = ({
     );
   };
 
+  const isScrolling = useIsScrolling();
+
   return (
     <>
       {/* Minimal Floating Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-20 lg:bottom-6 right-3 sm:right-6 z-40 w-11 h-11 sm:w-auto sm:h-auto p-0 sm:p-3.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-xl border border-slate-700/80 transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center group focus:outline-none focus:ring-2 focus:ring-cyan-400/40"
+          // Mobile UX: fades out while scrolling so it stops covering headings/content
+          className={`fixed bottom-20 lg:bottom-6 right-3 sm:right-6 z-40 w-11 h-11 sm:w-auto sm:h-auto p-0 sm:p-3.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-xl border border-slate-700/80 transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center justify-center group focus:outline-none focus:ring-2 focus:ring-cyan-400/40 ${
+            isScrolling ? 'opacity-25 scale-90 sm:opacity-100 sm:scale-100' : 'opacity-100 scale-100'
+          }`}
           aria-label="Open AI Assistant"
         >
           <div className="relative flex items-center justify-center">
@@ -263,7 +277,7 @@ export const ChatBotWidget: React.FC<ChatBotWidgetProps> = ({
             <div className="flex items-center space-x-2.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
               <div>
-                <h3 className="font-semibold text-sm text-white leading-tight">TexPrint AI</h3>
+                <h3 className="font-semibold text-sm text-white leading-tight">FabricPrint AI</h3>
                 <p className="text-[11px] text-slate-400 leading-tight">Online • Instant Help</p>
               </div>
             </div>
@@ -349,6 +363,20 @@ export const ChatBotWidget: React.FC<ChatBotWidgetProps> = ({
                     onChange={(e) => setTemperature(parseFloat(e.target.value))}
                     className="w-full accent-cyan-500 cursor-pointer"
                   />
+                </div>
+
+                <div className="space-y-1.5 pt-1">
+                  <label className="font-medium text-slate-300">API Key (Optional)</label>
+                  <input
+                    type="password"
+                    value={apiKeyInput}
+                    onChange={(e) => setApiKeyInput(e.target.value)}
+                    placeholder="sk-or-v1-... or nvapi-..."
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                  />
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    ✨ Built-in FabricPrint Mill Assistant is active by default. No API key is required to get instant answers about fabrics, GSMs, turnaround, and pricing!
+                  </p>
                 </div>
 
                 <button

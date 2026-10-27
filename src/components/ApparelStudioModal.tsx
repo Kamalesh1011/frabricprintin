@@ -54,6 +54,7 @@ import { useCart } from '../context/CartContext';
 import { GarmentMockup, GarmentModelType } from './GarmentMockup';
 import { ImageCropperModal } from './ImageCropperModal';
 import { StudioAutoFrameControls, AutoFramePreset } from './StudioAutoFrameControls';
+import { EMBROIDERY_THREADS } from './ApparelStudioShell';
 
 const getGarmentModelType = (productId: string): GarmentModelType => {
   if (productId.includes('crop-top')) return 'crop_top';
@@ -100,6 +101,9 @@ export const ApparelStudioModal: React.FC<ApparelStudioModalProps> = ({
   const [activeSide, setActiveSide] = useState<'front' | 'back'>('front');
   const [printPlacement, setPrintPlacement] = useState<PrintPlacement>('chest_center');
   const [printTechnique, setPrintTechnique] = useState<string>('DTF (Direct to Film)');
+  const [embroideryStyle, setEmbroideryStyle] = useState<'flat' | 'puff3d' | 'patch'>('puff3d');
+  const [embroideryThreadColor, setEmbroideryThreadColor] = useState<string>('#D4AF37');
+  const [dtfFinish, setDtfFinish] = useState<'matte' | 'gloss'>('matte');
   const [blendMode, setBlendMode] = useState<'auto' | 'normal' | 'multiply' | 'screen'>('auto');
 
   // Uploaded graphic state
@@ -652,7 +656,12 @@ export const ApparelStudioModal: React.FC<ApparelStudioModalProps> = ({
                           ? isDarkColor
                             ? 'normal'
                             : 'multiply'
-                          : blendMode
+                          : blendMode,
+                      filter: printTechnique.includes('Embroidery')
+                        ? 'drop-shadow(0 3px 3px rgba(0,0,0,0.7)) contrast(1.2) brightness(1.05)'
+                        : dtfFinish === 'gloss'
+                        ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.35)) brightness(1.08)'
+                        : 'drop-shadow(0 1px 3px rgba(0,0,0,0.3))'
                     }}
                   />
 
@@ -1188,6 +1197,111 @@ export const ApparelStudioModal: React.FC<ApparelStudioModalProps> = ({
                         </button>
                       ))}
                     </div>
+
+                    {/* Detailed Options when Embroidery is active */}
+                    {printTechnique.includes('Embroidery') && (
+                      <div className="mt-3 p-3.5 rounded-2xl bg-amber-500/[0.05] border border-amber-500/20 space-y-3 animate-in fade-in duration-150">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">
+                            🧵 Tajima Japanese Machine Threadwork
+                          </span>
+                          <span className="text-[10px] font-extrabold bg-amber-500/20 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded-full">
+                            +₹60 / pc
+                          </span>
+                        </div>
+
+                        {/* Stitch Style */}
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                            Stitch Style:
+                          </span>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {[
+                              { id: 'flat' as const, label: 'Flat Satin' },
+                              { id: 'puff3d' as const, label: '3D Puff Raised' },
+                              { id: 'patch' as const, label: 'Crest Patch' }
+                            ].map(st => (
+                              <button
+                                key={st.id}
+                                onClick={() => setEmbroideryStyle(st.id)}
+                                className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition ${
+                                  embroideryStyle === st.id
+                                    ? 'bg-[#0F100F] dark:bg-white text-white dark:text-black border-transparent shadow-xs'
+                                    : 'bg-white dark:bg-[#1A1C1A] border-black/10 dark:border-white/10 text-slate-700 dark:text-slate-300'
+                                }`}
+                              >
+                                {st.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Thread Color Swatches */}
+                        <div>
+                          <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                            <span>Thread Color:</span>
+                            <span className="text-[#AC7900] dark:text-[#D4AF37]">
+                              {EMBROIDERY_THREADS.find(t => t.hex === embroideryThreadColor)?.name || 'Gold'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                            {EMBROIDERY_THREADS.map(t => (
+                              <button
+                                key={t.hex}
+                                onClick={() => setEmbroideryThreadColor(t.hex)}
+                                className={`w-7 h-7 rounded-full shrink-0 border-2 transition-transform flex items-center justify-center ${
+                                  embroideryThreadColor === t.hex
+                                    ? 'border-black dark:border-white scale-110 ring-2 ring-amber-500 shadow-sm'
+                                    : 'border-black/20 dark:border-white/20'
+                                }`}
+                                style={{ backgroundColor: t.hex }}
+                                title={t.name}
+                              >
+                                {embroideryThreadColor === t.hex && (
+                                  <Check className={`w-3.5 h-3.5 ${t.hex === '#FFFFFF' ? 'text-black' : 'text-white'}`} />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Detailed Options when DTF is active */}
+                    {printTechnique.includes('DTF') && (
+                      <div className="mt-3 p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-between animate-in fade-in duration-150">
+                        <div>
+                          <span className="text-xs font-bold text-[#0F100F] dark:text-white block">
+                            🎨 DTF Finish Option
+                          </span>
+                          <span className="text-[10px] text-slate-500">
+                            Choose between standard matte finish or vibrant gloss luster
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => setDtfFinish('matte')}
+                            className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition ${
+                              dtfFinish === 'matte'
+                                ? 'bg-[#0F100F] dark:bg-white text-white dark:text-black border-transparent'
+                                : 'border-black/10 dark:border-white/10'
+                            }`}
+                          >
+                            Matte
+                          </button>
+                          <button
+                            onClick={() => setDtfFinish('gloss')}
+                            className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition ${
+                              dtfFinish === 'gloss'
+                                ? 'bg-[#0F100F] dark:bg-white text-white dark:text-black border-transparent'
+                                : 'border-black/10 dark:border-white/10'
+                            }`}
+                          >
+                            Gloss
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                 </div>
@@ -1487,7 +1601,7 @@ export const ApparelStudioModal: React.FC<ApparelStudioModalProps> = ({
 
               {/* MOQ Note */}
               <p className="text-[11px] text-center text-slate-500 mt-2">
-                ⚡ Express Dispatch from Surat Textile Mill · Free High-Def Artwork Check before Printing
+                ⚡ Express Dispatch from Tirupur Textile Mill Hub · Free High-Def Artwork Check before Printing
               </p>
 
             </div>

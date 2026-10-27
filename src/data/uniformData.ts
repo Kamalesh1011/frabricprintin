@@ -926,7 +926,7 @@ export const UNIFORM_PRODUCTS: UniformItem[] = [
       { label: 'Tensile Strength', value: '1100N Warp / Weft Anti-Tear' },
       { label: 'Pilling Test', value: 'Grade 5.0 (Zero Bobbling)' },
       { label: 'Shrinkage Max', value: '< 1.0% Controlled Compacted' },
-      { label: 'Safety Certification', value: 'OEKO-TEX Standard 100 Class 1' }
+      { label: 'Safety Standards', value: 'Skin-Safe Non-Toxic Inks' }
     ]
   },
   {
@@ -986,7 +986,7 @@ export const UNIFORM_CERTIFICATIONS = [
     icon: 'ShieldCheck'
   },
   {
-    title: 'OEKO-TEX Standard 100',
+    title: 'Skin-Safe Tested Inks',
     desc: 'Skin-friendly, hypoallergenic dyes safe for kindergarten, school and hospital personnel.',
     icon: 'Sparkles'
   },

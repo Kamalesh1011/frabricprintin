@@ -43,13 +43,15 @@
 }
 
 /* Luxury Editorial & Serif Typography Classes */
+/* Perf: Google font families beyond Plus Jakarta Sans/Outfit are no longer loaded
+   (see index.html). These stacks fall back to similar system fonts. */
 .font-display {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Outfit', Georgia, serif;
   letter-spacing: -0.02em;
 }
 
 .font-serif-luxury {
-  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
   letter-spacing: -0.015em;
 }
 
@@ -59,8 +61,23 @@
 }
 
 .font-mono-luxury {
-  font-family: 'Space Grotesk', monospace, sans-serif;
+  font-family: ui-monospace, 'Cascadia Mono', 'Menlo', monospace;
   letter-spacing: -0.01em;
+}
+
+/* Mobile readability: bump micro text (9-10px design labels) to legible sizes
+   on phones only. Targets Tailwind arbitrary-size utilities directly so all
+   components benefit without editing hundreds of class strings. */
+@media (max-width: 639px) {
+  .text-\[9px\],
+  .text-\[9\.5px\] {
+    font-size: 10px !important;
+    line-height: 1.35;
+  }
+  .text-\[10px\] {
+    font-size: 11px !important;
+    line-height: 1.4;
+  }
 }
 
 /* Luxury Letter Spacing Helpers */

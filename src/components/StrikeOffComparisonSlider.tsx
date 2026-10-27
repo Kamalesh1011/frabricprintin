@@ -8,8 +8,8 @@ interface StrikeOffComparisonSliderProps {
 }
 
 export const StrikeOffComparisonSlider: React.FC<StrikeOffComparisonSliderProps> = ({
-  beforeImage = 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=1000',
-  afterImage = 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=1000',
+  beforeImage = 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=60&w=800',
+  afterImage = 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=60&w=800',
   fabricName = 'Mulberry Silk Crepe (16 Momme)'
 }) => {
   const [sliderPos, setSliderPos] = useState<number>(50);
@@ -56,7 +56,7 @@ export const StrikeOffComparisonSlider: React.FC<StrikeOffComparisonSliderProps>
 
         <div className="flex items-center space-x-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3.5 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800 shrink-0">
           <ShieldCheck className="w-4 h-4" />
-          <span>OEKO-TEX 100 Non-Fading Color Lock</span>
+          <span>Grade 4.5+ Wash Resistance & Skin-Safe Dyes</span>
         </div>
       </div>
 
@@ -68,7 +68,7 @@ export const StrikeOffComparisonSlider: React.FC<StrikeOffComparisonSliderProps>
         onMouseLeave={() => setIsDragging(false)}
         onMouseMove={handleMouseMove}
         onTouchMove={handleTouchMove}
-        className="relative aspect-[16/9] sm:aspect-[21/9] w-full rounded-[28px] overflow-hidden select-none cursor-ew-resize border border-[#ECECEC] dark:border-white/[0.1] bg-[#F3F0E8] dark:bg-[#121312] shadow-sm"
+        className="relative aspect-[4/3] sm:aspect-[21/9] w-full rounded-[28px] overflow-hidden select-none cursor-ew-resize border border-[#ECECEC] dark:border-white/[0.1] bg-[#F3F0E8] dark:bg-[#121312] shadow-sm"
       >
         {/* AFTER IMAGE (Underneath Layer: 300 DPI Reactive Print) */}
         <img
@@ -78,9 +78,10 @@ export const StrikeOffComparisonSlider: React.FC<StrikeOffComparisonSliderProps>
         />
 
         {/* AFTER BADGE */}
-        <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-md text-white text-xs font-bold px-3.5 py-1.5 rounded-full z-10 shadow-md flex items-center space-x-1.5">
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-black/80 backdrop-blur-md text-white text-[10px] sm:text-xs font-bold px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full z-10 shadow-md flex items-center space-x-1.5">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>300 DPI Reactive Steam Print</span>
+          <span className="hidden sm:inline">300 DPI Reactive Steam Print</span>
+          <span className="sm:hidden">300 DPI Print</span>
         </div>
 
         {/* BEFORE IMAGE (Clipped Layer: Raw Unprinted RFD Base Fabric) */}
@@ -99,8 +100,9 @@ export const StrikeOffComparisonSlider: React.FC<StrikeOffComparisonSliderProps>
         </div>
 
         {/* BEFORE BADGE */}
-        <div className="absolute top-4 left-4 bg-white/90 dark:bg-black/80 backdrop-blur-md text-[#0F100F] dark:text-white text-xs font-bold px-3.5 py-1.5 rounded-full z-10 shadow-md border border-black/5 dark:border-white/10">
-          Raw RFD Base Fabric (Ready for Dye)
+        <div className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-white/90 dark:bg-black/80 backdrop-blur-md text-[#0F100F] dark:text-white text-[10px] sm:text-xs font-bold px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full z-10 shadow-md border border-black/5 dark:border-white/10">
+          <span className="hidden sm:inline">Raw RFD Base Fabric (Ready for Dye)</span>
+          <span className="sm:hidden">Raw RFD Base</span>
         </div>
 
         {/* DIVIDER LINE & HANDLE */}
@@ -108,14 +110,14 @@ export const StrikeOffComparisonSlider: React.FC<StrikeOffComparisonSliderProps>
           className="absolute top-0 bottom-0 w-1 bg-white shadow-2xl z-20 pointer-events-none"
           style={{ left: `${sliderPos}%` }}
         >
-          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-white text-[#0F100F] shadow-2xl border-2 border-[#AC7900] flex items-center justify-center pointer-events-auto cursor-ew-resize group hover:scale-110 transition-transform">
+          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white text-[#0F100F] shadow-2xl border-2 border-[#AC7900] flex items-center justify-center pointer-events-auto cursor-ew-resize group hover:scale-110 transition-transform">
             <ArrowLeftRight className="w-4 h-4 text-[#AC7900]" />
           </div>
         </div>
 
         {/* Bottom Hint */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-md text-white text-[11px] font-semibold px-4 py-1 rounded-full pointer-events-none z-10">
-          ↔ Drag to Compare Clarity & Fiber Penetration
+        <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 bg-black/75 backdrop-blur-md text-white text-[10px] sm:text-[11px] font-semibold px-3 sm:px-4 py-1 rounded-full pointer-events-none z-10 whitespace-nowrap">
+          ↔ Drag to Compare
         </div>
 
       </div>

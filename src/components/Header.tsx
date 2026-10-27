@@ -19,7 +19,9 @@ import {
   Shirt,
   GraduationCap,
   FileText,
-  Trophy
+  Trophy,
+  MessageCircle,
+  Phone
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -27,6 +29,7 @@ import { useWishlist } from '../context/WishlistContext';
 import { useTheme } from '../context/ThemeContext';
 import { SmartUrlImageExtractorModal } from './SmartUrlImageExtractorModal';
 import { SwatchBookOrderModal } from './SwatchBookOrderModal';
+import { BUSINESS_INFO } from '../config/businessInfo';
 
 interface HeaderProps {
   activeTab: string;
@@ -47,7 +50,7 @@ export const Header: React.FC<HeaderProps> = ({
   setSearchQuery,
   onOpenBulkInquiry
 }) => {
-  const { currentUser, isAdmin, toggleAdminMode } = useAuth();
+  const { currentUser, isAdmin } = useAuth();
   const { cart, setIsCartOpen } = useCart();
   const { wishlist } = useWishlist();
   const { isDark, toggleTheme } = useTheme();
@@ -62,6 +65,18 @@ export const Header: React.FC<HeaderProps> = ({
   const [trainingMenuOpen, setTrainingMenuOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Prevent background page from scrolling or bleeding through when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
 
   // Debounced Hover Timeouts (Prevents accidental close and tooltip flicker)
   const apparelTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -215,8 +230,13 @@ export const Header: React.FC<HeaderProps> = ({
     const isActive =
       activeTab === tabName ||
       (tabName === 'fabrics' && activeTab === 'product-detail') ||
-      (tabName === 'apparel' && (activeTab === 'apparel' || activeTab === 'apparel-studio'));
-    return `px-2.5 xl:px-3.5 py-1.5 rounded-full transition-all duration-150 flex items-center space-x-1 whitespace-nowrap text-[11px] xl:text-xs font-semibold ${isActive
+      (tabName === 'apparel' && activeTab === 'apparel') ||
+      (tabName === 'apparel-studio' && activeTab === 'apparel-studio') ||
+      (tabName === 'customizer' && activeTab === 'customizer') ||
+      (tabName === 'jersey' && activeTab === 'jersey') ||
+      (tabName === 'uniforms' && activeTab === 'uniforms') ||
+      (tabName === 'merch' && activeTab === 'merch');
+    return `px-2 xl:px-2.5 py-1.5 rounded-full transition-all duration-150 flex items-center space-x-1 whitespace-nowrap text-[11px] xl:text-xs font-semibold ${isActive
         ? 'bg-[#0F100F] text-white dark:bg-white dark:text-[#0F100F] font-bold shadow-sm'
         : 'text-[#0F100F] dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/5'
       }`;
@@ -226,18 +246,46 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="sticky top-0 z-50 transition-colors duration-300 font-sans" id="main-header">
 
       {/* ⚡ 1. TOP UTILITY BAR */}
-      <div className="bg-[#0D0E0D] text-white/90 py-1.5 px-4 sm:px-8 border-b border-white/[0.08] text-[11px] select-none">
-        <div className="max-w-7xl mx-auto flex items-center justify-end gap-4">
+      <div className="bg-[#0D0E0D] text-white/90 py-1 px-4 sm:px-8 border-b border-white/[0.08] text-xs select-none">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
+
+          {/* Left: Quick Navigation Links */}
+          <div className="hidden sm:flex items-center space-x-3 text-[11px] text-white/70">
+            <button
+              onClick={() => setActiveTab('about')}
+              className={`hover:text-[#D4AF37] transition font-medium ${activeTab === 'about' ? 'text-[#D4AF37] font-bold' : ''}`}
+            >
+              About Us
+            </button>
+            <span className="text-white/20">|</span>
+            <button
+              onClick={() => setActiveTab('contact')}
+              className={`hover:text-[#D4AF37] transition font-medium ${activeTab === 'contact' ? 'text-[#D4AF37] font-bold' : ''}`}
+            >
+              Contact Mill
+            </button>
+            <span className="text-white/20">|</span>
+            <a
+              href={BUSINESS_INFO.whatsapp.orderUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-emerald-400 transition flex items-center space-x-1"
+            >
+              <span className="text-emerald-400 font-bold">WhatsApp:</span>
+              <span>{BUSINESS_INFO.displayPhone}</span>
+            </a>
+          </div>
 
           {/* Right: Swatch Book, Currency, Theme & Admin */}
-          <div className="flex items-center space-x-3 shrink-0">
+          <div className="flex items-center space-x-2 sm:space-x-3 shrink-0 ml-auto sm:ml-0">
 
             {/* Swatch Kit Direct Action */}
             <button
               onClick={() => setSwatchModalOpen(true)}
-              className="text-[#D4AF37] hover:text-white transition-colors duration-150 flex items-center space-x-1.5 font-semibold group relative"
+              className="text-[#D4AF37] hover:text-white transition-colors duration-150 flex items-center space-x-1.5 font-semibold group relative py-1 px-2 min-h-[36px] text-xs"
+              aria-label="Order Sample Swatch Book"
             >
-              <BookOpen className="w-3 h-3 text-[#D4AF37] group-hover:scale-110 transition-transform" />
+              <BookOpen className="w-3.5 h-3.5 text-[#D4AF37] group-hover:scale-110 transition-transform" />
               <span className="hidden md:inline">Sample Book <span className="text-white/60 font-normal">(₹499)</span></span>
             </button>
 
@@ -247,10 +295,11 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="relative">
               <button
                 onClick={() => setCurrencyOpen(!currencyOpen)}
-                className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full border border-white/15 hover:border-white/30 bg-white/5 hover:bg-white/10 text-[11px] font-medium text-white/90 transition"
+                className="flex items-center space-x-1.5 px-3 py-1 min-h-[36px] rounded-full border border-white/15 hover:border-white/30 bg-white/5 hover:bg-white/10 text-xs font-medium text-white/90 transition"
+                aria-label="Select Currency"
               >
                 <span>{currency}</span>
-                <ChevronDown className={`w-2.5 h-2.5 opacity-60 transition-transform duration-200 ${currencyOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3 h-3 opacity-60 transition-transform duration-200 ${currencyOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {currencyOpen && (
@@ -264,7 +313,7 @@ export const Header: React.FC<HeaderProps> = ({
                           setCurrency(curr.code);
                           setCurrencyOpen(false);
                         }}
-                        className={`w-full text-left px-3 py-1.5 text-xs transition flex items-center justify-between ${currency === curr.code
+                        className={`w-full text-left px-3 py-2 text-xs transition flex items-center justify-between ${currency === curr.code
                             ? 'bg-[#AC7900]/20 text-[#D4AF37] font-bold'
                             : 'text-white/80 hover:bg-white/10'
                           }`}
@@ -283,28 +332,30 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Light / Dark Mode Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/15 text-white/90 hover:text-white transition flex items-center justify-center group"
+              className="p-2 min-h-[36px] min-w-[36px] rounded-full border border-white/15 bg-white/5 hover:bg-white/15 text-white/90 hover:text-white transition flex items-center justify-center group"
               title={`Switch to ${isDark ? 'Light Mode' : 'Dark Mode'}`}
+              aria-label="Toggle Dark and Light theme"
             >
               {isDark ? (
-                <Sun className="w-3 h-3 text-[#D4AF37] group-hover:rotate-45 transition-transform" />
+                <Sun className="w-3.5 h-3.5 text-[#D4AF37] group-hover:rotate-45 transition-transform" />
               ) : (
-                <Moon className="w-3 h-3 text-white/80 group-hover:-rotate-12 transition-transform" />
+                <Moon className="w-3.5 h-3.5 text-white/80 group-hover:-rotate-12 transition-transform" />
               )}
             </button>
 
-            <span className="text-white/20">|</span>
-
-            {/* Admin Toggle Chip */}
-            <button
-              onClick={toggleAdminMode}
-              className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition ${isAdmin
-                  ? 'bg-[#AC7900] text-white shadow-sm'
-                  : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10'
-                }`}
-            >
-              {isAdmin ? 'Admin ON' : 'Admin'}
-            </button>
+            {/* Admin Panel Link (Only visible if authenticated as Admin) */}
+            {isAdmin && (
+              <>
+                <span className="text-white/20">|</span>
+                <button
+                  onClick={() => setActiveTab('admin')}
+                  className="px-3 py-1.5 min-h-[36px] rounded-full text-xs font-bold bg-[#AC7900] text-white shadow-sm hover:bg-[#c28900] transition flex items-center"
+                  title="Open Admin Dashboard"
+                >
+                  Admin Panel
+                </button>
+              </>
+            )}
 
           </div>
 
@@ -348,7 +399,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Home</span>
             </button>
 
-            {/* 2. Fabric */}
+            {/* 1. Fabric */}
             <button
               onClick={() => {
                 setSelectedCategory('All');
@@ -359,7 +410,17 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Fabric</span>
             </button>
 
-            {/* 3. T-Shirt */}
+            {/* 2. Printing (Direct roll digital printing from 1m) */}
+            <button
+              onClick={() => setActiveTab('customizer')}
+              className={`${getNavButtonClass('customizer')} group`}
+              title="Custom Fabric Roll Printing from 1 Meter"
+            >
+              <Printer className="w-3.5 h-3.5 text-[#AC7900] dark:text-[#D4AF37] group-hover:scale-110 transition-transform" />
+              <span>Printing</span>
+            </button>
+
+            {/* 3. Tshirt */}
             <div
               className="relative py-1"
               onMouseEnter={handleApparelEnter}
@@ -372,7 +433,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }}
                 className={getNavButtonClass('apparel')}
               >
-                <span>T-Shirt</span>
+                <span>Tshirt</span>
                 <ChevronDown className={`w-3 h-3 opacity-60 ml-0.5 transition-transform duration-200 ${apparelMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -499,17 +560,30 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
-            {/* 3b. Sports (standalone team-kit studio) */}
+            {/* 4. Sports jersey */}
             <button
               onClick={() => setActiveTab('jersey')}
               className={`${getNavButtonClass('jersey')} group`}
-              title="Custom sublimation team kits"
+              title="Custom sublimation sports jerseys & team kits"
             >
               <Trophy className="w-3.5 h-3.5 text-[#AC7900] dark:text-[#D4AF37] group-hover:scale-125 group-hover:-rotate-12 transition-transform duration-200" />
-              <span>Sports</span>
+              <span>Sports jersey</span>
             </button>
 
-            {/* 4. Uniforms */}
+            {/* 5. Customize (Live 3D Customizer Studio) */}
+            <button
+              onClick={() => setActiveTab('apparel-studio')}
+              className={`${getNavButtonClass('apparel-studio')} group relative`}
+              title="Live 3D Apparel & T-Shirt Studio Customizer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#AC7900] dark:text-[#D4AF37] animate-pulse" />
+              <span>Customize</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-gradient-to-r from-[#AC7900] to-[#D4AF37] text-white">
+                3D
+              </span>
+            </button>
+
+            {/* 6. Uniform */}
             <div
               className="relative py-1"
               onMouseEnter={handleUniformEnter}
@@ -522,7 +596,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }}
                 className={getNavButtonClass('uniforms')}
               >
-                <span>Uniforms</span>
+                <span>Uniform</span>
                 <ChevronDown className={`w-3 h-3 opacity-60 ml-0.5 transition-transform duration-200 ${uniformMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -649,7 +723,7 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
-            {/* 5. Custom Merch & Accessories (NEW TAB) */}
+            {/* 7. Accessories */}
             <div
               className="relative py-1"
               onMouseEnter={handleMerchEnter}
@@ -662,7 +736,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }}
                 className={getNavButtonClass('merch')}
               >
-                <span>Other Products</span>
+                <span>Accessories</span>
                 <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-[#AC7900] text-white dark:bg-[#D4AF37] dark:text-black">
                   NEW
                 </span>
@@ -784,21 +858,7 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
-            {/* 6. Master Customize All Studio (Temporarily commented out) */}
-            {/* 
-            <button
-              onClick={() => setActiveTab('customizer')}
-              className={`${getNavButtonClass('customizer')} group relative`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-[#AC7900] dark:text-[#D4AF37] animate-pulse" />
-              <span className="font-bold">Customize All</span>
-              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-gradient-to-r from-[#AC7900] to-[#D4AF37] text-white">
-                STUDIO
-              </span>
-            </button> 
-            */}
-
-            {/* 6. Training & Academy Dropdown */}
+            {/* 8. Training & Academy Dropdown */}
             <div
               className="relative py-1"
               onMouseEnter={handleTrainingEnter}
@@ -879,6 +939,22 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               )}
             </div>
+
+            {/* 7. About Us */}
+            <button
+              onClick={() => setActiveTab('about')}
+              className={getNavButtonClass('about')}
+            >
+              <span>About</span>
+            </button>
+
+            {/* 8. Contact Us */}
+            <button
+              onClick={() => setActiveTab('contact')}
+              className={getNavButtonClass('contact')}
+            >
+              <span>Contact</span>
+            </button>
 
           </nav>
 
@@ -1028,9 +1104,58 @@ export const Header: React.FC<HeaderProps> = ({
 
         </div>
 
-        {/* MOBILE MENU FULL DRAWER (NO BACKGROUND BLEED-THROUGH) */}
+        {/* MOBILE MENU FULL DRAWER (SOLID 100% OPAQUE VIEWPORT OVERLAY - ZERO BLEED-THROUGH) */}
         {mobileMenuOpen && (
-          <div className="lg:hidden fixed inset-x-0 top-[96px] bottom-0 z-50 bg-[#FEFBF1] dark:bg-[#111211] border-t border-black/10 dark:border-white/10 overflow-y-auto px-4 py-4 space-y-3.5 text-xs font-semibold shadow-2xl animate-in fade-in duration-200 pb-36">
+          <div className="lg:hidden fixed inset-0 z-[100] bg-[#FEFBF1] dark:bg-[#111211] text-[#0F100F] dark:text-white flex flex-col animate-in fade-in duration-200">
+            {/* Top Bar with Logo & Explicit Close Button */}
+            <div className="bg-[#FEFBF1] dark:bg-[#111211] border-b border-black/10 dark:border-white/10 px-4 py-3 flex items-center justify-between shrink-0 shadow-xs">
+              <div
+                onClick={() => {
+                  setActiveTab('home');
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center space-x-2.5 cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-xl bg-white dark:bg-[#1A1C1A] border border-black/10 dark:border-white/15 p-1 flex items-center justify-center shadow-xs">
+                  <img src="/leaf-logo.png" alt="Fabric Print" className="w-full h-full object-contain" />
+                </div>
+                <div>
+                  <div className="text-base font-black font-editorial tracking-tight text-[#0F100F] dark:text-white leading-tight">
+                    FABRIC<span className="text-[#AC7900] dark:text-[#D4AF37]">PRINT</span>
+                  </div>
+                  <div className="text-[9px] text-[#8A8883] uppercase tracking-widest font-bold leading-none">
+                    Navigation Menu
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-1.5 px-3 rounded-full bg-black/5 dark:bg-white/10 text-gray-800 dark:text-gray-100 font-bold text-xs flex items-center space-x-1 hover:bg-black/10 transition"
+                aria-label="Close menu"
+              >
+                <span>Close</span>
+                <X className="w-4 h-4 ml-0.5" />
+              </button>
+            </div>
+
+            {/* Scrollable Container with Solid Opaque Background */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5 pb-28">
+              {/* WhatsApp Quick Order Desk Banner inside Menu */}
+              <a
+                href="https://wa.me/918903120006?text=Hi%20Fabric%20Print,%20I%20want%20to%20order%20or%20inquire%20about%20fabrics/t-shirts."
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full py-2.5 px-3.5 rounded-2xl bg-[#25D366] text-white flex items-center justify-between shadow-sm active:scale-98 transition font-bold"
+              >
+                <div className="flex items-center space-x-2">
+                  <MessageCircle className="w-4 h-4 fill-current shrink-0" />
+                  <span>Order on WhatsApp: +91 89031 20006</span>
+                </div>
+                <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-black">CHAT NOW</span>
+              </a>
 
             {/* Mobile Search Bar */}
             <form onSubmit={handleSearchSubmit} className="mb-2">
@@ -1054,21 +1179,48 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </form>
 
-            {/* Home Link */}
-            <button
-              onClick={() => {
-                setActiveTab('home');
-                setMobileMenuOpen(false);
-              }}
-              className={`w-full text-left py-2.5 px-3.5 rounded-xl transition flex items-center justify-between ${
-                activeTab === 'home'
-                  ? 'bg-black text-white dark:bg-white dark:text-black font-bold shadow-sm'
-                  : 'hover:bg-black/5 dark:hover:bg-white/5 text-gray-800 dark:text-gray-200'
-              }`}
-            >
-              <span>🏠 Home</span>
-              <ChevronRight className="w-3.5 h-3.5 opacity-40" />
-            </button>
+            {/* Mobile Top Navigation: Home, About Us, Contact Mill */}
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => {
+                  setActiveTab('home');
+                  setMobileMenuOpen(false);
+                }}
+                className={`py-2.5 px-2 rounded-xl text-center text-xs font-bold transition flex items-center justify-center space-x-1 ${
+                  activeTab === 'home'
+                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
+                    : 'bg-black/5 dark:bg-white/5 hover:bg-black/10 text-gray-800 dark:text-gray-200'
+                }`}
+              >
+                <span>🏠 Home</span>
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('about');
+                  setMobileMenuOpen(false);
+                }}
+                className={`py-2.5 px-2 rounded-xl text-center text-xs font-bold transition flex items-center justify-center space-x-1 ${
+                  activeTab === 'about'
+                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
+                    : 'bg-black/5 dark:bg-white/5 hover:bg-black/10 text-gray-800 dark:text-gray-200'
+                }`}
+              >
+                <span>ℹ️ About Us</span>
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('contact');
+                  setMobileMenuOpen(false);
+                }}
+                className={`py-2.5 px-2 rounded-xl text-center text-xs font-bold transition flex items-center justify-center space-x-1 ${
+                  activeTab === 'contact'
+                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
+                    : 'bg-black/5 dark:bg-white/5 hover:bg-black/10 text-gray-800 dark:text-gray-200'
+                }`}
+              >
+                <span>📞 Contact</span>
+              </button>
+            </div>
 
             {/* SECTION 1: FABRICS (250+ QUALITIES) ACCORDION */}
             <div className="border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden bg-white/60 dark:bg-white/5">
@@ -1098,7 +1250,7 @@ export const Header: React.FC<HeaderProps> = ({
                     { name: 'Modal Satin Luster', desc: 'Ultra-Fluid Beechwood Drape', cat: 'Modal' },
                     { name: 'Viscose & Rayon', desc: 'Georgette, Crepe & Slub Weaves', cat: 'Viscose' },
                     { name: 'Bamboo & Spandex', desc: 'Eco-Soft Antibacterial Knit', cat: 'Bamboo' },
-                    { name: 'Organic GOTS Cotton', desc: 'Chemical-Free Sustainable Cotton', cat: 'Organic Cotton' },
+                    { name: 'Pure Combed Cotton', desc: 'Chemical-Free Natural Cotton', cat: 'Organic Cotton' },
                     { name: 'Tencel & Lyocell', desc: 'Lenzing Closed-Loop Silky Twill', cat: 'Tencel' },
                     { name: 'Sheer Silk Organza', desc: 'Lightweight Ethereal Transparency', cat: 'Organza' },
                     { name: 'Fabric Blends & Poly', desc: 'Cotton-Viscose & Sublimation Canvas', cat: 'Fabric Blends' }
@@ -1134,7 +1286,30 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
-            {/* SECTION 2: APPAREL & T-SHIRTS (14 STYLES) ACCORDION */}
+            {/* SECTION 2: PRINTING (CUSTOM FABRIC ROLLS FROM 1M) */}
+            <div className="border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden bg-white/60 dark:bg-white/5">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('customizer');
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full text-left py-3 px-3.5 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 transition"
+              >
+                <div className="flex items-center space-x-2">
+                  <Printer className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span className="font-bold text-gray-900 dark:text-white">Printing (Direct to Fabric)</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                    FROM 1M
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                </div>
+              </button>
+            </div>
+
+            {/* SECTION 3: TSHIRT & APPAREL (14 STYLES) ACCORDION */}
             <div className="border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden bg-white/60 dark:bg-white/5">
               <button
                 type="button"
@@ -1143,7 +1318,7 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <div className="flex items-center space-x-2">
                   <Shirt className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="font-bold text-gray-900 dark:text-white">Apparel &amp; T-Shirts</span>
+                  <span className="font-bold text-gray-900 dark:text-white">Tshirt &amp; Apparel</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
@@ -1203,7 +1378,7 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
-            {/* SECTION 3: SPORTS & TEAM KITS (SUBLIMATION) ACCORDION */}
+            {/* SECTION 4: SPORTS JERSEY & TEAM KITS ACCORDION */}
             <div className="border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden bg-white/60 dark:bg-white/5">
               <button
                 type="button"
@@ -1212,7 +1387,7 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <div className="flex items-center space-x-2">
                   <Trophy className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  <span className="font-bold text-gray-900 dark:text-white">Sports &amp; Team Kits</span>
+                  <span className="font-bold text-gray-900 dark:text-white">Sports jersey &amp; Team Kits</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/15 text-amber-700 dark:text-amber-300">
@@ -1258,7 +1433,30 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
-            {/* SECTION 4: UNIFORMS & INSTITUTIONAL FABRICS ACCORDION */}
+            {/* SECTION 5: CUSTOMIZE (LIVE 3D APPAREL STUDIO) */}
+            <div className="border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden bg-white/60 dark:bg-white/5">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('apparel-studio');
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full text-left py-3 px-3.5 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 transition"
+              >
+                <div className="flex items-center space-x-2">
+                  <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400 animate-pulse" />
+                  <span className="font-bold text-gray-900 dark:text-white">Customize (3D Studio)</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-500/15 text-purple-700 dark:text-purple-300">
+                    LIVE 3D
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                </div>
+              </button>
+            </div>
+
+            {/* SECTION 6: UNIFORM & WORKWEAR ACCORDION */}
             <div className="border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden bg-white/60 dark:bg-white/5">
               <button
                 type="button"
@@ -1267,7 +1465,7 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <div className="flex items-center space-x-2">
                   <GraduationCap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  <span className="font-bold text-gray-900 dark:text-white">Institutional Uniforms</span>
+                  <span className="font-bold text-gray-900 dark:text-white">Uniform &amp; Workwear</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-500/15 text-blue-700 dark:text-blue-300">
@@ -1316,7 +1514,7 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
-            {/* SECTION 5: OTHER PRODUCTS & MERCH ACCORDION */}
+            {/* SECTION 7: ACCESSORIES & MERCH ACCORDION */}
             <div className="border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden bg-white/60 dark:bg-white/5">
               <button
                 type="button"
@@ -1325,7 +1523,7 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <div className="flex items-center space-x-2">
                   <ShoppingBag className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  <span className="font-bold text-gray-900 dark:text-white">Other Products &amp; Merch</span>
+                  <span className="font-bold text-gray-900 dark:text-white">Accessories &amp; Merch</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-500/15 text-purple-700 dark:text-purple-300">
@@ -1366,13 +1564,13 @@ export const Header: React.FC<HeaderProps> = ({
                     }}
                     className="w-full mt-2 py-2.5 px-3 bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold rounded-xl text-center flex items-center justify-center space-x-1.5 shadow-sm"
                   >
-                    <span>View All Other Products →</span>
+                    <span>View All Accessories →</span>
                   </button>
                 </div>
               )}
             </div>
 
-            {/* SECTION 6: TRAINING ACADEMY */}
+            {/* SECTION 8: TRAINING ACADEMY */}
             <button
               onClick={() => {
                 setActiveTab('training');
@@ -1446,6 +1644,29 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
 
+            {/* About Us & Contact Mill links */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  setActiveTab('about');
+                  setMobileMenuOpen(false);
+                }}
+                className="py-2.5 px-3 rounded-xl bg-black/5 dark:bg-white/5 text-left text-gray-800 dark:text-gray-200 font-bold hover:bg-black/10 transition text-xs flex items-center space-x-1.5"
+              >
+                <span>ℹ️ About Us</span>
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('contact');
+                  setMobileMenuOpen(false);
+                }}
+                className="py-2.5 px-3 rounded-xl bg-black/5 dark:bg-white/5 text-left text-gray-800 dark:text-gray-200 font-bold hover:bg-black/10 transition text-xs flex items-center space-x-1.5"
+              >
+                <span>📞 Contact Mill</span>
+              </button>
+            </div>
+
+            </div>
           </div>
         )}
 

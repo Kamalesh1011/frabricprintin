@@ -52,7 +52,9 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
-      const saved = localStorage.getItem('texprint_cart');
+      const legacy = localStorage.getItem('texprint_cart');
+      if (legacy) localStorage.removeItem('texprint_cart');
+      const saved = localStorage.getItem('fabricprint_cart') || legacy;
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
       console.error('Failed to parse cart from localStorage:', e);
@@ -65,7 +67,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     try {
-      localStorage.setItem('texprint_cart', JSON.stringify(cart));
+      localStorage.setItem('fabricprint_cart', JSON.stringify(cart));
     } catch (e) {
       console.error('Failed to save cart to localStorage:', e);
     }
@@ -262,7 +264,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const applyCoupon = (code: string) => {
     const normalized = code.trim().toUpperCase();
-    if (normalized === 'TEXPRINT10' || normalized === 'WELCOME10') {
+    if (normalized === 'FABRICPRINT10' || normalized === 'WELCOME10') {
       setCouponCode(normalized);
       setDiscountAmount(0.10);
       return true;

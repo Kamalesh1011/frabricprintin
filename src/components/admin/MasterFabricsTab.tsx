@@ -31,7 +31,7 @@ export const MasterFabricsTab: React.FC<MasterFabricsTabProps> = ({
     setName('');
     const firstCat = categories[0];
     setCategoryId(firstCat ? firstCat.id : '');
-    setDefaultImage('https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=600');
+    setDefaultImage('https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=60&w=600');
     setShowModal(true);
   };
 

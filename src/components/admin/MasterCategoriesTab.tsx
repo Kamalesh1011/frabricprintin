@@ -30,7 +30,7 @@ export const MasterCategoriesTab: React.FC<MasterCategoriesTabProps> = ({
     setName('');
     setSlug('');
     setDescription('');
-    setImage('https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=600');
+    setImage('https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=60&w=600');
     setShowModal(true);
   };
 

@@ -25,7 +25,7 @@ const LOOKBOOK_GALLERY: LookbookItem[] = [
     category: 'Silk',
     designerStudio: 'Studio Velvet • Mumbai',
     fabricCategory: 'Silk',
-    image: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=900',
+    image: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=60&w=800',
     description: 'Cascading floor-length kaftan printed on pure Mulberry Silk Crepe with high-def reactive botanical damask artwork.',
     printTechnique: '300 DPI Reactive Color Lock'
   },
@@ -35,7 +35,7 @@ const LOOKBOOK_GALLERY: LookbookItem[] = [
     category: 'Cotton',
     designerStudio: 'Rooh Atelier • Jaipur',
     fabricCategory: 'Cotton',
-    image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=900',
+    image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=60&w=800',
     description: 'Breathable summer cuban collar shirt crafted from 100% Organic Cotton Cambric 60s with crisp geometric repeat.',
     printTechnique: 'Bio-Washed Cotton Finish'
   },
@@ -45,7 +45,7 @@ const LOOKBOOK_GALLERY: LookbookItem[] = [
     category: 'Linen',
     designerStudio: 'Earth & Loom • Goa',
     fabricCategory: 'Linen',
-    image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=900',
+    image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=60&w=800',
     description: 'Relaxed resort tunic and trouser set crafted on French Flax Pure Linen (140 GSM) with natural organic slub texture.',
     printTechnique: 'Earthy Reactive Penetration'
   },
@@ -55,7 +55,7 @@ const LOOKBOOK_GALLERY: LookbookItem[] = [
     category: 'Modal',
     designerStudio: 'Zoya Couture • Delhi',
     fabricCategory: 'Modal',
-    image: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=80&w=900',
+    image: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=60&w=800',
     description: 'Silky flowing cocktail gown made from Bio-Cellulosic Modal Satin (110 GSM) with lustrous watercolor gradients.',
     printTechnique: 'Deep Reactive Dye Luster'
   }
@@ -79,12 +79,12 @@ export const DesignerLookbookSection: React.FC<DesignerLookbookSectionProps> = (
             Realized Creations by Indian Fashion Studios
           </h3>
           <p className="text-xs text-[#8A8883] dark:text-gray-400 max-w-xl">
-            See how leading fashion labels transform raw certified base fabrics into runaway collections using our digital print mill.
+            See how boutique fashion studios and designers transform raw premium base fabrics into runway creations using our digital print mill.
           </p>
         </div>
 
         <span className="text-xs font-bold text-[#EE6352] bg-[#EE6352]/10 px-3.5 py-1.5 rounded-full border border-[#EE6352]/20 shrink-0">
-          500+ Designer Collaborations
+          Bespoke Designer Print Works
         </span>
       </div>
 

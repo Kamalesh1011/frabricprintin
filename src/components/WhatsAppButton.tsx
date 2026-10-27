@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
+import { useIsScrolling } from '../hooks/useIsScrolling';
 
 export const WhatsAppButton: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
+  const isScrolling = useIsScrolling();
   const whatsappUrl =
     'https://wa.me/918903120006?text=Hello%20Fabric%20Print,%20I%20have%20an%20inquiry%20about%20fabric%20custom%20printing%20or%20bulk%20orders.';
 
   return (
-    <div className="fixed bottom-20 lg:bottom-6 left-3 sm:left-6 z-40 flex items-center select-none group">
+    // Mobile perf/UX: fades out while the user is scrolling so the floating
+    // button stops covering headings and text (restores after scroll settles)
+    <div
+      className={`fixed bottom-32 sm:bottom-6 right-3.5 sm:right-auto sm:left-6 z-40 flex items-center select-none group transition-all duration-300 ${
+        isScrolling ? 'opacity-25 scale-90 sm:opacity-100 sm:scale-100' : 'opacity-100 scale-100'
+      }`}
+    >
       <a
         href={whatsappUrl}
         target="_blank"

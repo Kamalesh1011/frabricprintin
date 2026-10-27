@@ -48,7 +48,7 @@ export const TermsConditionsPage: React.FC = () => {
               4. Dispatch & Turnaround Timelines
             </h3>
             <p>
-              Standard digital print runs are processed and dispatched within 7–10 business days from Surat, Gujarat. Bulk quantities over 500 meters are scheduled according to mutual production timelines.
+              Standard digital print runs are processed and dispatched within 7–10 business days from Tirupur, Tamil Nadu. Bulk quantities over 500 meters are scheduled according to mutual production timelines.
             </p>
           </section>
 

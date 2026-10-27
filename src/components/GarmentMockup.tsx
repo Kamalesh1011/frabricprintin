@@ -38,6 +38,9 @@ interface GarmentMockupProps {
   customTextColor?: string;
   customTextFont?: string;
   printEffect?: 'dtf' | 'embroidery' | 'foil' | 'puff';
+  embroideryStyle?: 'flat' | 'puff3d' | 'patch';
+  embroideryThreadColor?: string;
+  dtfFinish?: 'matte' | 'gloss';
   showBoundingBox?: boolean;
   isFlippedH?: boolean;
   isFlippedV?: boolean;
@@ -68,6 +71,9 @@ export const GarmentMockup: React.FC<GarmentMockupProps> = ({
   customTextColor = '#FFFFFF',
   customTextFont = 'font-sans',
   printEffect = 'dtf',
+  embroideryStyle = 'puff3d',
+  embroideryThreadColor,
+  dtfFinish = 'matte',
   showBoundingBox = false,
   isFlippedH = false,
   isFlippedV = false,
@@ -221,13 +227,17 @@ export const GarmentMockup: React.FC<GarmentMockupProps> = ({
                     }`}
                     style={{
                       filter:
-                        printEffect === 'embroidery'
-                          ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.6)) contrast(1.1)'
+                        printEffect === 'embroidery' || isEmbroidery
+                          ? embroideryStyle === 'puff3d'
+                            ? 'drop-shadow(0 3px 2px rgba(0,0,0,0.7)) drop-shadow(0 6px 6px rgba(0,0,0,0.45)) contrast(1.2) brightness(1.05)'
+                            : 'drop-shadow(0 2px 4px rgba(0,0,0,0.65)) contrast(1.15)'
                           : printEffect === 'foil'
                           ? 'drop-shadow(0 0 8px rgba(212,175,55,0.85)) saturate(1.4)'
                           : printEffect === 'puff'
                           ? 'drop-shadow(0 4px 6px rgba(0,0,0,0.5)) saturate(1.15)'
-                          : 'drop-shadow(0 1px 3px rgba(0,0,0,0.3))'
+                          : dtfFinish === 'gloss'
+                          ? 'drop-shadow(0 1px 3px rgba(0,0,0,0.3)) brightness(1.08) contrast(1.1)'
+                          : 'drop-shadow(0 1px 2px rgba(0,0,0,0.25)) saturate(1.05)'
                     }}
                     draggable={false}
                   />
@@ -237,12 +247,26 @@ export const GarmentMockup: React.FC<GarmentMockupProps> = ({
                 {customText && (
                   <span
                     className={`font-black text-center select-none mt-1 leading-tight pointer-events-none ${customTextFont}`}
-                    style={{
-                      color: customTextColor,
-                      fontSize: '18px',
-                      letterSpacing: '0.05em',
-                      textShadow: '0 2px 4px rgba(0,0,0,0.6)'
-                    }}
+                    style={
+                      printEffect === 'embroidery' || isEmbroidery
+                        ? {
+                            color: embroideryThreadColor || customTextColor,
+                            fontSize: '18px',
+                            letterSpacing: '0.08em',
+                            fontWeight: 900,
+                            textShadow:
+                              embroideryStyle === 'puff3d'
+                                ? '0 1px 0 rgba(255,255,255,0.4), 0 2px 0 rgba(0,0,0,0.4), 0 3px 0 rgba(0,0,0,0.5), 0 5px 6px rgba(0,0,0,0.6)'
+                                : '1px 1px 0 rgba(0,0,0,0.5), -1px -1px 0 rgba(255,255,255,0.35), 0 2px 4px rgba(0,0,0,0.6)',
+                            filter: 'contrast(1.2)'
+                          }
+                        : {
+                            color: customTextColor,
+                            fontSize: '18px',
+                            letterSpacing: '0.05em',
+                            textShadow: '0 2px 4px rgba(0,0,0,0.6)'
+                          }
+                    }
                   >
                     {customText}
                   </span>

@@ -73,12 +73,12 @@ export const FabricCustomizerModule: React.FC<FabricCustomizerModuleProps> = ({
       swatch_test_price: 180,
       swatch_big_price: 450,
       print_surcharge_per_meter: 0,
-      images: ['https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=1000'],
+      images: ['https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=60&w=800'],
       description: 'Mulmul cotton',
       weave_type: 'Plain Weave',
       composition: '100% Combed Cotton',
       in_stock: true,
-      certifications: ['GOTS Certified Organic', 'OEKO-TEX Standard 100']
+      certifications: ['100% Combed Cotton', 'Color-Lock Inks']
     }
   );
 
@@ -109,7 +109,7 @@ export const FabricCustomizerModule: React.FC<FabricCustomizerModuleProps> = ({
 
   // Uploaded or Selected Artwork State
   const [designUrl, setDesignUrl] = useState<string>(
-    'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=800'
+    'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=60&w=800'
   );
   const [designName, setDesignName] = useState<string>('Royal_Mughal_Botanical.png');
   const [designWidthPx, setDesignWidthPx] = useState<number>(3200);

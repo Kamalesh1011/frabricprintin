@@ -50,7 +50,7 @@ export const MasterCustomizerStudioPage: React.FC<MasterCustomizerStudioPageProp
 
   // Shared Uploaded Design (Can be used across all products simultaneously!)
   const [globalArtworkUrl, setGlobalArtworkUrl] = useState<string>(
-    'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=600'
+    'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=60&w=600'
   );
   const [urlModalOpen, setUrlModalOpen] = useState<boolean>(false);
 
@@ -353,7 +353,7 @@ export const MasterCustomizerStudioPage: React.FC<MasterCustomizerStudioPageProp
                 >
                   <div className="relative aspect-square rounded-xl overflow-hidden bg-[#FAF7EE] dark:bg-black/30 mb-2">
                     <img
-                      src={products[0]?.images[0] || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=400'}
+                      src={products[0]?.images[0] || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=60&w=400'}
                       alt="Fabric Drape"
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />

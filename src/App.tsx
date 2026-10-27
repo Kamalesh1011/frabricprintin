@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { AuthProvider } from './context/AuthContext';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -14,24 +14,44 @@ import { MobileBottomNav } from './components/MobileBottomNav';
 import { EntryWhatsAppModal } from './components/EntryWhatsAppModal';
 
 import { HomePage } from './pages/HomePage';
-import { FabricListingPage } from './pages/FabricListingPage';
-import { BlankApparelPage } from './pages/BlankApparelPage';
-import { JerseyPage } from './pages/JerseyPage';
-import { UniformPage } from './pages/UniformPage';
-import { CustomMerchPage } from './pages/CustomMerchPage';
-import { TrainingPage } from './pages/TrainingPage';
-import { ProductDetailView } from './components/ProductDetailView';
-import { CheckoutPage } from './components/CheckoutPage';
-import { OrderSuccessPage } from './components/OrderSuccessPage';
-import { UserDashboard } from './components/UserDashboard';
-import { AdminDashboard } from './components/AdminDashboard';
-import { FabricCustomizerModule } from './components/FabricCustomizerModule';
-import { MasterCustomizerStudioPage } from './pages/MasterCustomizerStudioPage';
-import { AboutUsPage } from './pages/AboutUsPage';
-import { ContactUsPage } from './pages/ContactUsPage';
-import { AuthPage } from './pages/AuthPage';
-import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
-import { TermsConditionsPage } from './pages/TermsConditionsPage';
+
+// ---- Code splitting (perf) ----
+// Only the initial landing page (HomePage) is eager. Every other page/component is
+// lazy-loaded so the first paint downloads a much smaller JS bundle, and heavy
+// deps (three.js / @react-three) are only fetched when the user actually visits
+// a page that uses them.
+const lazyNamed = <T extends Record<string, any>>(loader: () => Promise<T>, name: keyof T) => (
+  lazy(async () => ({ default: await loader().then((m) => m[name]) }))
+);
+
+const FabricListingPage = lazyNamed(() => import('./pages/FabricListingPage'), 'FabricListingPage');
+const BlankApparelPage = lazyNamed(() => import('./pages/BlankApparelPage'), 'BlankApparelPage');
+const JerseyPage = lazyNamed(() => import('./pages/JerseyPage'), 'JerseyPage');
+const UniformPage = lazyNamed(() => import('./pages/UniformPage'), 'UniformPage');
+const CustomMerchPage = lazyNamed(() => import('./pages/CustomMerchPage'), 'CustomMerchPage');
+const TrainingPage = lazyNamed(() => import('./pages/TrainingPage'), 'TrainingPage');
+const ProductDetailView = lazyNamed(() => import('./components/ProductDetailView'), 'ProductDetailView');
+const CheckoutPage = lazyNamed(() => import('./components/CheckoutPage'), 'CheckoutPage');
+const OrderSuccessPage = lazyNamed(() => import('./components/OrderSuccessPage'), 'OrderSuccessPage');
+const UserDashboard = lazyNamed(() => import('./components/UserDashboard'), 'UserDashboard');
+const AdminDashboard = lazyNamed(() => import('./components/AdminDashboard'), 'AdminDashboard');
+const FabricCustomizerModule = lazyNamed(() => import('./components/FabricCustomizerModule'), 'FabricCustomizerModule');
+const MasterCustomizerStudioPage = lazyNamed(() => import('./pages/MasterCustomizerStudioPage'), 'MasterCustomizerStudioPage');
+const AboutUsPage = lazyNamed(() => import('./pages/AboutUsPage'), 'AboutUsPage');
+const ContactUsPage = lazyNamed(() => import('./pages/ContactUsPage'), 'ContactUsPage');
+const AuthPage = lazyNamed(() => import('./pages/AuthPage'), 'AuthPage');
+const PrivacyPolicyPage = lazyNamed(() => import('./pages/PrivacyPolicyPage'), 'PrivacyPolicyPage');
+const TermsConditionsPage = lazyNamed(() => import('./pages/TermsConditionsPage'), 'TermsConditionsPage');
+
+// Shared fallback while a lazy page chunk is downloading
+const PageFallback = () => (
+  <div className="flex flex-col items-center justify-center py-24 space-y-4">
+    <div className="w-10 h-10 border-4 border-blue-900 border-t-transparent rounded-full animate-spin" />
+    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+      Loading Fabric Print Mill Collection...
+    </p>
+  </div>
+);
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -70,6 +90,7 @@ export function MainAppContent() {
     return 'home';
   };
 
+  const { isAdmin } = useAuth();
   const [activeTab, setActiveTabState] = useState<string>(getInitialTab);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -179,7 +200,8 @@ export function MainAppContent() {
             </p>
           </div>
         ) : (
-          <>
+          <Suspense fallback={<PageFallback />}>
+            <>
             {activeTab === 'home' && (
               <HomePage
                 categories={categories}
@@ -197,6 +219,10 @@ export function MainAppContent() {
                 }}
                 onGoToMerch={() => {
                   setActiveTab('merch');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onGoToAbout={() => {
+                  setActiveTab('about');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 onOpenBulkInquiry={() => setBulkInquiryOpen(true)}
@@ -297,6 +323,11 @@ export function MainAppContent() {
               <UserDashboard
                 onSelectProduct={handleSelectProduct}
                 onGoToFabrics={handleGoToFabrics}
+                initialTab="orders"
+                onGoToLogin={() => {
+                  setActiveTab('login');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
               />
             )}
 
@@ -304,6 +335,11 @@ export function MainAppContent() {
               <UserDashboard
                 onSelectProduct={handleSelectProduct}
                 onGoToFabrics={handleGoToFabrics}
+                initialTab="wishlist"
+                onGoToLogin={() => {
+                  setActiveTab('login');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
               />
             )}
 
@@ -320,20 +356,41 @@ export function MainAppContent() {
             )}
 
             {activeTab === 'admin' && (
-              <AdminDashboard
-                onProductsChange={loadData}
-                onViewProductInFrontend={(prodId) => {
-                  fetchProducts().then((allProds) => {
-                    setProducts(allProds);
-                    const match = allProds.find((p) => p.id === prodId);
-                    if (match) {
-                      handleSelectProduct(match);
-                    } else {
-                      setActiveTab('fabrics');
-                    }
-                  });
-                }}
-              />
+              isAdmin ? (
+                <AdminDashboard
+                  onProductsChange={loadData}
+                  onViewProductInFrontend={(prodId) => {
+                    fetchProducts().then((allProds) => {
+                      setProducts(allProds);
+                      const match = allProds.find((p) => p.id === prodId);
+                      if (match) {
+                        handleSelectProduct(match);
+                      } else {
+                        setActiveTab('fabrics');
+                      }
+                    });
+                  }}
+                />
+              ) : (
+                <div className="max-w-md mx-auto my-16 p-8 bg-white dark:bg-[#1A1C1A] text-[#0F100F] dark:text-white rounded-[32px] border border-[#ECECEC] dark:border-white/[0.08] shadow-fabriclore text-center space-y-4">
+                  <div className="w-12 h-12 bg-amber-500/10 text-[#AC7900] dark:text-[#D4AF37] rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+                    🔒
+                  </div>
+                  <h2 className="text-xl font-bold font-editorial">Admin Access Restricted</h2>
+                  <p className="text-xs text-[#8A8883] dark:text-gray-400">
+                    You must sign in with verified Mill Administrator credentials to view the admin control center.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setActiveTab('login');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="w-full bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold py-3 rounded-full text-xs hover:opacity-90 transition shadow-md"
+                  >
+                    Go to Admin Sign In
+                  </button>
+                </div>
+              )
             )}
 
             {activeTab === 'about' && (
@@ -357,7 +414,8 @@ export function MainAppContent() {
             {activeTab === 'privacy' && <PrivacyPolicyPage />}
 
             {activeTab === 'terms' && <TermsConditionsPage />}
-          </>
+            </>
+          </Suspense>
         )}
       </main>
 

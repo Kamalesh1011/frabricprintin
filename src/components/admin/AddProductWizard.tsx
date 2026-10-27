@@ -96,7 +96,7 @@ export const AddProductWizard: React.FC<AddProductWizardProps> = ({
   const [productImages, setProductImages] = useState<string[]>(
     editingProduct?.images && editingProduct.images.length > 0
       ? editingProduct.images
-      : ['https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=1000']
+      : ['https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=60&w=800']
   );
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
 
@@ -192,7 +192,7 @@ export const AddProductWizard: React.FC<AddProductWizardProps> = ({
       swatch_big_price: swatchBigPrice,
       print_surcharge_per_meter: printSurcharge,
       description,
-      images: productImages.length > 0 ? productImages : ['https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=1000'],
+      images: productImages.length > 0 ? productImages : ['https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=60&w=800'],
       weave_type: weaveType,
       composition,
       in_stock: true,
@@ -829,7 +829,7 @@ export const AddProductWizard: React.FC<AddProductWizardProps> = ({
             {publishedProductData && (
               <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 text-left flex items-center space-x-3.5 shadow-inner">
                 <img
-                  src={publishedProductData.images?.[0] || 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=400'}
+                  src={publishedProductData.images?.[0] || 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=60&w=400'}
                   alt={publishedProductData.name}
                   className="w-16 h-16 rounded-xl object-cover border border-slate-700 shrink-0"
                 />

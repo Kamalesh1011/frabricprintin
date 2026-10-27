@@ -1,0 +1,9 @@
+# Cloudflare Workers static-assets header rules.
+# Vite copies this file to the deploy root (dist/_headers).
+# Header rules apply in order, so /assets is listed last on purpose.
+#
+/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

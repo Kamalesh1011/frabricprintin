@@ -73,7 +73,7 @@ export const TRAINING_COURSES: TrainingCourse[] = [
     ],
     toolkitIncluded: [
       'Set of 3 hand-carved Sheesham teak wood printing blocks',
-      '5 meters GOTS organic cotton base fabric',
+      '5 meters premium combed cotton base fabric',
       'Natural pigment formulation starter kit & wooden tray',
       'Professional artisan print apron & Certificate'
     ],
@@ -404,7 +404,7 @@ export const TrainingPage: React.FC<TrainingPageProps> = ({ onGoToHome, onOpenBu
 
             <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#D4AF37]/10 backdrop-blur-md border border-[#D4AF37]/30 text-xs font-semibold text-[#E9C767]">
               <GraduationCap className="w-4 h-4 text-[#D4AF37]" />
-              <span>Textile Printing &amp; Craft Academy · Surat Mill Campus</span>
+              <span>Textile Printing &amp; Craft Academy · Tirupur Mill Campus</span>
             </div>
 
             {/* Ornamental divider */}

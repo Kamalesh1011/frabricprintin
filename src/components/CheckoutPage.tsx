@@ -20,16 +20,16 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onBa
   const [fullName, setFullName] = useState(defaultAddr?.fullName || currentUser?.name || '');
   const [phone, setPhone] = useState(defaultAddr?.phone || currentUser?.phone || '');
   const [email, setEmail] = useState(currentUser?.email || '');
-  const [street, setStreet] = useState(defaultAddr?.street || '42, Textile Park, Ring Road');
-  const [city, setCity] = useState(defaultAddr?.city || 'Surat');
-  const [state, setState] = useState(defaultAddr?.state || 'Gujarat');
-  const [pincode, setPincode] = useState(defaultAddr?.pincode || '395002');
+  const [street, setStreet] = useState(defaultAddr?.street || '');
+  const [city, setCity] = useState(defaultAddr?.city || '');
+  const [state, setState] = useState(defaultAddr?.state || '');
+  const [pincode, setPincode] = useState(defaultAddr?.pincode || '');
   const [country] = useState('India');
 
   // Payment Option State
   const [paymentMethod, setPaymentMethod] = useState<'Razorpay' | 'Card' | 'UPI' | 'COD'>('Razorpay');
-  const [upiId, setUpiId] = useState('aditi@upi');
-  const [cardNumber, setCardNumber] = useState('4532 •••• •••• 8821');
+  const [upiId, setUpiId] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
 
   // Processing & Modal State
   const [isProcessing, setIsProcessing] = useState(false);
@@ -67,7 +67,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onBa
       const orderItems = cart.map((item) => ({
         productId: item.productId,
         productName: item.product.name,
-        productImage: item.customPreviewUrl || item.printOptions?.designUrl || item.product?.image_url || item.product?.images?.[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=600',
+        productImage: item.customPreviewUrl || item.printOptions?.designUrl || item.product?.image_url || item.product?.images?.[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=60&w=600',
         gsm: item.product.gsm,
         width: item.product.width,
         color: item.product.color,
@@ -94,7 +94,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onBa
       const newOrderData: Partial<Order> = {
         userId: currentUser?.id || 'usr-guest',
         customerName: fullName,
-        customerEmail: email || 'guest@texprint.com',
+        customerEmail: email || 'guest@fabricprint.in',
         customerPhone: phone,
         shippingAddress,
         items: orderItems,
@@ -334,7 +334,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onBa
                     <div key={idx} className="pt-3 first:pt-0 space-y-1.5">
                       <div className="flex items-start space-x-3">
                         <img
-                          src={item.customPreviewUrl || item.printOptions?.designUrl || item.product?.image_url || item.product?.images?.[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=600'}
+                          src={item.customPreviewUrl || item.printOptions?.designUrl || item.product?.image_url || item.product?.images?.[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=60&w=600'}
                           alt={item.product?.name || 'Product'}
                           className="w-14 h-14 rounded-xl object-cover border border-[#ECECEC] dark:border-white/[0.1] shrink-0"
                         />

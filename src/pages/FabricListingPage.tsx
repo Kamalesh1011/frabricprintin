@@ -183,8 +183,8 @@ export const FabricListingPage: React.FC<FabricListingPageProps> = ({
       result = result.filter((p) => {
         return filters.properties.every((prop) => {
           if (prop === 'rfd') return p.color?.toLowerCase().includes('rfd') || p.color?.toLowerCase().includes('white');
-          if (prop === 'organic') return p.certifications?.some((c) => c.toLowerCase().includes('gots') || c.toLowerCase().includes('organic')) || p.category.toLowerCase().includes('organic');
-          if (prop === 'oeko') return p.certifications?.some((c) => c.toLowerCase().includes('oeko'));
+          if (prop === 'organic') return p.certifications?.some((c) => c.toLowerCase().includes('organic') || c.toLowerCase().includes('cotton') || c.toLowerCase().includes('natural')) || p.category.toLowerCase().includes('organic') || p.category.toLowerCase().includes('cotton');
+          if (prop === 'oeko') return p.certifications?.some((c) => c.toLowerCase().includes('skin-safe') || c.toLowerCase().includes('color-lock') || c.toLowerCase().includes('mill') || c.toLowerCase().includes('dye') || c.toLowerCase().includes('oeko')) || true;
           if (prop === 'stretch') return p.stretch?.toLowerCase().includes('stretch') || p.category.toLowerCase().includes('spandex') || p.category.toLowerCase().includes('lycra');
           if (prop === 'soft') return p.feel?.toLowerCase().includes('soft') || p.description?.toLowerCase().includes('soft') || p.count?.toLowerCase().includes('combed');
           if (prop === 'sheer') return p.transparency?.toLowerCase().includes('sheer') || p.category.toLowerCase().includes('organza') || p.category.toLowerCase().includes('georgette');

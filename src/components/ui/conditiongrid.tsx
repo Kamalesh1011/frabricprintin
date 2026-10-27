@@ -14,25 +14,25 @@ export interface ProjectItem {
 const defaultProjects: ProjectItem[] = [
   {
     id: "01",
-    img: "https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&q=80&w=1200",
+    img: "https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&q=60&w=800",
     title: "Distrokings",
     des: "We make your logo communicate with your customers more than words ever could",
   },
   {
     id: "02",
-    img: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=80&w=1200",
+    img: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=60&w=800",
     title: "Profitables",
     des: "We are dedicated to unlocking your business potential through precision development",
   },
   {
     id: "03",
-    img: "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&q=80&w=1200",
+    img: "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&q=60&w=800",
     title: "Topserve-copiers",
     des: "We are dedicated to unlocking your business potential through precision development",
   },
   {
     id: "04",
-    img: "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&q=80&w=1200",
+    img: "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&q=60&w=800",
     title: "Labramart.",
     des: "We specialize in crafting marketing solutions that propel your brand to new heights",
   },

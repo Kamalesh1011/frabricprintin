@@ -24,7 +24,6 @@ import {
   Droplets,
   Waves
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 import { Product, Category } from '../types';
 import { FabricCard } from '../components/FabricCard';
 import { SmartUrlImageExtractorModal } from '../components/SmartUrlImageExtractorModal';
@@ -39,6 +38,7 @@ import { UNIFORM_PRODUCTS } from '../data/uniformData';
 import { CUSTOM_MERCH_PRODUCTS } from '../data/customMerchData';
 import { AnimatedBadge } from '../components/ui/animated-badge';
 import { AnimatedTabs } from '../components/ui/animated-tabs';
+import { HeroStudioVisual, type HeroStudioMaterial, type HeroMaterial3DType } from '../components/HeroStudioVisual';
 import { NumberTicker } from '../components/ui/number-ticker';
 import { Marquee } from '../components/ui/marquee';
 import { SpotlightCard } from '../components/ui/spotlight-card';
@@ -56,6 +56,7 @@ interface HomePageProps {
   onGoToApparel?: () => void;
   onGoToUniforms?: () => void;
   onGoToMerch?: () => void;
+  onGoToAbout?: () => void;
   onOpenBulkInquiry: () => void;
 }
 
@@ -66,40 +67,61 @@ interface HeroMaterialPreview {
   specs: string;
   wholesalePrice: number;
   patternName: string;
+  /** Phase 1 "Studio hero" — data for the hydrated 3D draped-cloth stage */
+  design3d: string;
+  baseColor: string;
+  material3d?: HeroMaterial3DType;
+  repeat3d?: HeroStudioMaterial['repeat3d'];
 }
 
 const HERO_MATERIALS: Record<string, HeroMaterialPreview> = {
   'Silk': {
     name: 'Mulberry Silk Crepe',
     category: 'Silk',
-    image: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=900',
+    image: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=60&w=800',
     specs: '16 Momme • 44" Width • 300 DPI Reactive Print',
     wholesalePrice: 378,
-    patternName: 'Royal Mughal Botanical Damask'
+    patternName: 'Royal Mughal Botanical Damask',
+    design3d: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=60&w=500&h=500',
+    baseColor: '#FAF5E9',
+    material3d: 'silk_organza',
+    repeat3d: 'drop'
   },
   'Cotton': {
     name: 'Organic Cotton Cambric 60s',
     category: 'Cotton',
-    image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=900',
+    image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=60&w=800',
     specs: '95 GSM • 54" Usable Width • Bio-Washed',
     wholesalePrice: 180,
-    patternName: 'Indigo Heritage Geometric Tile'
+    patternName: 'Indigo Heritage Geometric Tile',
+    design3d: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=60&w=500&h=500',
+    baseColor: '#FBFBF7',
+    material3d: 'cotton_cambric',
+    repeat3d: 'grid'
   },
   'Linen': {
     name: 'French Flax Pure Linen',
     category: 'Linen',
-    image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=900',
+    image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=60&w=800',
     specs: '140 GSM • 56" Width • Slub Texture',
     wholesalePrice: 420,
-    patternName: 'Tropical Flora Leaf Motif'
+    patternName: 'Tropical Flora Leaf Motif',
+    design3d: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=60&w=500&h=500',
+    baseColor: '#F4F1E8',
+    material3d: 'french_linen',
+    repeat3d: 'drop'
   },
   'Modal': {
     name: 'Modal Satin Silk Luster',
     category: 'Modal',
-    image: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=80&w=900',
+    image: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=60&w=800',
     specs: '110 GSM • 44" Width • Ultra-Fluid Drape',
     wholesalePrice: 240,
-    patternName: 'Fluid Watercolor Splash'
+    patternName: 'Fluid Watercolor Splash',
+    design3d: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=60&w=500&h=500',
+    baseColor: '#FAF7F1',
+    material3d: 'modal_satin',
+    repeat3d: 'mirror'
   }
 };
 
@@ -122,6 +144,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   onGoToApparel,
   onGoToUniforms,
   onGoToMerch,
+  onGoToAbout,
   onOpenBulkInquiry
 }) => {
   const [urlModalOpen, setUrlModalOpen] = useState<boolean>(false);
@@ -141,7 +164,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   ) || products[0];
 
   return (
-    <div className="space-y-16 sm:space-y-24 pb-20 transition-colors duration-300">
+    <div className="space-y-10 sm:space-y-20 pb-16 transition-colors duration-300">
 
       {/* 🌾 1. HIGH-CONVERTING EDITORIAL HERO WITH REAL-TIME MATERIAL SWITCHER */}
       {/* 🌾 1. HIGH-CONVERTING EDITORIAL HERO WITH REAL-TIME MATERIAL SWITCHER */}
@@ -160,13 +183,13 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </AnimatedBadge>
               </div>
 
-              {/* Main Headline */}
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black font-editorial tracking-tight leading-[1.1] text-[#0F100F] dark:text-white">
+              {/* Main Headline — poster scale (Phase 1) */}
+              <h1 className="text-[2.55rem] leading-[1.02] sm:text-6xl lg:text-[4.15rem] lg:leading-[1.0] font-black font-editorial tracking-[-0.03em] text-[#0F100F] dark:text-white">
                 Custom Fabric Printing <span className="text-[#AC7900] dark:text-[#D4AF37]">from 1 Meter</span>
               </h1>
 
               {/* Subtitle - Simplified & Friendly */}
-              <p className="text-xs sm:text-base text-[#8A8883] dark:text-gray-300 max-w-xl leading-relaxed font-normal">
+              <p className="text-[13px] sm:text-base text-[#8A8883] dark:text-gray-300 max-w-xl leading-relaxed font-normal">
                 Direct mill custom printing with zero minimum order. Print your own artwork onto <strong>certified Cotton, Mulberry Silk, Linen &amp; Modal</strong> with reactive color-lock technology.
               </p>
 
@@ -215,7 +238,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div className="bg-[#F9F6ED] dark:bg-[#1C1E1C] border border-[#ECECEC] dark:border-white/[0.08] p-3.5 sm:p-4 rounded-2xl sm:rounded-[24px] shadow-xs max-w-lg flex items-center space-x-3">
                 <span className="text-base sm:text-lg shrink-0">⭐</span>
                 <p className="text-[11px] sm:text-xs text-[#0F100F] dark:text-gray-200 leading-snug">
-                  <strong>Trusted by 500+ fashion labels:</strong> Verified colorfastness strike-offs, skin-safe OEKO-TEX dyes, and express mill dispatch.
+                  <strong>Direct Mill Digital Printing:</strong> High-definition strike-offs, skin-safe non-toxic reactive dyes, and express pan-India dispatch.
                 </p>
               </div>
 
@@ -245,29 +268,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                   />
                 </div>
 
-                {/* Animated Draped Visual */}
-                <div className="relative aspect-[4/3] rounded-[24px] overflow-hidden bg-[#F3F0E8] dark:bg-[#222422]">
-                  <AnimatePresence mode="wait">
-                    <motion.img
-                      key={activeHeroTab}
-                      initial={{ opacity: 0, scale: 0.98 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 1.02 }}
-                      transition={{ duration: 0.3 }}
-                      src={heroMat.image}
-                      alt={heroMat.name}
-                      className="w-full h-full object-cover animate-cloth-drape select-none"
-                    />
-                  </AnimatePresence>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-5 text-white">
-                    <span className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider">
-                      {heroMat.patternName}
-                    </span>
-                    <span className="text-sm font-black">
-                      {heroMat.name} ({heroMat.specs})
-                    </span>
-                  </div>
-                </div>
+                {/* Studio Visual: instant static render → hydrated 3D draped cloth */}
+                <HeroStudioVisual heroTab={activeHeroTab} material={heroMat} />
 
                 {/* Studio CTA Footer */}
                 <div className="flex items-center justify-between pt-1">
@@ -293,7 +295,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
 
           {/* 🛡️ 2. THE 3 VALUE PROPOSITION PILLARS */}
-          <div className="mt-16 pt-10 border-t border-[#ECECEC] dark:border-white/[0.08] grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="mt-10 sm:mt-16 pt-8 sm:pt-10 border-t border-[#ECECEC] dark:border-white/[0.08] grid grid-cols-1 md:grid-cols-3 gap-8">
 
             <div className="relative flex gap-4 pl-12">
               <div className="absolute top-0 left-0 bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold shadow-sm">
@@ -318,7 +320,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   Consistent Tested Quality
                 </h4>
                 <p className="text-xs text-[#8A8883] dark:text-gray-300 leading-relaxed font-medium">
-                  Every run is colorfastness tested, GSM verified, and inspected with OEKO-TEX 100 certified non-toxic reactive dyes.
+                  Every run is colorfastness tested, GSM verified, and inspected with high-definition, non-toxic reactive dyes.
                 </p>
               </div>
             </div>
@@ -343,10 +345,10 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div className="mt-12 bg-white dark:bg-[#1A1C1A] border border-[#ECECEC] dark:border-white/[0.08] rounded-[28px] p-6 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div>
               <span className="text-2xl sm:text-3xl font-black text-[#0F100F] dark:text-white font-editorial block">
-                <NumberTicker value={500} suffix="+" />
+                <NumberTicker value={250} suffix="+" />
               </span>
               <span className="text-xs text-[#8A8883] dark:text-gray-400 font-medium">
-                Designer Fashion Labels
+                Ready Fabric Qualities
               </span>
             </div>
             <div>
@@ -377,21 +379,21 @@ export const HomePage: React.FC<HomePageProps> = ({
 
         </div>
 
-        {/* 🌟 INFINITE CERTIFICATION & STANDARDS MARQUEE */}
-        <div className="mt-8 pt-6 border-t border-black/[0.04] dark:border-white/[0.06]">
+        {/* 🌟 INFINITE PRODUCTION STANDARDS MARQUEE */}
+        <div className="mt-8 pt-6 border-t border-black/[0.04] dark:border-white/[0.06] overflow-hidden w-full">
           <Marquee speed="35s" pauseOnHover={true}>
             {[
-              { title: 'OEKO-TEX® Standard 100', desc: 'Non-Toxic Dyes' },
-              { title: 'GOTS Certified', desc: '100% Organic Cotton' },
-              { title: 'Mulberry Silk Mark', desc: 'Pure 100% Natural Silk' },
-              { title: 'European Flax®', desc: 'Certified French Linen' },
-              { title: 'Lenzing™ Modal', desc: 'Eco-Botanical Weaves' },
-              { title: 'ISO 9001:2015', desc: 'Mill Quality Standard' },
-              { title: 'Grade 5 Fastness', desc: 'AATCC Wash Resistance' },
+              { title: 'Skin-Safe Reactive Dyes', desc: 'Azo-Free & Non-Toxic' },
+              { title: '100% Pure Natural Fibers', desc: 'Combed Cotton, Silk, Linen' },
+              { title: 'Grade 4.5+ Fastness', desc: 'AATCC Wash & Rub Resistance' },
+              { title: 'Zero Surface Cracking', desc: 'Molecular Fiber Lock' },
+              { title: 'Bio-Washed Finish', desc: 'Ultra-Soft Handfeel' },
+              { title: 'Low MOQ: 1 Meter', desc: 'Custom Strike-Offs & Rolls' },
+              { title: 'Mill Direct Dispatch', desc: 'Fast Doorstep Delivery' },
             ].map((cert, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-white/5 border border-black/5 dark:border-white/10 shadow-xs shrink-0"
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-white/5 border border-black/5 dark:border-white/10 shadow-xs shrink-0 mx-1.5"
               >
                 <Award className="w-3.5 h-3.5 text-[#AC7900] dark:text-[#D4AF37]" />
                 <span className="text-xs font-bold text-[#0F100F] dark:text-white">{cert.title}</span>
@@ -512,7 +514,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 School Checks, Suiting & Hospital Scrubs
               </h2>
               <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] max-w-xl leading-relaxed">
-                Supplying 1,500+ Indian schools and hospital networks with anti-pilling PV blends, woven tartans, and silver-ion scrubs with guaranteed Grade 5 color fastness.
+                Supplying schools, institutional teams, and healthcare workwear with durable, colorfast fabrics and tailored uniform weaves.
               </p>
             </div>
 
@@ -767,8 +769,16 @@ export const HomePage: React.FC<HomePageProps> = ({
               onClick={() => onSelectCategory(cat.name)}
               className="group bg-white dark:bg-[#1A1C1A] rounded-[24px] p-4 text-center cursor-pointer border border-[#ECECEC] dark:border-white/[0.08] hover:border-[#AC7900] dark:hover:border-[#D4AF37] shadow-sm hover:shadow-md transition flex flex-col items-center space-y-3"
             >
-              <div className="w-16 h-16 rounded-full overflow-hidden border border-[#ECECEC] dark:border-white/[0.1] group-hover:scale-105 transition duration-300">
-                <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+              <div className="w-16 h-16 rounded-full overflow-hidden border border-[#ECECEC] dark:border-white/[0.1] group-hover:scale-105 transition duration-300 bg-black/5 dark:bg-white/5">
+                <img
+                  src={cat.image}
+                  alt={cat.name}
+                  loading="lazy"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=60&w=400';
+                  }}
+                />
               </div>
               <div>
                 <h4 className="text-xs font-bold text-[#0F100F] dark:text-white group-hover:text-[#AC7900] dark:group-hover:text-[#D4AF37] transition">
@@ -803,6 +813,53 @@ export const HomePage: React.FC<HomePageProps> = ({
             <span>Request Mill Bulk Quote</span>
             <ArrowRight className="w-4 h-4" />
           </button>
+        </div>
+      </section>
+
+      {/* 🏭 ABOUT FABRIC PRINT MILL SECTION */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white dark:bg-[#1A1C1A] rounded-[32px] p-8 sm:p-12 border border-[#ECECEC] dark:border-white/[0.08] shadow-fabriclore grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <div className="space-y-4">
+            <div className="inline-flex items-center space-x-2 text-xs font-bold text-[#AC7900] dark:text-[#D4AF37] uppercase tracking-wider font-editorial">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Direct Mill Printing &amp; Apparel Manufacturing</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black font-editorial text-[#0F100F] dark:text-white">
+              About Fabric Print Mill Hub
+            </h2>
+            <p className="text-xs sm:text-sm text-[#8A8883] dark:text-gray-400 leading-relaxed">
+              Located in Tirupur, Tamil Nadu—the garment manufacturing capital of India. Fabric Print pairs master textile craft with cutting-edge 300 DPI reactive digital presses, direct-to-film (DTF), and dye-sublimation machinery.
+            </p>
+            <div className="grid grid-cols-2 gap-3 text-xs pt-1">
+              <div className="p-3 rounded-xl bg-[#F9F6ED] dark:bg-[#242624] space-y-1">
+                <span className="font-bold text-[#0F100F] dark:text-white block">1m Sampling MOQ</span>
+                <span className="text-[11px] text-[#8A8883] dark:text-gray-400">Order strike-offs with custom artwork before bulk</span>
+              </div>
+              <div className="p-3 rounded-xl bg-[#F9F6ED] dark:bg-[#242624] space-y-1">
+                <span className="font-bold text-[#0F100F] dark:text-white block">Direct Mill Pricing</span>
+                <span className="text-[11px] text-[#8A8883] dark:text-gray-400">No middlemen; wholesale tier savings up to 25%</span>
+              </div>
+            </div>
+            {onGoToAbout && (
+              <div className="pt-2">
+                <button
+                  onClick={onGoToAbout}
+                  className="px-6 py-3 rounded-full bg-[#0F100F] hover:bg-black text-white dark:bg-white dark:hover:bg-slate-100 dark:text-[#0F100F] font-semibold text-xs shadow-sm flex items-center space-x-2 transition group"
+                >
+                  <span>Learn More About Our Mill</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="relative aspect-[4/3] rounded-[24px] overflow-hidden bg-[#F3F0E8] dark:bg-[#222422] border border-[#ECECEC] dark:border-white/[0.08]">
+            <img
+              src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&q=60&w=800"
+              alt="Fabric Print Mill Hub Tirupur"
+              className="w-full h-full object-cover"
+            />
+          </div>
         </div>
       </section>
 

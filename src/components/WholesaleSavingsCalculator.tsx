@@ -66,7 +66,7 @@ export const WholesaleSavingsCalculator: React.FC<WholesaleSavingsCalculatorProp
             Calculate Your Wholesale Mill Savings
           </h3>
           <p className="text-xs sm:text-sm text-[#71717A] dark:text-[#A1A1AA] max-w-xl">
-            See how much your studio saves by printing directly from our Surat rotary & high-speed digital printing facility.
+            See how much your studio saves by printing directly from our Tirupur rotary & high-speed digital printing facility.
           </p>
         </div>
 

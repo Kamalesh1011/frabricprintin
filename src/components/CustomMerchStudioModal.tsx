@@ -208,25 +208,25 @@ const CURATED_DESIGNS = [
   {
     name: 'Cyber Liquid Orbit',
     category: 'Sublimation Texture',
-    url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=900',
+    url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=60&w=800',
     wrapMode: 'full_sublimation' as SublimationWrapMode,
   },
   {
     name: 'Geometric Hex Mesh',
     category: 'Performance Grid',
-    url: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=900',
+    url: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=60&w=800',
     wrapMode: 'full_sublimation' as SublimationWrapMode,
   },
   {
     name: 'Abstract Fluid Ink',
     category: 'Vibrant Blend',
-    url: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=80&w=900',
+    url: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=60&w=800',
     wrapMode: 'c_design_wrap' as SublimationWrapMode,
   },
   {
     name: 'Gold Crest Monogram',
     category: 'Chest Crest',
-    url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=600',
+    url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=60&w=600',
     wrapMode: 'chest_crest' as SublimationWrapMode,
   },
 ];

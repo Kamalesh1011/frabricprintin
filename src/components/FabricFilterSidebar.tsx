@@ -91,8 +91,8 @@ export const WEAVES_LIST = [
 
 export const PROPERTIES_LIST = [
   { id: 'rfd', label: 'Ready For Dyeing (RFD)' },
-  { id: 'organic', label: 'GOTS Certified Organic' },
-  { id: 'oeko', label: 'OEKO-TEX Standard 100' },
+  { id: 'organic', label: '100% Pure Natural Cotton' },
+  { id: 'oeko', label: 'Skin-Safe Reactive Inks' },
   { id: 'stretch', label: 'Active Stretch (Lycra/Spandex)' },
   { id: 'soft', label: 'Ultra Soft / Combed' },
   { id: 'matte', label: 'Matte Natural Finish' },

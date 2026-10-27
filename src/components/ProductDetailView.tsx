@@ -688,7 +688,7 @@ export const ProductDetailView: React.FC<ProductDetailViewProps> = ({
                   <div><strong>Count:</strong> {currentProduct.count || 'Combed 30s'}</div>
                   <div><strong>Weave:</strong> {currentProduct.weave_type || 'Plain'}</div>
                   <div><strong>Composition:</strong> {currentProduct.composition}</div>
-                  <div><strong>Dyes:</strong> Skin-safe OEKO-TEX Standard 100</div>
+                  <div><strong>Dyes:</strong> Skin-safe reactive colorfast dyes</div>
                 </div>
               )}
             </div>

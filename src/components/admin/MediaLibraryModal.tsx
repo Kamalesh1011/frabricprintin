@@ -25,61 +25,61 @@ const STOCK_MEDIA_LIBRARY = [
     id: 'media-1',
     name: 'Cotton Mulmul Weave White',
     category: 'Cotton',
-    url: 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=80&w=1000'
+    url: 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=60&w=800'
   },
   {
     id: 'media-2',
     name: 'French Flax Linen Texture',
     category: 'Linen',
-    url: 'https://images.unsplash.com/photo-1603251578711-3290ca1a0187?auto=format&fit=crop&q=80&w=1000'
+    url: 'https://images.unsplash.com/photo-1603251578711-3290ca1a0187?auto=format&fit=crop&q=60&w=800'
   },
   {
     id: 'media-3',
     name: 'Mulberry Silk Satin Sheen',
     category: 'Silk',
-    url: 'https://images.unsplash.com/photo-1528458876861-544fd1761a91?auto=format&fit=crop&q=80&w=1000'
+    url: 'https://images.unsplash.com/photo-1528458876861-544fd1761a91?auto=format&fit=crop&q=60&w=800'
   },
   {
     id: 'media-4',
     name: 'Viscose Rayon Fluid Drape',
     category: 'Rayon',
-    url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&q=80&w=1000'
+    url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&q=60&w=800'
   },
   {
     id: 'media-5',
     name: 'Lenzing Modal Satin Texture',
     category: 'Modal',
-    url: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1000'
+    url: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=60&w=800'
   },
   {
     id: 'media-6',
     name: 'Glass Organza Transparent Sheer',
     category: 'Organza',
-    url: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&q=80&w=1000'
+    url: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&q=60&w=800'
   },
   {
     id: 'media-7',
     name: 'Botanical Floral Printed Fabric',
     category: 'Prints',
-    url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=1000'
+    url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=60&w=800'
   },
   {
     id: 'media-8',
     name: 'Traditional Block Print Motif',
     category: 'Prints',
-    url: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=1000'
+    url: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=60&w=800'
   },
   {
     id: 'media-9',
     name: 'Tropical Palm Leaf Fabric',
     category: 'Prints',
-    url: 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&q=80&w=1000'
+    url: 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&q=60&w=800'
   },
   {
     id: 'media-10',
     name: 'Organic Raw Unbleached Cotton',
     category: 'Cotton',
-    url: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=80&w=1000'
+    url: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=60&w=800'
   }
 ];
 

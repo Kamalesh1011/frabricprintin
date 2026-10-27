@@ -288,7 +288,7 @@ export const CUSTOM_MERCH_PRODUCTS: CustomMerchItem[] = [
     description: 'Eco-friendly heavyweight natural cotton canvas tote bag. Premium flat surface ideal for ultra-sharp DTF, direct-to-garment (DTG), or vibrant Sublimation graphics.',
     basePrice: 180,
     samplePrice: 240,
-    materialSpecs: '320 GSM 100% GOTS Certified Cotton Duck Canvas',
+    materialSpecs: '320 GSM 100% Heavyweight Cotton Duck Canvas',
     dimensions: '15" W x 16" H with 4" Bottom Gusset · 24" Handles',
     moq: 1,
     productionTimeDays: '2–3 Days',

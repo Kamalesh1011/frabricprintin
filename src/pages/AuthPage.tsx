@@ -26,7 +26,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'lo
   const [regPassword, setRegPassword] = useState('');
   const [regError, setRegError] = useState('');
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
 
@@ -39,28 +41,22 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'lo
       return;
     }
 
+    setIsLoading(true);
     try {
-      const { isAdmin } = login(loginEmail, loginPassword);
+      const { isAdmin } = await login(loginEmail, loginPassword);
       if (isAdmin) {
         onNavigate('admin');
       } else {
         onNavigate('dashboard');
       }
     } catch (err: any) {
-      setLoginError('Invalid credentials. Please check your details.');
+      setLoginError(err?.message || 'Invalid credentials. Please check your details.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleAdminQuickLogin = () => {
-    setLoginEmail('admin@fabricprint.in');
-    setLoginPassword('admin123');
-    const { isAdmin } = login('admin@fabricprint.in', 'admin123');
-    if (isAdmin) {
-      onNavigate('admin');
-    }
-  };
-
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegError('');
 
@@ -81,11 +77,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'lo
       return;
     }
 
+    setIsLoading(true);
     try {
-      register(regName, regPhone, regEmail, regPassword);
-      onNavigate('home');
+      await register(regName, regPhone, regEmail, regPassword);
+      onNavigate('dashboard');
     } catch (err: any) {
-      setRegError('Registration failed. Please try again.');
+      setRegError(err?.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -163,7 +162,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'lo
                   <input
                     type="text"
                     required
-                    placeholder="aditi.design@example.com or admin@fabricprint.in"
+                    placeholder="name@example.com"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     className="w-full bg-[#F9F6ED] dark:bg-[#242624] border border-[#ECECEC] dark:border-white/[0.1] rounded-2xl py-2.5 pl-10 pr-3 text-xs text-[#0F100F] dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#AC7900] transition"
@@ -204,16 +203,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'lo
                 <span>Sign In to Account</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
-
-              <div className="pt-4 border-t border-[#ECECEC] dark:border-white/[0.08] text-center">
-                <button
-                  type="button"
-                  onClick={handleAdminQuickLogin}
-                  className="text-xs font-semibold text-[#AC7900] dark:text-[#D4AF37] hover:underline"
-                >
-                  Quick Sign-in as Demo Admin (admin@fabricprint.in) →
-                </button>
-              </div>
             </form>
           )}
 

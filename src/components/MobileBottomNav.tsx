@@ -56,7 +56,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           )}
         </button>
 
-        {/* 2. Fabrics */}
+        {/* 2. Fabric */}
         <button
           type="button"
           onClick={() => {
@@ -71,13 +71,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <div className={`p-1 rounded-xl transition-all ${isFabricsActive ? 'bg-black/5 dark:bg-white/10 scale-110' : ''}`}>
             <Layers className={`w-5 h-5 ${isFabricsActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
           </div>
-          <span className="text-[10px] tracking-tight mt-0.5">Fabrics</span>
+          <span className="text-[10px] tracking-tight mt-0.5">Fabric</span>
           {isFabricsActive && (
             <span className="absolute -bottom-0.5 w-1 h-1 bg-[#AC7900] dark:bg-[#D4AF37] rounded-full" />
           )}
         </button>
 
-        {/* 3. Apparel */}
+        {/* 3. Tshirt */}
         <button
           type="button"
           onClick={() => {
@@ -93,30 +93,45 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <div className={`p-1 rounded-xl transition-all ${isApparelActive ? 'bg-black/5 dark:bg-white/10 scale-110' : ''}`}>
             <Shirt className={`w-5 h-5 ${isApparelActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
           </div>
-          <span className="text-[10px] tracking-tight mt-0.5">Apparel</span>
+          <span className="text-[10px] tracking-tight mt-0.5">Tshirt</span>
           {isApparelActive && (
             <span className="absolute -bottom-0.5 w-1 h-1 bg-[#AC7900] dark:bg-[#D4AF37] rounded-full" />
           )}
         </button>
 
-        {/* 4. Training */}
+        {/* 4. Customize (3D Studio) */}
         <button
           type="button"
           onClick={() => {
-            setActiveTab('training');
+            setActiveTab('apparel-studio');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           className={`flex flex-col items-center justify-center py-1 rounded-2xl transition-all duration-200 relative ${
-            isTrainingActive
+            activeTab === 'apparel-studio'
               ? 'text-[#0F100F] dark:text-white font-black'
               : 'text-slate-500 hover:text-black dark:hover:text-white font-medium'
           }`}
         >
-          <div className={`p-1 rounded-xl transition-all ${isTrainingActive ? 'bg-black/5 dark:bg-white/10 scale-110' : ''}`}>
-            <GraduationCap className={`w-5 h-5 ${isTrainingActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
+          <div className="p-1 rounded-xl transition-all relative">
+            <span className="absolute -top-1 -right-2 px-1 py-0.2 rounded-full text-[8px] font-black bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs">
+              3D
+            </span>
+            <svg
+              className="w-5 h-5 stroke-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"
+              />
+            </svg>
           </div>
-          <span className="text-[10px] tracking-tight mt-0.5">Training</span>
-          {isTrainingActive && (
+          <span className="text-[10px] tracking-tight mt-0.5 font-bold text-[#AC7900] dark:text-[#D4AF37]">Customize</span>
+          {activeTab === 'apparel-studio' && (
             <span className="absolute -bottom-0.5 w-1 h-1 bg-[#AC7900] dark:bg-[#D4AF37] rounded-full" />
           )}
         </button>

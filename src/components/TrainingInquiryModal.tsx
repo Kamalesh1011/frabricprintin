@@ -18,7 +18,7 @@ export const TrainingInquiryModal: React.FC<TrainingInquiryModalProps> = ({
   const [email, setEmail] = useState('');
   const [selectedProgram, setSelectedProgram] = useState(defaultProgram);
   const [attendeeCount, setAttendeeCount] = useState('6–15 Students');
-  const [trainingMode, setTrainingMode] = useState('Surat Mill Campus Workshop');
+  const [trainingMode, setTrainingMode] = useState('Tirupur Mill Campus Workshop');
   const [notes, setNotes] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
@@ -212,7 +212,7 @@ export const TrainingInquiryModal: React.FC<TrainingInquiryModalProps> = ({
                     onChange={(e) => setTrainingMode(e.target.value)}
                     className="w-full bg-[#F9F6ED] dark:bg-[#242624] border border-black/10 dark:border-white/10 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#AC7900] text-[#0F100F] dark:text-white font-medium"
                   >
-                    <option value="Surat Mill Campus Workshop">Surat Mill Campus (Live Machine Lab)</option>
+                    <option value="Tirupur Mill Campus Workshop">Tirupur Mill Campus (Live Machine Lab)</option>
                     <option value="On-Site at College / Studio">On-Site at Your College / Studio</option>
                     <option value="Online Cohort + Raw Kits Shipped">Online Masterclass + Home Kits</option>
                   </select>

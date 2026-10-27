@@ -56,7 +56,7 @@ import {
 } from '../data/apparelCatalogData';
 import { GarmentMockup } from '../components/GarmentMockup';
 import { ThreeDGarmentViewer } from '../components/ThreeDGarmentViewer';
-import { ApparelStudioShell } from '../components/ApparelStudioShell';
+import { ApparelStudioShell, EMBROIDERY_THREADS } from '../components/ApparelStudioShell';
 import { SmartUrlImageExtractorModal } from '../components/SmartUrlImageExtractorModal';
 import { useCart } from '../context/CartContext';
 import { Product, CategoryType } from '../types';
@@ -155,6 +155,9 @@ export const BlankApparelPage: React.FC<BlankApparelPageProps> = ({
   const [isAutoSpinning, setIsAutoSpinning] = useState<boolean>(false);
   const [activeColorIdx, setActiveColorIdx] = useState<number>(0);
   const [customizationMode, setCustomizationMode] = useState<PrintEffect>('dtf');
+  const [embroideryStyle, setEmbroideryStyle] = useState<'flat' | 'puff3d' | 'patch'>('puff3d');
+  const [embroideryThreadColor, setEmbroideryThreadColor] = useState<string>('#D4AF37');
+  const [dtfFinish, setDtfFinish] = useState<'matte' | 'gloss'>('matte');
   const [studioAtmosphere, setStudioAtmosphere] = useState<StudioAtmosphere>('studio');
 
   // Auto-Spin 360 Animation Timer
@@ -289,19 +292,22 @@ export const BlankApparelPage: React.FC<BlankApparelPageProps> = ({
 
   // Unit price calculation
   const unitPrice = useMemo(() => {
+    let base = activeGarment.price;
     // 1. If product has size-specific pricing (e.g. Oversized XS-XXL or Mars Polo)
     if (activeGarment.sizePricing && activeGarment.sizePricing.length > 0) {
       const match = activeGarment.sizePricing.find(s => s.size === selectedSize);
-      if (match) return match.price;
-    }
-    // 2. If product has quantity tiers
-    if (activeGarment.pricingTiers && activeGarment.pricingTiers.length > 1) {
+      if (match) base = match.price;
+    } else if (activeGarment.pricingTiers && activeGarment.pricingTiers.length > 1) {
       const sortedTiers = [...activeGarment.pricingTiers].sort((a, b) => b.minQty - a.minQty);
       const tierMatch = sortedTiers.find(t => quantity >= t.minQty);
-      if (tierMatch) return tierMatch.price;
+      if (tierMatch) base = tierMatch.price;
     }
-    return activeGarment.price;
-  }, [activeGarment, selectedSize, quantity]);
+    // Surcharge for premium thread embroidery (+₹60)
+    if (customizationMode === 'embroidery') {
+      base += 60;
+    }
+    return base;
+  }, [activeGarment, selectedSize, quantity, customizationMode]);
 
   const totalPrice = unitPrice * quantity;
   const originalTotalPrice = (activeGarment.originalPrice || unitPrice * 2) * quantity;
@@ -559,7 +565,7 @@ export const BlankApparelPage: React.FC<BlankApparelPageProps> = ({
 
   // Convert ApparelGarmentItem to Cart Product
   const createCartProduct = (garment: ApparelGarmentItem, qty: number = 1): Product => {
-    const previewImg = activeGraphicUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=600';
+    const previewImg = activeGraphicUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=60&w=600';
     return {
       id: `${garment.id}-${currentColor.code}-${selectedSize}-${Date.now()}`,
       name: `${garment.name} - ${currentColor.name} (${selectedSize})`,
@@ -588,6 +594,10 @@ export const BlankApparelPage: React.FC<BlankApparelPageProps> = ({
       ? sizeBreakdown
       : { [selectedSize]: qty };
 
+    const techDescription = customizationMode === 'embroidery'
+      ? `Embroidery (${embroideryStyle === 'puff3d' ? '3D Puff Raised' : embroideryStyle === 'patch' ? 'Crest Patch' : 'Flat Satin'} · Thread: ${embroideryThreadColor})`
+      : `1200 DPI DTF Printing (${dtfFinish === 'gloss' ? 'Gloss Finish' : 'Matte Finish'})`;
+
     addToCart(
       cartProduct,
       'apparel',
@@ -598,7 +608,7 @@ export const BlankApparelPage: React.FC<BlankApparelPageProps> = ({
         dpi: 1200,
         layoutType: 'single',
         scalePercentage: scalePercent,
-        notes: `Technique: ${customizationMode.toUpperCase()} · Placement: ${artworkPlacement}${customText ? ` · Custom Text: "${customText}"` : ''}`,
+        notes: `Technique: ${techDescription} · Placement: ${artworkPlacement}${customText ? ` · Custom Text: "${customText}"` : ''}`,
       },
       1,
       `${currentColor.name} • ${qty > 1 ? `${qty} pcs Multi-size` : selectedSize}`,
@@ -622,6 +632,10 @@ export const BlankApparelPage: React.FC<BlankApparelPageProps> = ({
       ? sizeBreakdown
       : { [selectedSize]: quantity };
 
+    const techDescription = customizationMode === 'embroidery'
+      ? `Embroidery (${embroideryStyle === 'puff3d' ? '3D Puff Raised' : embroideryStyle === 'patch' ? 'Crest Patch' : 'Flat Satin'} · Thread: ${embroideryThreadColor})`
+      : `1200 DPI DTF Printing (${dtfFinish === 'gloss' ? 'Gloss Finish' : 'Matte Finish'})`;
+
     addToCart(
       cartProduct,
       'apparel',
@@ -632,7 +646,7 @@ export const BlankApparelPage: React.FC<BlankApparelPageProps> = ({
         dpi: 1200,
         layoutType: 'single',
         scalePercentage: scalePercent,
-        notes: `Technique: ${customizationMode.toUpperCase()} · Placement: ${artworkPlacement}${customText ? ` · Custom Text: "${customText}"` : ''}`,
+        notes: `Technique: ${techDescription} · Placement: ${artworkPlacement}${customText ? ` · Custom Text: "${customText}"` : ''}`,
       },
       1,
       `${currentColor.name} • ${quantity > 1 ? `${quantity} pcs Multi-size` : selectedSize}`,
@@ -924,6 +938,14 @@ export const BlankApparelPage: React.FC<BlankApparelPageProps> = ({
               setIsLive3D={setIsLive3D}
               autoRotate={autoRotate}
               setAutoRotate={setAutoRotate}
+              customizationMethod={customizationMode === 'embroidery' ? 'embroidery' : 'dtf'}
+              setCustomizationMethod={(m) => setCustomizationMode(m)}
+              embroideryStyle={embroideryStyle}
+              setEmbroideryStyle={setEmbroideryStyle}
+              embroideryThreadColor={embroideryThreadColor}
+              setEmbroideryThreadColor={setEmbroideryThreadColor}
+              dtfFinish={dtfFinish}
+              setDtfFinish={setDtfFinish}
               selectedSize={selectedSize}
               setSelectedSize={setSelectedSize}
               quantity={quantity}
@@ -1132,10 +1154,13 @@ export const BlankApparelPage: React.FC<BlankApparelPageProps> = ({
                           isFlippedH={isFlippedH}
                           cropShape={cropShape}
                           customText={customText}
-                          customTextColor={customTextColor}
+                          customTextColor={customizationMode === 'embroidery' ? embroideryThreadColor : customTextColor}
                           customTextFont={customTextFont}
                           printEffect={customizationMode}
                           isEmbroidery={customizationMode === 'embroidery'}
+                          embroideryStyle={embroideryStyle}
+                          embroideryThreadColor={embroideryThreadColor}
+                          dtfFinish={dtfFinish}
                           showBoundingBox={Boolean(activeGraphicUrl || customText)}
                           onGraphicPointerDown={handleGraphicPointerDown}
                           onCornerHandlePointerDown={handleCornerHandlePointerDown}
@@ -1604,32 +1629,142 @@ export const BlankApparelPage: React.FC<BlankApparelPageProps> = ({
                       </div>
                     )}
 
-                    {/* TAB 4: PRINT FINISH */}
+                    {/* TAB 4: PRINT FINISH & EMBROIDERY */}
                     {activeStudioTab === 'techniques' && (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 animate-in fade-in duration-200">
-                        {[
-                          { id: 'dtf', label: '1200 DPI DTF', icon: Printer },
-                          { id: 'embroidery', label: '3D Embroidery', icon: Sparkles },
-                          { id: 'foil', label: 'Gold Foil', icon: Flame },
-                          { id: 'puff', label: '3D Puff Print', icon: Layers }
-                        ].map(tech => {
-                          const Icon = tech.icon;
-                          const isSelected = customizationMode === tech.id;
-                          return (
-                            <button
-                              key={tech.id}
-                              onClick={() => setCustomizationMode(tech.id as any)}
-                              className={`p-3 rounded-xl border text-center transition flex flex-col items-center justify-center space-y-1.5 ${
-                                isSelected
-                                  ? 'border-[#AC7900] dark:border-[#D4AF37] bg-amber-500/10 ring-1 ring-[#AC7900]'
-                                  : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#181918] hover:border-black/20'
-                              }`}
-                            >
-                              <Icon className={`w-4 h-4 ${isSelected ? 'text-[#AC7900] dark:text-[#D4AF37]' : 'text-slate-400'}`} />
-                              <span className="text-xs font-bold text-[#0F100F] dark:text-white">{tech.label}</span>
-                            </button>
-                          );
-                        })}
+                      <div className="space-y-4 animate-in fade-in duration-200">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {[
+                            { id: 'dtf', label: '1200 DPI DTF', icon: Printer },
+                            { id: 'embroidery', label: '3D Embroidery', icon: Sparkles },
+                            { id: 'foil', label: 'Gold Foil', icon: Flame },
+                            { id: 'puff', label: '3D Puff Print', icon: Layers }
+                          ].map(tech => {
+                            const Icon = tech.icon;
+                            const isSelected = customizationMode === tech.id;
+                            return (
+                              <button
+                                key={tech.id}
+                                onClick={() => setCustomizationMode(tech.id as any)}
+                                className={`p-3 rounded-xl border text-center transition flex flex-col items-center justify-center space-y-1.5 ${
+                                  isSelected
+                                    ? 'border-[#AC7900] dark:border-[#D4AF37] bg-amber-500/10 ring-1 ring-[#AC7900]'
+                                    : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#181918] hover:border-black/20'
+                                }`}
+                              >
+                                <Icon className={`w-4 h-4 ${isSelected ? 'text-[#AC7900] dark:text-[#D4AF37]' : 'text-slate-400'}`} />
+                                <span className="text-xs font-bold text-[#0F100F] dark:text-white">{tech.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Detailed Options when Embroidery is selected */}
+                        {customizationMode === 'embroidery' && (
+                          <div className="p-3.5 rounded-2xl bg-amber-500/[0.05] border border-amber-500/20 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300">
+                                🧵 Japanese Tajima Machine Threadwork
+                              </span>
+                              <span className="text-[10px] font-extrabold bg-amber-500/20 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded-full">
+                                +₹60 / pc
+                              </span>
+                            </div>
+
+                            {/* Stitch Style Chips */}
+                            <div>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                                Stitch Style:
+                              </span>
+                              <div className="grid grid-cols-3 gap-1.5">
+                                {[
+                                  { id: 'flat' as const, label: 'Flat Satin' },
+                                  { id: 'puff3d' as const, label: '3D Puff Raised' },
+                                  { id: 'patch' as const, label: 'Crest Patch' }
+                                ].map(st => (
+                                  <button
+                                    key={st.id}
+                                    onClick={() => setEmbroideryStyle(st.id)}
+                                    className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition ${
+                                      embroideryStyle === st.id
+                                        ? 'bg-[#0F100F] dark:bg-white text-white dark:text-black border-transparent shadow-xs'
+                                        : 'bg-white dark:bg-[#1A1C1A] border-black/10 dark:border-white/10 text-slate-700 dark:text-slate-300'
+                                    }`}
+                                  >
+                                    {st.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Thread Color Swatches */}
+                            <div>
+                              <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                <span>Thread Color:</span>
+                                <span className="text-[#AC7900] dark:text-[#D4AF37]">
+                                  {EMBROIDERY_THREADS.find(t => t.hex === embroideryThreadColor)?.name || 'Gold'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                                {EMBROIDERY_THREADS.map(t => (
+                                  <button
+                                    key={t.hex}
+                                    onClick={() => {
+                                      setEmbroideryThreadColor(t.hex);
+                                      setCustomTextColor(t.hex);
+                                    }}
+                                    className={`w-7 h-7 rounded-full shrink-0 border-2 transition-transform flex items-center justify-center ${
+                                      embroideryThreadColor === t.hex
+                                        ? 'border-black dark:border-white scale-110 ring-2 ring-amber-500 shadow-sm'
+                                        : 'border-black/20 dark:border-white/20'
+                                    }`}
+                                    style={{ backgroundColor: t.hex }}
+                                    title={t.name}
+                                  >
+                                    {embroideryThreadColor === t.hex && (
+                                      <Check className={`w-3.5 h-3.5 ${t.hex === '#FFFFFF' ? 'text-black' : 'text-white'}`} />
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Detailed Options when DTF is selected */}
+                        {customizationMode === 'dtf' && (
+                          <div className="p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 flex items-center justify-between">
+                            <div>
+                              <span className="text-xs font-bold text-[#0F100F] dark:text-white block">
+                                🎨 1200 DPI Reactive DTF Transfer
+                              </span>
+                              <span className="text-[10px] text-slate-500">
+                                Photographic full-color vibrancy with wash-fast stretch resilience
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                onClick={() => setDtfFinish('matte')}
+                                className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition ${
+                                  dtfFinish === 'matte'
+                                    ? 'bg-[#0F100F] dark:bg-white text-white dark:text-black border-transparent'
+                                    : 'border-black/10 dark:border-white/10'
+                                }`}
+                              >
+                                Matte
+                              </button>
+                              <button
+                                onClick={() => setDtfFinish('gloss')}
+                                className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border transition ${
+                                  dtfFinish === 'gloss'
+                                    ? 'bg-[#0F100F] dark:bg-white text-white dark:text-black border-transparent'
+                                    : 'border-black/10 dark:border-white/10'
+                                }`}
+                              >
+                                Gloss
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 

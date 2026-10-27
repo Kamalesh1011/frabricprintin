@@ -1,12 +1,17 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { cloudflare } from '@cloudflare/vite-plugin';
 import path from 'path';
-import {defineConfig} from 'vite';
+import { defineConfig, type PluginOption } from 'vite';
 
-export default defineConfig(() => {
+export default defineConfig(async ({ command }) => {
+  const plugins: PluginOption[] = [react(), tailwindcss()];
+  if (command === 'build') {
+    const { cloudflare } = await import('@cloudflare/vite-plugin');
+    plugins.unshift(cloudflare());
+  }
+
   return {
-    plugins: [cloudflare(), react(), tailwindcss()],
+    plugins,
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
@@ -19,7 +24,13 @@ export default defineConfig(() => {
       rollupOptions: {
         output: {
           manualChunks(id: string) {
-            if (!id.includes('node_modules')) return undefined;
+            if (!id.includes('node_modules')) {
+              // Pin Vite's dynamic-import preload helper into the eager 'react'
+              // chunk. Otherwise Rollup may place it in the 'three' chunk, which
+              // makes the initial page statically import ~250 KB of three.js.
+              if (id.includes('vite/preload-helper')) return 'react';
+              return undefined;
+            }
             const norm = id.split('\\').join('/');
             if (norm.includes('/three/') || norm.includes('@react-three/') || norm.includes('/three-stdlib/')) {
               return 'three';

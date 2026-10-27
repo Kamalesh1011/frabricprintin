@@ -24,12 +24,24 @@ import {
   RefreshCw,
   Pause,
   Play,
+  Sparkles,
 } from 'lucide-react';
 import { GarmentMockup, GarmentModelType } from './GarmentMockup';
 import { ThreeDGarmentViewer } from './ThreeDGarmentViewer';
 import { SAMPLE_GRAPHICS_LIBRARY, ApparelGarmentItem } from '../data/apparelCatalogData';
 
-export type ShellSheet = 'none' | 'color' | 'add' | 'pad' | 'edit' | 'product';
+export type ShellSheet = 'none' | 'method' | 'color' | 'add' | 'pad' | 'edit' | 'product';
+
+export const EMBROIDERY_THREADS = [
+  { name: 'Metallic Gold', hex: '#D4AF37' },
+  { name: 'Metallic Silver', hex: '#C0C0C0' },
+  { name: 'Optical White', hex: '#FFFFFF' },
+  { name: 'Pitch Black', hex: '#18181B' },
+  { name: 'Crimson Red', hex: '#DC2626' },
+  { name: 'Royal Navy', hex: '#1E3A8A' },
+  { name: 'Emerald Green', hex: '#15803D' },
+  { name: 'Sunset Orange', hex: '#EA580C' }
+];
 
 interface ApparelStudioShellProps {
   garment: ApparelGarmentItem;
@@ -69,6 +81,15 @@ interface ApparelStudioShellProps {
   setIsLive3D: (v: boolean) => void;
   autoRotate: boolean;
   setAutoRotate: (v: boolean) => void;
+  // Customization Options: DTF & Embroidery
+  customizationMethod?: 'dtf' | 'embroidery';
+  setCustomizationMethod?: (m: 'dtf' | 'embroidery') => void;
+  embroideryStyle?: 'flat' | 'puff3d' | 'patch';
+  setEmbroideryStyle?: (s: 'flat' | 'puff3d' | 'patch') => void;
+  embroideryThreadColor?: string;
+  setEmbroideryThreadColor?: (c: string) => void;
+  dtfFinish?: 'matte' | 'gloss';
+  setDtfFinish?: (f: 'matte' | 'gloss') => void;
   // Commerce
   selectedSize: string;
   setSelectedSize: (s: string) => void;
@@ -100,9 +121,28 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
     customText, setCustomText, customTextColor, setCustomTextColor,
     handleResetArtwork, canUndo, canRedo, handleUndo, handleRedo, onBack,
     isLive3D, setIsLive3D, autoRotate, setAutoRotate,
+    customizationMethod: propCustomizationMethod, setCustomizationMethod: propSetCustomizationMethod,
+    embroideryStyle: propEmbroideryStyle, setEmbroideryStyle: propSetEmbroideryStyle,
+    embroideryThreadColor: propEmbroideryThreadColor, setEmbroideryThreadColor: propSetEmbroideryThreadColor,
+    dtfFinish: propDtfFinish, setDtfFinish: propSetDtfFinish,
     selectedSize, setSelectedSize, quantity, setQuantity, totalPrice,
     onAddToCart, onBuyNow,
   } = props;
+
+  // Local state fallbacks if not supplied by parent
+  const [localMethod, setLocalMethod] = useState<'dtf' | 'embroidery'>('dtf');
+  const [localEmbStyle, setLocalEmbStyle] = useState<'flat' | 'puff3d' | 'patch'>('puff3d');
+  const [localThreadCol, setLocalThreadCol] = useState<string>('#D4AF37');
+  const [localDtfFinish, setLocalDtfFinish] = useState<'matte' | 'gloss'>('matte');
+
+  const method = propCustomizationMethod ?? localMethod;
+  const setMethod = propSetCustomizationMethod ?? setLocalMethod;
+  const embStyle = propEmbroideryStyle ?? localEmbStyle;
+  const setEmbStyle = propSetEmbroideryStyle ?? setLocalEmbStyle;
+  const threadCol = propEmbroideryThreadColor ?? localThreadCol;
+  const setThreadCol = propSetEmbroideryThreadColor ?? setLocalThreadCol;
+  const finish = propDtfFinish ?? localDtfFinish;
+  const setFinish = propSetDtfFinish ?? setLocalDtfFinish;
 
   const [sheet, setSheet] = useState<ShellSheet>('pad');
   const [showPrintPanel, setShowPrintPanel] = useState<boolean>(true);
@@ -284,6 +324,30 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
           </div>
         )}
 
+        {/* Floating Technique & Thread Badge */}
+        <div className="absolute top-13 left-3 z-20 flex items-center gap-1.5">
+          <button
+            onClick={() => toggleSheet('method')}
+            className={`backdrop-blur-md text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1.5 transition active:scale-95 ${
+              method === 'embroidery'
+                ? 'bg-black/85 border border-amber-500/70 text-amber-300'
+                : 'bg-black/85 border border-white/20 text-white/90'
+            }`}
+          >
+            {method === 'embroidery' ? (
+              <>
+                <span className="w-2.5 h-2.5 rounded-full border border-white/40 inline-block shrink-0 shadow-xs" style={{ backgroundColor: threadCol }} />
+                <span>🧵 {embStyle === 'puff3d' ? '3D Puff Embroidery' : embStyle === 'patch' ? 'Crest Patch' : 'Satin Embroidery'}</span>
+              </>
+            ) : (
+              <>
+                <span>🎨 1200 DPI DTF ({finish === 'gloss' ? 'Gloss' : 'Matte'})</span>
+              </>
+            )}
+            <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+          </button>
+        </div>
+
         {/* Live garment */}
         <div className="absolute inset-0 pt-12 pb-10">
           {isLive3D ? (
@@ -311,7 +375,12 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
               offsetY={offsetY}
               isFlippedH={isFlippedH}
               customText={customText}
-              customTextColor={customTextColor}
+              customTextColor={method === 'embroidery' ? threadCol : customTextColor}
+              printEffect={method}
+              isEmbroidery={method === 'embroidery'}
+              embroideryStyle={embStyle}
+              embroideryThreadColor={threadCol}
+              dtfFinish={finish}
               showBoundingBox={false}
               className="w-full h-full"
             />
@@ -467,6 +536,159 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
       </div>
 
       {/* ===== Sheets ===== */}
+      {/* 1. Method Sheet (DTF Printing vs 3D Embroidery) */}
+      {sheet === 'method' && (
+        <div className="mx-3 mt-2 rounded-2xl bg-black/90 border border-white/10 p-3.5 space-y-3 animate-in slide-in-from-bottom-2">
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider">
+              Customization Technique
+            </div>
+            <span className="text-[10px] font-bold text-amber-400">
+              {method === 'embroidery' ? '🧵 Tajima Stitched (+₹60)' : '🎨 1200 DPI Heat Transfer'}
+            </span>
+          </div>
+
+          {/* 2 Primary Method Cards: DTF vs Embroidery */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* DTF Card */}
+            <button
+              onClick={() => setMethod('dtf')}
+              className={`p-3 rounded-xl border text-left transition relative flex flex-col justify-between ${
+                method === 'dtf'
+                  ? 'border-amber-500 bg-amber-500/15 ring-1 ring-amber-500/40 text-white'
+                  : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-black">🎨 DTF Printing</span>
+                  {method === 'dtf' && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                </div>
+                <p className="text-[9px] text-white/60 leading-tight">
+                  Ultra-HD digital film transfer, full color gradients
+                </p>
+              </div>
+              <div className="mt-2 text-[10px] font-extrabold text-emerald-400">
+                Standard (₹0)
+              </div>
+            </button>
+
+            {/* Embroidery Card */}
+            <button
+              onClick={() => setMethod('embroidery')}
+              className={`p-3 rounded-xl border text-left transition relative flex flex-col justify-between ${
+                method === 'embroidery'
+                  ? 'border-amber-500 bg-amber-500/15 ring-1 ring-amber-500/40 text-white'
+                  : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-black">🧵 Embroidery</span>
+                  {method === 'embroidery' && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                </div>
+                <p className="text-[9px] text-white/60 leading-tight">
+                  Premium stitched thread, textured 3D raised feel
+                </p>
+              </div>
+              <div className="mt-2 text-[10px] font-extrabold text-amber-400">
+                Premium (+₹60)
+              </div>
+            </button>
+          </div>
+
+          {/* Detailed options depending on selected method */}
+          {method === 'dtf' ? (
+            <div className="pt-2 border-t border-white/10 space-y-2">
+              <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider block">
+                DTF Finish Option
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setFinish('matte')}
+                  className={`py-2 px-2.5 rounded-xl text-[11px] font-bold border transition ${
+                    finish === 'matte'
+                      ? 'bg-white text-black border-white'
+                      : 'border-white/15 text-white/70 bg-white/5'
+                  }`}
+                >
+                  Matte Finish (Standard)
+                </button>
+                <button
+                  onClick={() => setFinish('gloss')}
+                  className={`py-2 px-2.5 rounded-xl text-[11px] font-bold border transition ${
+                    finish === 'gloss'
+                      ? 'bg-white text-black border-white'
+                      : 'border-white/15 text-white/70 bg-white/5'
+                  }`}
+                >
+                  Gloss Luster (Vibrant)
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="pt-2 border-t border-white/10 space-y-2.5">
+              {/* Embroidery Stitch Style */}
+              <div>
+                <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider block mb-1">
+                  Embroidery Stitch Style
+                </span>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[
+                    { id: 'flat' as const, label: 'Flat Satin', desc: 'Smooth text' },
+                    { id: 'puff3d' as const, label: '3D Puff Raised', desc: 'Streetwear' },
+                    { id: 'patch' as const, label: 'Crest Patch', desc: 'Badge border' }
+                  ].map(st => (
+                    <button
+                      key={st.id}
+                      onClick={() => setEmbStyle(st.id)}
+                      className={`p-1.5 rounded-xl text-center border transition ${
+                        embStyle === st.id
+                          ? 'bg-white text-black border-white'
+                          : 'border-white/15 text-white/70 bg-white/5'
+                      }`}
+                    >
+                      <span className="block text-[10px] font-black">{st.label}</span>
+                      <span className="text-[8px] opacity-70 block">{st.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Embroidery Thread Colors */}
+              <div>
+                <div className="flex items-center justify-between text-[10px] font-bold text-white/50 uppercase tracking-wider mb-1">
+                  <span>Thread Color</span>
+                  <span className="text-amber-400">
+                    {EMBROIDERY_THREADS.find(t => t.hex === threadCol)?.name || 'Gold'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  {EMBROIDERY_THREADS.map(t => (
+                    <button
+                      key={t.hex}
+                      onClick={() => {
+                        setThreadCol(t.hex);
+                        setCustomTextColor(t.hex);
+                      }}
+                      className={`w-7 h-7 rounded-full shrink-0 border-2 transition-transform flex items-center justify-center ${
+                        threadCol === t.hex ? 'border-white scale-110 ring-2 ring-amber-500' : 'border-white/20'
+                      }`}
+                      style={{ backgroundColor: t.hex }}
+                      title={t.name}
+                    >
+                      {threadCol === t.hex && (
+                        <Check className={`w-3.5 h-3.5 ${t.hex === '#FFFFFF' ? 'text-black' : 'text-white'}`} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {sheet === 'color' && (
         <div className="mx-3 mt-2 rounded-2xl bg-black/80 border border-white/10 p-3 animate-in slide-in-from-bottom-2">
           <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider mb-2">Color • {currentColor.name}</div>
@@ -607,6 +829,16 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
               ))}
             </div>
           </div>
+          {/* Technique Summary Badge */}
+          <div className="flex items-center justify-between text-xs bg-white/5 p-2 rounded-xl border border-white/10">
+            <span className="text-white/60 font-medium">Technique:</span>
+            <span className="font-bold text-amber-400">
+              {method === 'embroidery'
+                ? `🧵 ${embStyle === 'puff3d' ? '3D Puff' : embStyle === 'patch' ? 'Crest Patch' : 'Satin'} Embroidery`
+                : `🎨 DTF Print (${finish === 'gloss' ? 'Gloss' : 'Matte'})`}
+            </span>
+          </div>
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button onClick={() => setQuantity(q => Math.max(1, (typeof q === 'number' ? q : 1) - 1))} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
@@ -632,9 +864,12 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
 
       <div className="flex-1" />
 
-      {/* ===== Bottom toolbar: Color • Add • Pad • Edit • Flip ===== */}
+      {/* ===== Bottom toolbar: Method • Color • Add • Pad • Edit ===== */}
       <div className="sticky bottom-0 px-3 pb-3 pb-safe pt-1 bg-gradient-to-t from-[#262624] via-[#262624] to-transparent">
         <div className="flex items-stretch gap-1 bg-black/90 border border-white/10 rounded-2xl p-1.5 shadow-2xl">
+          <button onClick={() => toggleSheet('method')} className={toolbarBtn(sheet === 'method')}>
+            <Sparkles className="w-4 h-4 text-amber-400" /><span>Method</span>
+          </button>
           <button onClick={() => toggleSheet('color')} className={toolbarBtn(sheet === 'color')}>
             <Palette className="w-4 h-4" /><span>Color</span>
           </button>
@@ -646,9 +881,6 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
           </button>
           <button onClick={() => toggleSheet('edit')} className={toolbarBtn(sheet === 'edit')}>
             <Pencil className="w-4 h-4" /><span>Edit</span>
-          </button>
-          <button onClick={() => setIsFlippedH((v: boolean) => !v)} className={toolbarBtn(isFlippedH)}>
-            <FlipHorizontal className="w-4 h-4" /><span>Flip</span>
           </button>
         </div>
       </div>

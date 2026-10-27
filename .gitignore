@@ -10,3 +10,5 @@ coverage/
 *.exe
 .wrangler/
 .dev.vars
+data/*.db
+data/*.db-journal

@@ -27,7 +27,7 @@ export const POPULAR_DESIGNS_DATA: PopularDesignItem[] = [
     id: 'pop-ikat-chevron',
     name: 'Earthy Chevron Ikat Weave',
     category: 'Ikat & Chevron',
-    imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=80&w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=60&w=800',
     tags: ['Trending', 'Boho Chic', '300 DPI'],
     recommendedFabrics: ['Cotton Viscose Slub', 'Linen', 'Cotton Mulmul'],
     popularScore: 98
@@ -36,7 +36,7 @@ export const POPULAR_DESIGNS_DATA: PopularDesignItem[] = [
     id: 'pop-pink-lotus',
     name: 'Blush Lotus Symmetry Motif',
     category: 'Floral',
-    imageUrl: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=60&w=800',
     tags: ['Bestseller', 'Pastel Bloom', '300 DPI'],
     recommendedFabrics: ['Viscose Moroccan Crepe', 'Silk Crepe', 'Modal Satin'],
     popularScore: 99
@@ -45,7 +45,7 @@ export const POPULAR_DESIGNS_DATA: PopularDesignItem[] = [
     id: 'pop-mustard-floral',
     name: 'Marigold Meadow Bellflower',
     category: 'Floral',
-    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=60&w=800',
     tags: ['Festive', 'Vibrant Yellow', '300 DPI'],
     recommendedFabrics: ['Cotton Cambric', 'Viscose Cupro', 'Tencel'],
     popularScore: 95
@@ -54,7 +54,7 @@ export const POPULAR_DESIGNS_DATA: PopularDesignItem[] = [
     id: 'pop-botanical-bloom',
     name: 'Vintage Botanical Blossom',
     category: 'Botanical',
-    imageUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=60&w=800',
     tags: ['Designer Pick', 'Soft Pastel', '300 DPI'],
     recommendedFabrics: ['Mulberry Silk Crepe', 'Bamboo Lycra', 'Silk Organza'],
     popularScore: 97
@@ -63,7 +63,7 @@ export const POPULAR_DESIGNS_DATA: PopularDesignItem[] = [
     id: 'pop-autumn-foliage',
     name: 'Autumn Woodland Ferns & Berries',
     category: 'Botanical',
-    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=60&w=800',
     tags: ['Fall Season', 'Rich Earthy', '300 DPI'],
     recommendedFabrics: ['French Flax Linen', 'Cotton Poplin', 'Viscose Dobby'],
     popularScore: 94
@@ -72,7 +72,7 @@ export const POPULAR_DESIGNS_DATA: PopularDesignItem[] = [
     id: 'pop-mughal-damask',
     name: 'Royal Heritage Mughal Damask',
     category: 'Mughal Damask',
-    imageUrl: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=80&w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=60&w=800',
     tags: ['Luxury Couture', 'Gold & Ink', '300 DPI'],
     recommendedFabrics: ['Modal Satin', 'Viscose Drum Crepe', 'Silk'],
     popularScore: 96
@@ -81,7 +81,7 @@ export const POPULAR_DESIGNS_DATA: PopularDesignItem[] = [
     id: 'pop-geometric-tile',
     name: 'Indigo Mosaic Geometry',
     category: 'Abstract Geometric',
-    imageUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=800',
+    imageUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=60&w=800',
     tags: ['Modern Ethnic', 'High Precision', '300 DPI'],
     recommendedFabrics: ['Cotton Cambric', 'Organic Cotton', 'Linen'],
     popularScore: 92

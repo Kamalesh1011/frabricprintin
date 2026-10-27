@@ -58,7 +58,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onGoToCheckout, onGoToFa
     if (applyCoupon(inputCoupon)) {
       setCouponSuccess('Promo code applied successfully!');
     } else {
-      setCouponError('Invalid coupon code. Try TEXPRINT10 or WELCOME10');
+      setCouponError('Invalid coupon code. Try FABRICPRINT10 or WELCOME10');
     }
   };
 
@@ -138,7 +138,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onGoToCheckout, onGoToFa
                       {/* Product Thumbnail / Custom Design Snapshot */}
                       <div className="relative w-16 h-16 rounded-2xl overflow-hidden bg-[#F3F0E8] dark:bg-[#222422] border border-black/10 dark:border-white/[0.1] shrink-0 group/thumb">
                         <img
-                          src={item.customPreviewUrl || item.printOptions?.designUrl || item.product?.image_url || item.product?.images?.[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=600'}
+                          src={item.customPreviewUrl || item.printOptions?.designUrl || item.product?.image_url || item.product?.images?.[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=60&w=600'}
                           alt={item.product?.name || 'Product'}
                           className="w-full h-full object-cover"
                         />
@@ -307,7 +307,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onGoToCheckout, onGoToFa
                   type="text"
                   value={inputCoupon}
                   onChange={(e) => setInputCoupon(e.target.value)}
-                  placeholder="Coupon code (e.g. TEXPRINT10)"
+                  placeholder="Coupon code (e.g. FABRICPRINT10)"
                   className="flex-1 bg-[#F9F6ED] dark:bg-[#242624] border border-black/10 dark:border-white/[0.1] rounded-full px-3.5 py-1.5 text-xs text-[#0F100F] dark:text-white placeholder-gray-400 focus:outline-none"
                 />
                 <button

@@ -11,12 +11,14 @@ const WishlistContext = createContext<WishlistContextType | undefined>(undefined
 
 export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [wishlist, setWishlist] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('texprint_wishlist');
+    const legacy = localStorage.getItem('texprint_wishlist');
+    if (legacy) localStorage.removeItem('texprint_wishlist');
+    const saved = localStorage.getItem('fabricprint_wishlist') || legacy;
     return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
-    localStorage.setItem('texprint_wishlist', JSON.stringify(wishlist));
+    localStorage.setItem('fabricprint_wishlist', JSON.stringify(wishlist));
   }, [wishlist]);
 
   const toggleWishlist = (product: Product) => {
