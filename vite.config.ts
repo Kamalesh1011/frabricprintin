@@ -3,12 +3,10 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig, type PluginOption } from 'vite';
 
-export default defineConfig(async ({ command }) => {
+export default defineConfig(() => {
+  // The API Worker (worker/index.ts) is bundled and deployed by wrangler;
+  // Vite only builds the static frontend into dist/.
   const plugins: PluginOption[] = [react(), tailwindcss()];
-  if (command === 'build') {
-    const { cloudflare } = await import('@cloudflare/vite-plugin');
-    plugins.unshift(cloudflare());
-  }
 
   return {
     plugins,
@@ -46,6 +44,10 @@ export default defineConfig(async ({ command }) => {
       },
     },
     server: {
+      // `npm run dev:api` serves the Worker (with local D1/KV) on :8787.
+      proxy: {
+        '/api': 'http://localhost:8787'
+      },
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',

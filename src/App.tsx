@@ -9,7 +9,6 @@ import { Footer } from './components/Footer';
 import { CartDrawer } from './components/CartDrawer';
 import { BulkInquiryModal } from './components/BulkInquiryModal';
 import { WhatsAppButton } from './components/WhatsAppButton';
-import { ChatBotWidget } from './components/ChatBot/ChatBotWidget';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { EntryWhatsAppModal } from './components/EntryWhatsAppModal';
 
@@ -58,51 +57,28 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { fetchCategories, fetchProducts } from './services/api';
 import { Category, Product, Order } from './types';
 import { INITIAL_PRODUCTS } from './data/mockData';
+import { migrateLegacyHashUrl, parseLocation, pathForTab } from './lib/routes';
 
 export function MainAppContent() {
-  const getInitialTab = (): string => {
-    const hash = window.location.hash.replace('#', '');
-    if (
-      hash &&
-      [
-        'home',
-        'fabrics',
-        'apparel',
-        'apparel-studio',
-        'jersey',
-        'uniforms',
-        'merch',
-        'training',
-        'customizer',
-        'about',
-        'contact',
-        'login',
-        'dashboard',
-        'wishlist',
-        'checkout',
-        'product-detail',
-        'order-success',
-        'admin'
-      ].includes(hash)
-    ) {
-      return hash;
-    }
-    return 'home';
-  };
+  const [initialLocation] = useState(() => {
+    migrateLegacyHashUrl();
+    return parseLocation();
+  });
 
   const { isAdmin } = useAuth();
-  const [activeTab, setActiveTabState] = useState<string>(getInitialTab);
+  const [activeTab, setActiveTabState] = useState<string>(initialLocation.tab);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingProductId, setPendingProductId] = useState<string | undefined>(initialLocation.productId);
 
-  // Synchronized tab navigation with browser history
-  const setActiveTab = (tab: string, pushHistory = true) => {
+  // Synchronized tab navigation with browser history (clean paths, not #hash)
+  const setActiveTab = (tab: string, pushHistory = true, productId?: string) => {
     setActiveTabState(tab);
     if (pushHistory) {
-      const targetHash = '#' + tab;
-      if (window.location.hash !== targetHash) {
-        window.history.pushState({ tab }, '', targetHash);
+      const targetPath = pathForTab(tab, productId);
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ tab, productId }, '', targetPath);
       }
     }
   };
@@ -110,16 +86,22 @@ export function MainAppContent() {
   // Listen to browser Back and Forward buttons
   useEffect(() => {
     const handlePopState = () => {
-      const hash = window.location.hash.replace('#', '') || 'home';
-      setActiveTabState(hash);
+      const loc = parseLocation();
+      setActiveTabState(loc.tab);
+      if (loc.productId) setPendingProductId(loc.productId);
+    };
+
+    // Old-style in-page links like <a href="#fabrics"> still work.
+    const handleHashChange = () => {
+      migrateLegacyHashUrl();
+      handlePopState();
     };
 
     window.addEventListener('popstate', handlePopState);
-    window.addEventListener('hashchange', handlePopState);
-
+    window.addEventListener('hashchange', handleHashChange);
     return () => {
       window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('hashchange', handlePopState);
+      window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
 
@@ -142,8 +124,24 @@ export function MainAppContent() {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeTab]);
+
+  // Resolve /product/:id deep links once the catalog has loaded.
+  useEffect(() => {
+    if (!pendingProductId || products.length === 0) return;
+    const match = products.find((p) => p.id === pendingProductId);
+    if (match) {
+      setSelectedProduct(match);
+    } else {
+      setActiveTab('fabrics', false);
+      window.history.replaceState({ tab: 'fabrics' }, '', '/fabrics');
+    }
+    setPendingProductId(undefined);
+  }, [pendingProductId, products]);
 
   const defaultFabricProduct = products.find((p) => p.id === 'p-1') || products[0] || INITIAL_PRODUCTS[0];
 
@@ -156,7 +154,7 @@ export function MainAppContent() {
 
   const handleSelectProduct = (product: Product) => {
     setSelectedProduct(product);
-    setActiveTab('product-detail');
+    setActiveTab('product-detail', true, product.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -289,11 +287,14 @@ export function MainAppContent() {
               />
             )}
 
-            {activeTab === 'product-detail' && (
+            {activeTab === 'product-detail' && !pendingProductId && (
               <ProductDetailView
                 product={selectedProduct || defaultFabricProduct}
                 allProducts={products.length > 0 ? products : INITIAL_PRODUCTS}
-                onSelectProduct={(p) => setSelectedProduct(p)}
+                onSelectProduct={(p) => {
+                  setSelectedProduct(p);
+                  window.history.replaceState({ tab: 'product-detail', productId: p.id }, '', pathForTab('product-detail', p.id));
+                }}
                 onGoToCheckout={handleGoToCheckout}
                 onOpenBulkInquiry={() => setBulkInquiryOpen(true)}
                 onBackToFabrics={() => {
@@ -425,13 +426,6 @@ export function MainAppContent() {
       {/* Floating Buttons: Hide on mobile when on product-detail to prevent overlapping controls */}
       <div className={activeTab === 'product-detail' ? 'hidden lg:block' : 'block'}>
         <WhatsAppButton />
-        <ChatBotWidget
-          onNavigate={(tab) => {
-            setActiveTab(tab);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          onOpenBulkInquiry={() => setBulkInquiryOpen(true)}
-        />
       </div>
 
       {/* Global Footer */}

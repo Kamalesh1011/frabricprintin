@@ -63,7 +63,7 @@ export const SAMPLE_FABRIC_PRINTS = [
     id: 'sp-floral',
     name: 'Jaipur Botanical Floral',
     category: 'Floral',
-    url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=60',
+    url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=800&q=60',
     color: '#D9534F'
   },
   {

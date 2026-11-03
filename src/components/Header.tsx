@@ -389,7 +389,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* CENTER: UNIFIED NAVIGATION TABS (USER-FRIENDLY HOVER BRIDGE & 300MS DEBOUNCE) */}
-          <nav className="hidden lg:flex items-center space-x-1 select-none">
+          <nav className="hidden xl:flex items-center space-x-1 select-none">
 
             {/* 1. Home */}
             <button
@@ -578,7 +578,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Sparkles className="w-3.5 h-3.5 text-[#AC7900] dark:text-[#D4AF37] animate-pulse" />
               <span>Customize</span>
-              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-gradient-to-r from-[#AC7900] to-[#D4AF37] text-white">
+              <span className="hidden min-[1800px]:inline px-1.5 py-0.2 rounded-full text-[9px] font-black bg-gradient-to-r from-[#AC7900] to-[#D4AF37] text-white">
                 3D
               </span>
             </button>
@@ -737,7 +737,7 @@ export const Header: React.FC<HeaderProps> = ({
                 className={getNavButtonClass('merch')}
               >
                 <span>Accessories</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-[#AC7900] text-white dark:bg-[#D4AF37] dark:text-black">
+                <span className="hidden min-[1800px]:inline px-1.5 py-0.2 rounded-full text-[9px] font-black bg-[#AC7900] text-white dark:bg-[#D4AF37] dark:text-black">
                   NEW
                 </span>
                 <ChevronDown className={`w-3 h-3 opacity-60 ml-0.5 transition-transform duration-200 ${merchMenuOpen ? 'rotate-180' : ''}`} />
@@ -877,7 +877,7 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <GraduationCap className="w-3.5 h-3.5 text-[#AC7900] dark:text-[#D4AF37]" />
                 <span>Training</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-[#AC7900] text-white dark:bg-[#D4AF37] dark:text-black">
+                <span className="hidden min-[1800px]:inline px-1.5 py-0.2 rounded-full text-[9px] font-black bg-[#AC7900] text-white dark:bg-[#D4AF37] dark:text-black">
                   7
                 </span>
                 <ChevronDown className={`w-3 h-3 opacity-60 ml-0.5 transition-transform duration-200 ${trainingMenuOpen ? 'rotate-180' : ''}`} />
@@ -940,21 +940,21 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
-            {/* 7. About Us */}
-            <button
-              onClick={() => setActiveTab('about')}
-              className={getNavButtonClass('about')}
-            >
-              <span>About</span>
-            </button>
-
-            {/* 8. Contact Us */}
-            <button
-              onClick={() => setActiveTab('contact')}
-              className={getNavButtonClass('contact')}
-            >
-              <span>Contact</span>
-            </button>
+            {/* 7–8. About / Contact (also in the top bar + footer; only shown here on very wide screens) */}
+            <div className="hidden min-[1800px]:flex items-center space-x-1">
+              <button
+                onClick={() => setActiveTab('about')}
+                className={getNavButtonClass('about')}
+              >
+                <span>About</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('contact')}
+                className={getNavButtonClass('contact')}
+              >
+                <span>Contact</span>
+              </button>
+            </div>
 
           </nav>
 
@@ -962,10 +962,10 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center space-x-2 select-none">
 
             {/* Search Pill Capsule */}
-            <div className="relative hidden md:block">
+            <div className="relative hidden md:block xl:hidden 2xl:block">
               <form
                 onSubmit={handleSearchSubmit}
-                className={`relative transition-all duration-200 ${isSearchFocused ? 'w-48 lg:w-56 xl:w-64' : 'w-32 lg:w-36 xl:w-44'
+                className={`relative transition-all duration-200 ${isSearchFocused ? 'w-48 lg:w-56 xl:w-56' : 'w-32 lg:w-36 xl:w-32 min-[1800px]:w-44'
                   }`}
               >
                 <div className="flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/10 border border-black/10 dark:border-white/10 rounded-full pl-3 pr-2 py-1.5 transition-all">
@@ -988,7 +988,7 @@ export const Header: React.FC<HeaderProps> = ({
                       <X className="w-3 h-3" />
                     </button>
                   ) : (
-                    <kbd className="hidden xl:inline-flex items-center gap-0.5 rounded border border-black/10 dark:border-white/15 bg-white dark:bg-black/40 px-1.5 py-0.5 text-[9px] text-slate-500 font-mono shrink-0">
+                    <kbd className="hidden min-[1800px]:inline-flex items-center gap-0.5 rounded border border-black/10 dark:border-white/15 bg-white dark:bg-black/40 px-1.5 py-0.5 text-[9px] text-slate-500 font-mono shrink-0">
                       ⌘K
                     </kbd>
                   )}
@@ -1041,7 +1041,7 @@ export const Header: React.FC<HeaderProps> = ({
                 )}
               </button>
               {/* Instant Micro-Tooltip */}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-slate-900 text-white text-[10px] font-semibold rounded-md shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50 hidden sm:block">
+              <div className="absolute top-full right-0 mt-2 px-2 py-1 bg-slate-900 text-white text-[10px] font-semibold rounded-md shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50 hidden sm:block">
                 Saved Swatches
               </div>
             </div>
@@ -1063,13 +1063,13 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
                 <span className="hidden sm:inline">Cart</span>
                 {cartItemCount > 0 && (
-                  <span className="text-[#D4AF37] dark:text-[#AC7900] font-black pl-0.5 hidden lg:inline">
+                  <span className="text-[#D4AF37] dark:text-[#AC7900] font-black pl-0.5 hidden min-[1800px]:inline">
                     (₹{cartSubtotal.toLocaleString('en-IN')})
                   </span>
                 )}
               </button>
               {/* Instant Micro-Tooltip */}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-slate-900 text-white text-[10px] font-semibold rounded-md shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50 hidden sm:block">
+              <div className="absolute top-full right-0 mt-2 px-2 py-1 bg-slate-900 text-white text-[10px] font-semibold rounded-md shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50 hidden sm:block">
                 View Cart & Checkout
               </div>
             </div>
@@ -1087,7 +1087,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <User className="w-4 h-4" />
               </button>
               {/* Instant Micro-Tooltip */}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-slate-900 text-white text-[10px] font-semibold rounded-md shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50 hidden sm:block">
+              <div className="absolute top-full right-0 mt-2 px-2 py-1 bg-slate-900 text-white text-[10px] font-semibold rounded-md shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50 hidden sm:block">
                 Account & Orders
               </div>
             </div>
@@ -1095,7 +1095,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Mobile Hamburger Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1A1C1A] text-slate-800 dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition"
+              className="xl:hidden p-2 rounded-full border border-black/10 dark:border-white/10 bg-white dark:bg-[#1A1C1A] text-slate-800 dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -1106,7 +1106,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* MOBILE MENU FULL DRAWER (SOLID 100% OPAQUE VIEWPORT OVERLAY - ZERO BLEED-THROUGH) */}
         {mobileMenuOpen && (
-          <div className="lg:hidden fixed inset-0 z-[100] bg-[#FEFBF1] dark:bg-[#111211] text-[#0F100F] dark:text-white flex flex-col animate-in fade-in duration-200">
+          <div className="xl:hidden fixed inset-0 z-[100] bg-[#FEFBF1] dark:bg-[#111211] text-[#0F100F] dark:text-white flex flex-col animate-in fade-in duration-200">
             {/* Top Bar with Logo & Explicit Close Button */}
             <div className="bg-[#FEFBF1] dark:bg-[#111211] border-b border-black/10 dark:border-white/10 px-4 py-3 flex items-center justify-between shrink-0 shadow-xs">
               <div

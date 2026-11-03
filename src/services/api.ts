@@ -23,65 +23,6 @@ import {
   INITIAL_SWATCH_BOOKS
 } from '../data/mockData';
 
-function getLocalProducts(): Product[] {
-  try {
-    const data = localStorage.getItem('custom_products');
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveToLocalProducts(prod: Product) {
-  try {
-    const list = getLocalProducts();
-    const filtered = list.filter(p => p.id !== prod.id);
-    filtered.unshift(prod);
-    localStorage.setItem('custom_products', JSON.stringify(filtered));
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-function updateLocalProduct(prod: Product) {
-  try {
-    const list = getLocalProducts();
-    const idx = list.findIndex(p => p.id === prod.id);
-    if (idx !== -1) {
-      list[idx] = prod;
-    } else {
-      list.unshift(prod);
-    }
-    localStorage.setItem('custom_products', JSON.stringify(list));
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-function deleteLocalProduct(id: string) {
-  try {
-    const list = getLocalProducts();
-    const filtered = list.filter(p => p.id !== id);
-    localStorage.setItem('custom_products', JSON.stringify(filtered));
-    
-    const deletedIds = JSON.parse(localStorage.getItem('deleted_product_ids') || '[]');
-    if (!deletedIds.includes(id)) {
-      deletedIds.push(id);
-      localStorage.setItem('deleted_product_ids', JSON.stringify(deletedIds));
-    }
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-function getDeletedProductIds(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem('deleted_product_ids') || '[]');
-  } catch {
-    return [];
-  }
-}
-
 // SMART URL / GOOGLE IMAGE EXTRACTION API
 export async function extractImageFromUrl(url: string): Promise<ExtractedImageInfo> {
   try {
@@ -140,33 +81,10 @@ export async function fetchProducts(category?: string, search?: string, certifie
 
     const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch products');
-    const apiProducts: Product[] = await res.json();
-    
-    const locals = getLocalProducts();
-    const deletedIds = getDeletedProductIds();
-    let combined = [...apiProducts];
-    
-    locals.forEach(lp => {
-      if (!combined.some(ap => ap.id === lp.id)) {
-        combined.unshift(lp);
-      }
-    });
-    
-    return combined.filter(p => !deletedIds.includes(p.id));
+    return (await res.json()) as Product[];
   } catch (err) {
-    console.warn('API unavailable, returning combined local data:', err);
+    console.warn('API unavailable, showing built-in catalog:', err);
     let list = [...INITIAL_PRODUCTS];
-    const locals = getLocalProducts();
-    const deletedIds = getDeletedProductIds();
-    
-    locals.forEach(lp => {
-      if (!list.some(p => p.id === lp.id)) {
-        list.unshift(lp);
-      }
-    });
-
-    list = list.filter(p => !deletedIds.includes(p.id));
-
     if (category && category !== 'All') {
       list = list.filter(p => p.category.toLowerCase() === category.toLowerCase());
     }
@@ -182,89 +100,47 @@ export async function fetchProducts(category?: string, search?: string, certifie
 }
 
 export async function fetchProductById(id: string): Promise<Product | null> {
-  const deletedIds = getDeletedProductIds();
-  if (deletedIds.includes(id)) return null;
-
   try {
-    const res = await fetch(`/api/products/${id}`);
-    if (!res.ok) throw new Error('Product not found');
+    const res = await fetch(`/api/products/${encodeURIComponent(id)}`);
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error('Product lookup failed');
     return await res.json();
-  } catch (err) {
-    const locals = getLocalProducts();
-    const matchedLocal = locals.find(p => p.id === id);
-    if (matchedLocal) return matchedLocal;
-
+  } catch {
     return INITIAL_PRODUCTS.find(p => p.id === id) || null;
   }
 }
 
+async function errorFrom(res: Response, fallback: string): Promise<Error> {
+  const data: any = await res.json().catch(() => ({}));
+  return new Error(data?.error || fallback);
+}
+
 export async function createProduct(product: Partial<Product>): Promise<Product> {
-  try {
-    const res = await fetch('/api/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-      body: JSON.stringify(product)
-    });
-    if (!res.ok) throw new Error('Failed to create product');
-    const created = (await res.json()) as Product;
-    saveToLocalProducts(created);
-    return created;
-  } catch (err) {
-    console.warn('API createProduct failed, saving to local storage:', err);
-    const newProduct: Product = {
-      ...product,
-      id: `p-${Date.now()}`,
-      in_stock: product.in_stock ?? true,
-      images: product.images && product.images.length > 0 ? product.images : ['https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=60&w=800'],
-      rating: 5.0,
-      reviews_count: 0
-    } as Product;
-    saveToLocalProducts(newProduct);
-    return newProduct;
-  }
+  const res = await fetch('/api/products', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify(product)
+  });
+  if (!res.ok) throw await errorFrom(res, 'Failed to create product');
+  return (await res.json()) as Product;
 }
 
 export async function updateProduct(id: string, product: Partial<Product>): Promise<Product> {
-  try {
-    const res = await fetch(`/api/products/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
-      body: JSON.stringify(product)
-    });
-    if (!res.ok) throw new Error('Failed to update product');
-    const updated = (await res.json()) as Product;
-    updateLocalProduct(updated);
-    return updated;
-  } catch (err) {
-    console.warn('API updateProduct failed, updating in local storage:', err);
-    const locals = getLocalProducts();
-    const idx = locals.findIndex(p => p.id === id);
-    let updated: Product;
-    if (idx !== -1) {
-      locals[idx] = { ...locals[idx], ...product };
-      updated = locals[idx];
-      localStorage.setItem('custom_products', JSON.stringify(locals));
-    } else {
-      const initial = INITIAL_PRODUCTS.find(p => p.id === id);
-      updated = { ...(initial || {}), ...product } as Product;
-      saveToLocalProducts(updated);
-    }
-    return updated;
-  }
+  const res = await fetch(`/api/products/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify(product)
+  });
+  if (!res.ok) throw await errorFrom(res, 'Failed to update product');
+  return (await res.json()) as Product;
 }
 
 export async function deleteProduct(id: string): Promise<void> {
-  try {
-    const res = await fetch(`/api/products/${id}`, {
-      method: 'DELETE',
-      headers: { ...getAuthHeader() }
-    });
-    if (!res.ok) throw new Error('Failed to delete product');
-  } catch (err) {
-    console.warn('API deleteProduct failed, deleting from local storage:', err);
-  } finally {
-    deleteLocalProduct(id);
-  }
+  const res = await fetch(`/api/products/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: { ...getAuthHeader() }
+  });
+  if (!res.ok) throw await errorFrom(res, 'Failed to delete product');
 }
 
 export async function fetchCategories(): Promise<Category[]> {
@@ -326,13 +202,14 @@ export async function updateCustomizerSettings(settings: Partial<AdminCustomizer
   try {
     const res = await fetch('/api/customizer-settings', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
       body: JSON.stringify(settings)
     });
-    if (!res.ok) throw new Error('Failed to update settings');
+    if (!res.ok) throw await errorFrom(res, 'Failed to update settings');
     return await res.json();
   } catch (err) {
-    return { ...INITIAL_CUSTOMIZER_SETTINGS, ...settings };
+    console.error('updateCustomizerSettings failed:', err);
+    throw err;
   }
 }
 
@@ -349,7 +226,7 @@ export async function fetchPreloadedDesigns(): Promise<PreloadedDesign[]> {
 export async function addPreloadedDesign(design: Partial<PreloadedDesign>): Promise<PreloadedDesign> {
   const res = await fetch('/api/preloaded-designs', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify(design)
   });
   if (!res.ok) throw new Error('Failed to add preloaded design');
@@ -357,17 +234,58 @@ export async function addPreloadedDesign(design: Partial<PreloadedDesign>): Prom
 }
 
 export async function deletePreloadedDesign(id: string): Promise<void> {
-  const res = await fetch(`/api/preloaded-designs/${id}`, { method: 'DELETE' });
+  const res = await fetch(`/api/preloaded-designs/${id}`, { method: 'DELETE', headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error('Failed to delete preloaded design');
 }
 
-export async function createOrder(order: Partial<Order>): Promise<Order> {
-  const res = await fetch('/api/orders', {
+export interface PaymentConfig {
+  razorpayEnabled: boolean;
+  keyId: string | null;
+  currency: string;
+}
+
+export async function fetchPaymentConfig(): Promise<PaymentConfig> {
+  try {
+    const res = await fetch('/api/payments/config');
+    if (!res.ok) throw new Error('config unavailable');
+    return await res.json();
+  } catch {
+    return { razorpayEnabled: false, keyId: null, currency: 'INR' };
+  }
+}
+
+export interface CheckoutSession {
+  orderId: string;
+  razorpayOrderId: string;
+  amount: number; // paise
+  currency: string;
+  keyId: string;
+  prefill: { name: string; email: string; contact: string };
+}
+
+/** Saves the order as Pending and opens a matching Razorpay order. */
+export async function createCheckout(order: Partial<Order>): Promise<CheckoutSession> {
+  const res = await fetch('/api/checkout/create', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify(order)
   });
-  if (!res.ok) throw new Error('Failed to create order');
+  if (!res.ok) throw await errorFrom(res, 'Could not start payment. Please try again.');
+  return await res.json();
+}
+
+export async function verifyCheckout(payload: {
+  orderId: string;
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}): Promise<Order> {
+  const res = await fetch('/api/checkout/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw await errorFrom(res, 'Payment verification failed');
   return await res.json();
 }
 
@@ -538,3 +456,54 @@ export async function deleteMasterVariant(id: string): Promise<void> {
   localMasterVariants = localMasterVariants.filter(v => v.id !== id);
 }
 
+
+// ---------- Customer inquiries ----------
+
+export type InquiryType = 'contact' | 'bulk' | 'training';
+
+export interface InquiryInput {
+  type: InquiryType;
+  name: string;
+  phone?: string;
+  email?: string;
+  message?: string;
+  details?: Record<string, string>;
+}
+
+export interface Inquiry extends Required<Omit<InquiryInput, 'details'>> {
+  id: string;
+  details: Record<string, string>;
+  status: 'New' | 'Contacted' | 'Closed';
+  created_at: string;
+}
+
+/** Saves the inquiry so it shows in the admin panel. */
+export async function submitInquiry(input: InquiryInput): Promise<void> {
+  const res = await fetch('/api/inquiries', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+  if (!res.ok) throw await errorFrom(res, 'Could not send your inquiry');
+}
+
+export async function fetchInquiries(): Promise<Inquiry[]> {
+  const res = await fetch('/api/inquiries', { headers: { ...getAuthHeader() } });
+  if (!res.ok) return [];
+  return await res.json();
+}
+
+export async function updateInquiryStatus(id: string, status: Inquiry['status']): Promise<void> {
+  const res = await fetch(`/api/inquiries/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify({ status })
+  });
+  if (!res.ok) throw await errorFrom(res, 'Could not update inquiry');
+}
+
+/** WhatsApp deep link to the business number with the inquiry pre-filled. */
+export function inquiryWhatsAppUrl(waNumber: string, title: string, lines: Array<string | false | undefined>): string {
+  const text = [title, ...lines.filter(Boolean)].join('\n');
+  return `https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`;
+}

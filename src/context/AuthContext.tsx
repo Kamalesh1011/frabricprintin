@@ -48,6 +48,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return savedToken;
   });
 
+  // Re-validate the stored session with the server on load. Tokens issued by
+  // the old backend (or expired ones) are rejected, so the user is signed out
+  // instead of seeing a broken dashboard.
+  useEffect(() => {
+    const savedToken = localStorage.getItem('fabricprint_token');
+    if (!savedToken) {
+      if (currentUser) setCurrentUser(null);
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${savedToken}` } })
+      .then(async (res) => {
+        if (cancelled) return;
+        if (res.status === 401) {
+          setToken(null);
+          setCurrentUser(null);
+          return;
+        }
+        if (res.ok) {
+          const data: any = await res.json();
+          if (data?.user) setCurrentUser(data.user);
+        }
+      })
+      .catch(() => {
+        /* offline: keep the cached session */
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('fabricprint_user', JSON.stringify(currentUser));
@@ -82,7 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const userToSet: User = data.user;
     const userToken: string = data.token;
-    const isAdminUser: boolean = !!data.isAdmin;
+    const isAdminUser: boolean = data.user?.role === 'admin';
 
     setCurrentUser(userToSet);
     setToken(userToken);
@@ -100,8 +132,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!cleanEmail) {
       throw new Error('Please enter your email address');
     }
-    if (!password || password.length < 6) {
-      throw new Error('Password must be at least 6 characters long.');
+    if (!password || password.length < 8) {
+      throw new Error('Password must be at least 8 characters long.');
     }
 
     const res = await fetch('/api/auth/register', {
@@ -142,6 +174,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const saveAddress = (addressData: Omit<Address, 'id'>) => {
     if (!currentUser) return;
+    const sameAs = (a: Address) =>
+      a.street.trim().toLowerCase() === addressData.street.trim().toLowerCase() &&
+      String(a.pincode).trim() === String(addressData.pincode).trim();
+    if (currentUser.addresses.some(sameAs)) return;
     const newAddress: Address = {
       ...addressData,
       id: `addr-${Date.now()}`
@@ -151,6 +187,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addresses: [...currentUser.addresses, newAddress]
     };
     setCurrentUser(updatedUser);
+    const savedToken = localStorage.getItem('fabricprint_token');
+    if (savedToken && currentUser.role === 'user') {
+      fetch('/api/auth/me/addresses', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${savedToken}` },
+        body: JSON.stringify({ addresses: updatedUser.addresses })
+      }).catch(() => {
+        /* address stays cached locally */
+      });
+    }
   };
 
   return (

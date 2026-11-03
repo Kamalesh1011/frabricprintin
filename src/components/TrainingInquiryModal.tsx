@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { X, GraduationCap, Send, CheckCircle2, Users, Building, Phone, Mail, BookOpen } from 'lucide-react';
+import { BUSINESS_INFO } from '../config/businessInfo';
+import { inquiryWhatsAppUrl, submitInquiry } from '../services/api';
 
 interface TrainingInquiryModalProps {
   isOpen: boolean;
@@ -21,21 +23,48 @@ export const TrainingInquiryModal: React.FC<TrainingInquiryModalProps> = ({
   const [trainingMode, setTrainingMode] = useState('Tirupur Mill Campus Workshop');
   const [notes, setNotes] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const waUrl = () =>
+    inquiryWhatsAppUrl(BUSINESS_INFO.whatsapp.number, 'Hi Fabric Print, training inquiry from your website:', [
+      `Name: ${name}`,
+      organization && `Organization: ${organization}`,
+      `Phone: ${phone}`,
+      email && `Email: ${email}`,
+      `Program: ${selectedProgram}`,
+      `Attendees: ${attendeeCount}`,
+      `Mode: ${trainingMode}`,
+      notes && `Notes: ${notes}`
+    ]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      onClose();
-      setName('');
-      setOrganization('');
-      setPhone('');
-      setEmail('');
-      setNotes('');
-    }, 2800);
+    setSending(true);
+    setSendError('');
+    try {
+      await submitInquiry({
+        type: 'training',
+        name,
+        phone,
+        email,
+        message: notes,
+        details: { organization, program: selectedProgram, attendees: attendeeCount, mode: trainingMode }
+      });
+      setSubmitted(true);
+    } catch (err: any) {
+      setSendError(err?.message || 'Could not send. Please message us on WhatsApp instead.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleClose = () => {
+    setSubmitted(false);
+    setSendError('');
+    onClose();
   };
 
   return (
@@ -44,7 +73,8 @@ export const TrainingInquiryModal: React.FC<TrainingInquiryModalProps> = ({
         
         {/* Close Button */}
         <button
-          onClick={onClose}
+          onClick={handleClose}
+          aria-label="Close"
           className="absolute top-5 right-5 text-gray-400 hover:text-black dark:hover:text-white p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition"
         >
           <X className="w-5 h-5" />
@@ -59,6 +89,14 @@ export const TrainingInquiryModal: React.FC<TrainingInquiryModalProps> = ({
             <p className="text-xs text-[#8A8883] dark:text-gray-300 leading-relaxed max-w-sm mx-auto">
               Our Academic Dean will contact you on WhatsApp at <strong>{phone}</strong> with customized syllabus PDFs, machine lab schedules, and institutional discounts.
             </p>
+            <a
+                  href={waUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 mt-2 px-4 py-2.5 rounded-full bg-[#25D366] text-white text-xs font-bold hover:opacity-90 transition"
+                >
+                  For a faster reply, also send on WhatsApp
+                </a>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -235,12 +273,19 @@ export const TrainingInquiryModal: React.FC<TrainingInquiryModalProps> = ({
 
             </div>
 
+            {sendError && (
+              <p className="text-xs text-red-500 font-semibold">
+                {sendError}{' '}
+                <a href={waUrl()} target="_blank" rel="noopener noreferrer" className="underline">Send on WhatsApp</a>
+              </p>
+            )}
             <button
               type="submit"
-              className="w-full bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold py-3 px-4 rounded-xl text-xs hover:opacity-90 transition shadow-md flex items-center justify-center space-x-2 mt-4"
+              disabled={sending}
+              className="w-full bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold py-3 px-4 rounded-xl text-xs hover:opacity-90 transition shadow-md flex items-center justify-center space-x-2 mt-4 disabled:opacity-60"
             >
               <Send className="w-3.5 h-3.5" />
-              <span>Submit Academy Training Inquiry</span>
+              <span>{sending ? 'Sending…' : 'Submit Academy Training Inquiry'}</span>
             </button>
 
           </form>

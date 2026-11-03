@@ -199,7 +199,13 @@ export const AddProductWizard: React.FC<AddProductWizardProps> = ({
       featured: true
     };
 
-    const result = await onSaveProduct(productPayload);
+    let result: Product | void;
+    try {
+      result = await onSaveProduct(productPayload);
+    } catch (err: any) {
+      window.alert(err?.message || 'Could not save product. Please sign in again and retry.');
+      return;
+    }
     const finalProduct = (result || {
       id: editingProduct?.id || `prod-${Date.now()}`,
       ...productPayload

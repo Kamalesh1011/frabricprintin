@@ -43,8 +43,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
               <button
                 onClick={() => {
                   this.setState({ hasError: false, error: null });
-                  window.location.hash = '#home';
-                  window.location.reload();
+                  window.location.assign('/');
                 }}
                 className="px-5 py-2.5 rounded-full bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] text-xs font-bold hover:scale-105 transition flex items-center justify-center space-x-1.5 shadow-md"
               >

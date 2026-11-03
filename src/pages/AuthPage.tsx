@@ -1,3 +1,4 @@
+import { BUSINESS_INFO } from '../config/businessInfo';
 import React, { useState } from 'react';
 import { LogIn, UserPlus, Mail, Lock, User as UserIcon, Phone, ShieldCheck, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -72,8 +73,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'lo
       setRegError('Please enter your email address');
       return;
     }
-    if (!regPassword.trim() || regPassword.length < 6) {
-      setRegError('Password must be at least 6 characters long');
+    if (!regPassword.trim() || regPassword.length < 8) {
+      setRegError('Password must be at least 8 characters long');
       return;
     }
 
@@ -144,6 +145,32 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'lo
           </div>
 
           {/* TAB 1: LOGIN FORM */}
+          {activeTab === 'login' && showForgotPassword && (
+            <div className="space-y-4 text-xs">
+              <h3 className="text-sm font-bold font-editorial">Reset your password</h3>
+              <p className="text-[#8A8883] dark:text-gray-400 leading-relaxed">
+                Message us on WhatsApp from your registered phone number with your account email. Our team will verify it and reset your password.
+              </p>
+              <a
+                href={`https://wa.me/${BUSINESS_INFO.whatsapp.number}?text=${encodeURIComponent(
+                  `Hi Fabric Print, please help me reset my account password. My account email: ${loginEmail || ''}`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-[#25D366] text-white font-bold py-3 rounded-full flex items-center justify-center hover:opacity-90 transition"
+              >
+                Reset via WhatsApp
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(false)}
+                className="w-full font-bold py-2.5 rounded-full border border-[#ECECEC] dark:border-white/[0.1] hover:bg-black/5 dark:hover:bg-white/5 transition"
+              >
+                Back to Sign In
+              </button>
+            </div>
+          )}
+
           {activeTab === 'login' && !showForgotPassword && (
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               {loginError && (
@@ -262,7 +289,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'lo
               </div>
 
               <div>
-                <label className="block text-xs font-bold mb-1 font-editorial">Password (Min. 6 chars) *</label>
+                <label className="block text-xs font-bold mb-1 font-editorial">Password (Min. 8 chars) *</label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-[#8A8883] absolute left-3.5 top-3" />
                   <input

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send, CheckCircle2, MessageSquare, Clock, MessageCircle, HelpCircle, ChevronDown } from 'lucide-react';
 import { BUSINESS_INFO } from '../config/businessInfo';
+import { inquiryWhatsAppUrl, submitInquiry } from '../services/api';
 
 export const ContactUsPage: React.FC = () => {
   const [name, setName] = useState('');
@@ -8,11 +9,30 @@ export const ContactUsPage: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const waUrl = () =>
+    inquiryWhatsAppUrl(BUSINESS_INFO.whatsapp.number, 'Hi Fabric Print, I sent an inquiry from your website:', [
+      `Name: ${name}`,
+      phone && `Phone: ${phone}`,
+      email && `Email: ${email}`,
+      message && `Message: ${message}`
+    ]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setSending(true);
+    setSendError('');
+    try {
+      await submitInquiry({ type: 'contact', name, phone, email, message });
+      setSubmitted(true);
+    } catch (err: any) {
+      setSendError(err?.message || 'Could not send. Please message us on WhatsApp instead.');
+    } finally {
+      setSending(false);
+    }
   };
 
   const FAQS = [
@@ -123,6 +143,16 @@ export const ContactUsPage: React.FC = () => {
                 <p className="text-xs text-[#8A8883] dark:text-gray-400">
                   Thank you, <strong>{name}</strong>. A dedicated textile advisor will contact you within 2 hours.
                 </p>
+                <div>
+                  <a
+                  href={waUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 mt-2 px-4 py-2.5 rounded-full bg-[#25D366] text-white text-xs font-bold hover:opacity-90 transition"
+                >
+                  For a faster reply, also send on WhatsApp
+                </a>
+                </div>
                 <button
                   type="button"
                   onClick={() => {
@@ -189,12 +219,19 @@ export const ContactUsPage: React.FC = () => {
                   />
                 </div>
 
+                {sendError && (
+                  <p className="text-xs text-red-500 font-semibold">
+                    {sendError}{' '}
+                    <a href={waUrl()} target="_blank" rel="noopener noreferrer" className="underline">Send on WhatsApp</a>
+                  </p>
+                )}
                 <button
                   type="submit"
-                  className="w-full bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold py-3.5 rounded-full text-xs hover:opacity-90 transition shadow-md flex items-center justify-center space-x-2"
+                  disabled={sending}
+                  className="w-full bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold py-3.5 rounded-full text-xs hover:opacity-90 transition shadow-md flex items-center justify-center space-x-2 disabled:opacity-60"
                 >
                   <Send className="w-4 h-4" />
-                  <span>Send Inquiry to Mill Advisor</span>
+                  <span>{sending ? 'Sending…' : 'Send Inquiry to Mill Advisor'}</span>
                 </button>
               </form>
             )}

@@ -1,14 +1,38 @@
-import React, { useState } from 'react';
-import { ShieldCheck, Lock, CreditCard, Smartphone, CheckCircle2, ArrowLeft, Printer, Sparkles, Building2, ArrowRight } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ShieldCheck, Lock, ArrowLeft, Printer, ArrowRight, MessageCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { createOrder } from '../services/api';
+import { createCheckout, fetchPaymentConfig, verifyCheckout, type PaymentConfig } from '../services/api';
+import { BUSINESS_INFO } from '../config/businessInfo';
 import { Order } from '../types';
 
 interface CheckoutPageProps {
   onOrderSuccess: (order: Order) => void;
   onBackToCart: () => void;
   onBackToFabrics?: () => void;
+}
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => { open: () => void; on: (ev: string, cb: (r: any) => void) => void };
+  }
+}
+
+const RAZORPAY_SCRIPT = 'https://checkout.razorpay.com/v1/checkout.js';
+
+function loadRazorpayScript(): Promise<void> {
+  if (window.Razorpay) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${RAZORPAY_SCRIPT}"]`);
+    const script = existing || document.createElement('script');
+    script.addEventListener('load', () => resolve());
+    script.addEventListener('error', () => reject(new Error('Could not load Razorpay. Check your connection and try again.')));
+    if (!existing) {
+      script.src = RAZORPAY_SCRIPT;
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  });
 }
 
 export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onBackToCart, onBackToFabrics }) => {
@@ -26,98 +50,162 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onBa
   const [pincode, setPincode] = useState(defaultAddr?.pincode || '');
   const [country] = useState('India');
 
-  // Payment Option State
-  const [paymentMethod, setPaymentMethod] = useState<'Razorpay' | 'Card' | 'UPI' | 'COD'>('Razorpay');
-  const [upiId, setUpiId] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-
-  // Processing & Modal State
+  const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showRazorpayModal, setShowRazorpayModal] = useState(false);
   const [orderError, setOrderError] = useState('');
 
-  const handleStartPayment = (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    fetchPaymentConfig().then(setPaymentConfig);
+  }, []);
+
+  const paymentsReady = paymentConfig?.razorpayEnabled === true;
+
+  const validateForm = (): boolean => {
     if (!fullName || !phone || !street || !city || !pincode) {
       setOrderError('Please complete all required shipping address fields.');
-      return;
+      return false;
+    }
+    if (!/^\d{6}$/.test(pincode.trim())) {
+      setOrderError('Please enter a valid 6-digit PIN code.');
+      return false;
+    }
+    if (phone.replace(/\D/g, '').length < 10) {
+      setOrderError('Please enter a valid 10-digit phone number.');
+      return false;
     }
     setOrderError('');
-    setShowRazorpayModal(true);
+    return true;
   };
 
-  const handleConfirmOrder = async () => {
+  const buildOrder = (): Partial<Order> => {
+    const shippingAddress = {
+      id: `addr-${Date.now()}`,
+      fullName,
+      phone,
+      street,
+      city,
+      state,
+      pincode: pincode.trim(),
+      country
+    };
+
+    const items = cart.map((item) => ({
+      productId: item.productId,
+      productName: item.product.name,
+      productImage: item.customPreviewUrl || item.printOptions?.designUrl || item.product?.image_url || item.product?.images?.[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=60&w=600',
+      gsm: item.product.gsm,
+      width: item.product.width,
+      color: item.product.color,
+      sizeType: item.sizeType,
+      sizeLabel:
+        item.sizeType === 'apparel'
+          ? `${item.quantity} Pcs Custom Apparel`
+          : item.sizeType === 'swatch_test'
+          ? 'Test Swatch (20x20cm)'
+          : item.sizeType === 'swatch_big'
+          ? 'Big Swatch (75x100cm)'
+          : `Linear Meter (${item.meters}m)`,
+      meters: item.meters,
+      quantity: item.quantity,
+      pricePerUnit: item.calculatedPricePerUnit,
+      totalPrice: item.itemTotalPrice,
+      printOptions: item.printOptions,
+      sizeBreakdown: item.sizeBreakdown,
+      customPreviewUrl: item.customPreviewUrl || item.printOptions?.designUrl,
+      apparelProduct: item.apparelProduct,
+      jerseyCustomization: item.jerseyCustomization,
+    }));
+
+    return {
+      customerName: fullName,
+      customerEmail: email,
+      customerPhone: phone,
+      shippingAddress,
+      items: items as Order['items'],
+      subtotal,
+      discount,
+      shippingFee,
+      tax,
+      totalAmount: total,
+      paymentMethod: 'Razorpay'
+    };
+  };
+
+  const handlePay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!paymentsReady || !validateForm()) return;
     setIsProcessing(true);
     try {
-      const shippingAddress = {
-        id: `addr-${Date.now()}`,
-        fullName,
-        phone,
-        street,
-        city,
-        state,
-        pincode,
-        country
-      };
-
-      if (currentUser) {
-        saveAddress(shippingAddress);
+      const order = buildOrder();
+      if (currentUser && order.shippingAddress) {
+        const { id: _id, ...addr } = order.shippingAddress;
+        saveAddress(addr);
       }
 
-      const orderItems = cart.map((item) => ({
-        productId: item.productId,
-        productName: item.product.name,
-        productImage: item.customPreviewUrl || item.printOptions?.designUrl || item.product?.image_url || item.product?.images?.[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=60&w=600',
-        gsm: item.product.gsm,
-        width: item.product.width,
-        color: item.product.color,
-        sizeType: item.sizeType,
-        sizeLabel:
-          item.sizeType === 'apparel'
-            ? `${item.quantity} Pcs Custom Apparel`
-            : item.sizeType === 'swatch_test'
-            ? 'Test Swatch (20x20cm)'
-            : item.sizeType === 'swatch_big'
-            ? 'Big Swatch (75x100cm)'
-            : `Linear Meter (${item.meters}m)`,
-        meters: item.meters,
-        quantity: item.quantity,
-        pricePerUnit: item.calculatedPricePerUnit,
-        totalPrice: item.itemTotalPrice,
-        printOptions: item.printOptions,
-        sizeBreakdown: item.sizeBreakdown,
-        customPreviewUrl: item.customPreviewUrl || item.printOptions?.designUrl,
-        apparelProduct: item.apparelProduct,
-        jerseyCustomization: item.jerseyCustomization,
-      }));
+      const [session] = await Promise.all([createCheckout(order), loadRazorpayScript()]);
+      if (!window.Razorpay) throw new Error('Razorpay failed to load.');
 
-      const newOrderData: Partial<Order> = {
-        userId: currentUser?.id || 'usr-guest',
-        customerName: fullName,
-        customerEmail: email || 'guest@fabricprint.in',
-        customerPhone: phone,
-        shippingAddress,
-        items: orderItems,
-        subtotal,
-        discount,
-        shippingFee,
-        tax,
-        totalAmount: total,
-        paymentMethod,
-        paymentStatus: 'Paid',
-        orderStatus: 'Pending',
-        trackingNumber: `TXP-IN-${Math.floor(100000 + Math.random() * 900000)}`
-      };
-
-      const created = await createOrder(newOrderData as any);
-      clearCart();
-      setShowRazorpayModal(false);
-      onOrderSuccess(created);
+      const rzp = new window.Razorpay({
+        key: session.keyId,
+        amount: session.amount,
+        currency: session.currency,
+        order_id: session.razorpayOrderId,
+        name: BUSINESS_INFO.brandName,
+        description: `Order ${session.orderId}`,
+        image: `${window.location.origin}/leaf-logo.png`,
+        prefill: session.prefill,
+        notes: { order_id: session.orderId },
+        theme: { color: '#0F100F' },
+        modal: {
+          ondismiss: () => {
+            setIsProcessing(false);
+            setOrderError('Payment was cancelled. Your cart is saved — you can try again.');
+          }
+        },
+        handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+          try {
+            const paidOrder = await verifyCheckout({ orderId: session.orderId, ...response });
+            clearCart();
+            onOrderSuccess(paidOrder);
+          } catch (err: any) {
+            setOrderError(
+              `${err.message || 'Payment verification failed.'} Reference: ${session.orderId} / ${response.razorpay_payment_id}`
+            );
+          } finally {
+            setIsProcessing(false);
+          }
+        }
+      });
+      rzp.on('payment.failed', (resp: any) => {
+        setOrderError(resp?.error?.description || 'Payment failed. Please try again or use another method.');
+      });
+      rzp.open();
     } catch (err: any) {
-      setOrderError(err.message || 'Failed to process order.');
-    } finally {
+      setOrderError(err.message || 'Failed to start payment.');
       setIsProcessing(false);
     }
+  };
+
+  const whatsappOrderUrl = (): string => {
+    const lines = [
+      `Hi ${BUSINESS_INFO.brandName}, I want to place an order:`,
+      ...cart.map((item, i) => {
+        const qty =
+          item.sizeType === 'apparel'
+            ? `${item.quantity} pcs`
+            : item.sizeType === 'meter'
+            ? `${item.meters} m`
+            : item.sizeType === 'swatch_test'
+            ? 'Test swatch'
+            : 'Big swatch';
+        return `${i + 1}. ${item.product?.name} – ${qty} – ₹${item.itemTotalPrice.toLocaleString('en-IN')}`;
+      }),
+      `Total: ₹${total.toLocaleString('en-IN')}`,
+      fullName ? `Name: ${fullName}` : '',
+      phone ? `Phone: ${phone}` : '',
+      street ? `Address: ${street}, ${city} ${state} ${pincode}` : ''
+    ].filter(Boolean);
+    return `https://wa.me/${BUSINESS_INFO.whatsapp.number}?text=${encodeURIComponent(lines.join('\n'))}`;
   };
 
   if (cart.length === 0) {
@@ -156,7 +244,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onBa
           <span>Secure Mill Checkout</span>
         </h1>
 
-        <form onSubmit={handleStartPayment} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <form onSubmit={handlePay} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* LEFT: Shipping Address & Payment Selection */}
           <div className="lg:col-span-7 space-y-6">
@@ -239,82 +327,27 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onBa
             {/* Payment Method */}
             <div className="bg-white dark:bg-[#1A1C1A] rounded-[30px] border border-[#ECECEC] dark:border-white/[0.08] p-6 shadow-fabriclore space-y-4">
               <h3 className="font-bold text-xs uppercase tracking-wider border-b border-[#ECECEC] dark:border-white/[0.08] pb-2 font-editorial text-[#0F100F] dark:text-white">
-                2. Select Payment Method
+                2. Payment
               </h3>
 
-              <div className="space-y-2.5">
-                <label
-                  onClick={() => setPaymentMethod('Razorpay')}
-                  className={`p-3.5 rounded-2xl border cursor-pointer flex items-center justify-between transition ${
-                    paymentMethod === 'Razorpay'
-                      ? 'border-[#0F100F] dark:border-white bg-[#FEFBF1] dark:bg-[#222422]'
-                      : 'border-[#ECECEC] dark:border-white/[0.08] bg-[#F9F6ED] dark:bg-[#242624]'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      name="payMethod"
-                      checked={paymentMethod === 'Razorpay'}
-                      onChange={() => setPaymentMethod('Razorpay')}
-                      className="accent-[#0F100F]"
-                    />
-                    <div>
-                      <span className="text-xs font-bold block">Razorpay Instant Checkout</span>
-                      <span className="text-[11px] text-[#8A8883] dark:text-gray-400">UPI, NetBanking, Credit/Debit Cards, EMI</span>
-                    </div>
+              {paymentConfig === null ? (
+                <p className="text-xs text-[#8A8883] dark:text-gray-400">Checking payment options…</p>
+              ) : paymentsReady ? (
+                <div className="p-3.5 rounded-2xl border border-[#0F100F] dark:border-white bg-[#FEFBF1] dark:bg-[#222422] flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold block">Pay securely with Razorpay</span>
+                    <span className="text-[11px] text-[#8A8883] dark:text-gray-400">UPI, Cards, NetBanking, Wallets, EMI</span>
                   </div>
-                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Fast & Safe</span>
-                </label>
-
-                <label
-                  onClick={() => setPaymentMethod('UPI')}
-                  className={`p-3.5 rounded-2xl border cursor-pointer flex items-center justify-between transition ${
-                    paymentMethod === 'UPI'
-                      ? 'border-[#0F100F] dark:border-white bg-[#FEFBF1] dark:bg-[#222422]'
-                      : 'border-[#ECECEC] dark:border-white/[0.08] bg-[#F9F6ED] dark:bg-[#242624]'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      name="payMethod"
-                      checked={paymentMethod === 'UPI'}
-                      onChange={() => setPaymentMethod('UPI')}
-                      className="accent-[#0F100F]"
-                    />
-                    <div>
-                      <span className="text-xs font-bold block">Direct UPI QR Code</span>
-                      <span className="text-[11px] text-[#8A8883] dark:text-gray-400">Google Pay, PhonePe, Paytm, BHIM</span>
-                    </div>
-                  </div>
-                  <Smartphone className="w-4 h-4 text-[#AC7900]" />
-                </label>
-
-                <label
-                  onClick={() => setPaymentMethod('COD')}
-                  className={`p-3.5 rounded-2xl border cursor-pointer flex items-center justify-between transition ${
-                    paymentMethod === 'COD'
-                      ? 'border-[#0F100F] dark:border-white bg-[#FEFBF1] dark:bg-[#222422]'
-                      : 'border-[#ECECEC] dark:border-white/[0.08] bg-[#F9F6ED] dark:bg-[#242624]'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="radio"
-                      name="payMethod"
-                      checked={paymentMethod === 'COD'}
-                      onChange={() => setPaymentMethod('COD')}
-                      className="accent-[#0F100F]"
-                    />
-                    <div>
-                      <span className="text-xs font-bold block">Cash on Delivery (COD)</span>
-                      <span className="text-[11px] text-[#8A8883] dark:text-gray-400">Pay on physical delivery of fabric swatches / rolls</span>
-                    </div>
-                  </div>
-                  <Building2 className="w-4 h-4 text-[#8A8883]" />
-                </label>
-              </div>
+                  <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+              ) : (
+                <div className="p-3.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 space-y-2">
+                  <span className="text-xs font-bold block">Online payment is being set up</span>
+                  <span className="text-[11px] text-[#8A8883] dark:text-gray-300 block">
+                    Send your order on WhatsApp and our team will confirm the price, delivery date and payment link.
+                  </span>
+                </div>
+              )}
             </div>
 
           </div>
@@ -412,14 +445,35 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onBa
                 <p className="text-xs text-red-500 font-semibold">{orderError}</p>
               )}
 
-              <button
-                type="submit"
-                disabled={isProcessing}
-                className="w-full bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold py-3.5 px-4 rounded-full text-xs hover:opacity-90 transition shadow-md flex items-center justify-center space-x-2"
-              >
-                <span>Confirm & Pay INR {total.toLocaleString('en-IN')}.00</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              {paymentsReady ? (
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className="w-full bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold py-3.5 px-4 rounded-full text-xs hover:opacity-90 transition shadow-md flex items-center justify-center space-x-2 disabled:opacity-60"
+                >
+                  {isProcessing ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      <span>Processing payment…</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Pay INR {total.toLocaleString('en-IN')}.00</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              ) : (
+                <a
+                  href={whatsappOrderUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-[#25D366] text-white font-bold py-3.5 px-4 rounded-full text-xs hover:opacity-90 transition shadow-md flex items-center justify-center space-x-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Send Order on WhatsApp</span>
+                </a>
+              )}
 
             </div>
           </div>
@@ -427,43 +481,6 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onOrderSuccess, onBa
         </form>
 
       </div>
-
-      {/* RAZORPAY / PAYMENT GATEWAY SIMULATION MODAL */}
-      {showRazorpayModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white dark:bg-[#1A1C1A] text-[#0F100F] dark:text-white rounded-[32px] border border-[#ECECEC] dark:border-white/[0.1] p-6 max-w-sm w-full shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#ECECEC] dark:border-white/[0.08] pb-3">
-              <div className="flex items-center space-x-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-600" />
-                <span className="font-bold text-xs">Razorpay Mill Payment</span>
-              </div>
-              <span className="text-xs font-bold text-[#AC7900]">INR {total.toLocaleString('en-IN')}</span>
-            </div>
-
-            <p className="text-xs text-[#8A8883] dark:text-gray-400">
-              Simulating secure payment authentication for <strong>{fullName}</strong>.
-            </p>
-
-            <button
-              onClick={handleConfirmOrder}
-              disabled={isProcessing}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-full text-xs flex items-center justify-center space-x-2 transition shadow-md"
-            >
-              {isProcessing ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Authorizing Payment...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Authorize & Place Order</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      )}
 
     </div>
   );
