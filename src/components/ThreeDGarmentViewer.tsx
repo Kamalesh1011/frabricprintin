@@ -3,6 +3,10 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Float } from '@react-three/drei';
 import * as THREE from 'three';
 
+export type FabricPBRType = 'cotton_jersey' | 'french_terry' | 'interlock_poly' | 'linen_silk';
+export type LightingPreset = 'studio' | 'daylight' | 'neon';
+export type StudioViewSide = 'front' | 'back' | 'left_sleeve' | 'right_sleeve';
+
 interface ThreeDGarmentViewerProps {
   designUrl: string | null;
   color: { hex: string; name: string };
@@ -10,7 +14,7 @@ interface ThreeDGarmentViewerProps {
   scalePercent: number;
   artworkPlacement: string;
   isFlippedH: boolean;
-  side: 'front' | 'back';
+  side: StudioViewSide;
   autoRotate?: boolean;
   modelType?: string;
   offsetX?: number;
@@ -18,8 +22,13 @@ interface ThreeDGarmentViewerProps {
   customText?: string;
   customTextColor?: string;
   customTextFont?: string;
+  textArc?: number;
+  strokeWidth?: number;
+  strokeColor?: string;
   isEmbroidery?: boolean;
   embroideryThreadColor?: string;
+  fabricPbr?: FabricPBRType;
+  lightingPreset?: LightingPreset;
 }
 
 const PLACEMENTS: Record<string, { x: number; y: number; w: number; h: number }> = {
@@ -54,15 +63,19 @@ const PhotorealisticGarmentMesh: React.FC<{
   scalePercent: number;
   artworkPlacement: string;
   isFlippedH: boolean;
-  side: 'front' | 'back';
+  side: StudioViewSide;
   modelType?: string;
   offsetX?: number;
   offsetY?: number;
   customText?: string;
   customTextColor?: string;
   customTextFont?: string;
+  textArc?: number;
+  strokeWidth?: number;
+  strokeColor?: string;
   isEmbroidery?: boolean;
   embroideryThreadColor?: string;
+  fabricPbr?: FabricPBRType;
 }> = ({
   colorHex,
   designUrl,
@@ -77,8 +90,12 @@ const PhotorealisticGarmentMesh: React.FC<{
   customText,
   customTextColor = '#FFFFFF',
   customTextFont = 'sans-serif',
+  textArc = 0,
+  strokeWidth = 0,
+  strokeColor = '#000000',
   isEmbroidery,
-  embroideryThreadColor
+  embroideryThreadColor,
+  fabricPbr = 'cotton_jersey'
 }) => {
   const groupRef = useRef<THREE.Group>(null);
   const frontMatRef = useRef<THREE.MeshStandardMaterial>(null);
@@ -92,6 +109,21 @@ const PhotorealisticGarmentMesh: React.FC<{
     colorHex.toLowerCase() === '#fdfbf7';
 
   const { front: frontSrc, back: backSrc } = useMemo(() => getGarmentImagePaths(modelType), [modelType]);
+
+  // PBR Physical Material Roughness & Metalness per fabric selection
+  const pbrParams = useMemo(() => {
+    switch (fabricPbr) {
+      case 'french_terry':
+        return { roughness: 0.94, metalness: 0.01 };
+      case 'interlock_poly':
+        return { roughness: 0.36, metalness: 0.16 };
+      case 'linen_silk':
+        return { roughness: 0.46, metalness: 0.24 };
+      case 'cotton_jersey':
+      default:
+        return { roughness: 0.82, metalness: 0.04 };
+    }
+  }, [fabricPbr]);
 
   // Load Front & Back Base Garment Textures
   useEffect(() => {
@@ -114,27 +146,35 @@ const PhotorealisticGarmentMesh: React.FC<{
     });
   }, [frontSrc, backSrc]);
 
-  // Update color tinting
+  // Update color tinting and PBR parameters
   useEffect(() => {
     const tintColor = isPureWhite ? new THREE.Color(0xffffff) : new THREE.Color(colorHex);
     if (frontMatRef.current) {
       frontMatRef.current.color = tintColor;
+      frontMatRef.current.roughness = pbrParams.roughness;
+      frontMatRef.current.metalness = pbrParams.metalness;
       frontMatRef.current.needsUpdate = true;
     }
     if (backMatRef.current) {
       backMatRef.current.color = tintColor;
+      backMatRef.current.roughness = pbrParams.roughness;
+      backMatRef.current.metalness = pbrParams.metalness;
       backMatRef.current.needsUpdate = true;
     }
-  }, [colorHex, isPureWhite]);
+  }, [colorHex, isPureWhite, pbrParams]);
 
-  // Rotate group with side / view angle
+  // Rotate group with side / view angle preset
   useEffect(() => {
     if (groupRef.current) {
-      groupRef.current.rotation.y = THREE.MathUtils.degToRad(side === 'back' ? 180 : 0);
+      let deg = 0;
+      if (side === 'back') deg = 180;
+      else if (side === 'left_sleeve') deg = -75;
+      else if (side === 'right_sleeve') deg = 75;
+      groupRef.current.rotation.y = THREE.MathUtils.degToRad(deg);
     }
   }, [side]);
 
-  // Real-Time Dynamic Composite Texture (Graphic Image + Custom Text Overlay)
+  // Real-Time Dynamic Composite Texture (Graphic Image + Custom Text Overlay with Arcs & Strokes)
   useEffect(() => {
     const mat = decalMatRef.current;
     if (!mat) return;
@@ -164,7 +204,39 @@ const PhotorealisticGarmentMesh: React.FC<{
         ctx.shadowBlur = 8;
         ctx.shadowOffsetY = 4;
         const textY = designUrl ? 880 : 512;
-        ctx.fillText(customText, 512, textY);
+
+        if (textArc && Math.abs(textArc) > 5) {
+          // Curved Arc Varsity / Streetwear Typography
+          const radius = Math.max(180, 500 - Math.abs(textArc) * 3);
+          const arcSign = textArc > 0 ? 1 : -1;
+          const arcCenterY = textY + (arcSign > 0 ? radius : -radius);
+          const chars = customText.split('');
+          const totalAngle = (chars.length * 28) / radius;
+          let currentAngle = -totalAngle / 2;
+
+          chars.forEach((char) => {
+            ctx.save();
+            ctx.translate(512 + Math.sin(currentAngle) * radius, arcCenterY - Math.cos(currentAngle) * radius * arcSign);
+            ctx.rotate(currentAngle * arcSign);
+            if (strokeWidth && strokeWidth > 0) {
+              ctx.strokeStyle = strokeColor || '#000000';
+              ctx.lineWidth = strokeWidth * 2;
+              ctx.strokeText(char, 0, 0);
+            }
+            ctx.fillText(char, 0, 0);
+            ctx.restore();
+            currentAngle += totalAngle / chars.length;
+          });
+        } else {
+          // Standard Linear Typography with optional athletic stroke
+          if (strokeWidth && strokeWidth > 0) {
+            ctx.strokeStyle = strokeColor || '#000000';
+            ctx.lineWidth = strokeWidth * 2;
+            ctx.strokeText(customText, 512, textY);
+          }
+          ctx.fillText(customText, 512, textY);
+        }
+
         ctx.restore();
       }
 
@@ -182,7 +254,6 @@ const PhotorealisticGarmentMesh: React.FC<{
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        // Draw artwork centered on canvas
         const hRatio = customText ? 0.75 : 0.9;
         const maxW = 1024 * 0.9;
         const maxH = 1024 * hRatio;
@@ -209,7 +280,7 @@ const PhotorealisticGarmentMesh: React.FC<{
         mat.map = null;
       }
     };
-  }, [designUrl, customText, customTextColor, customTextFont, embroideryThreadColor]);
+  }, [designUrl, customText, customTextColor, customTextFont, textArc, strokeWidth, strokeColor, embroideryThreadColor]);
 
   const place = PLACEMENTS[artworkPlacement] || PLACEMENTS.chest_center;
 
@@ -290,8 +361,13 @@ export const ThreeDGarmentViewer: React.FC<ThreeDGarmentViewerProps> = ({
   customText,
   customTextColor,
   customTextFont,
+  textArc = 0,
+  strokeWidth = 0,
+  strokeColor,
   isEmbroidery,
-  embroideryThreadColor
+  embroideryThreadColor,
+  fabricPbr = 'cotton_jersey',
+  lightingPreset = 'studio'
 }) => {
   return (
     <div className="w-full h-full relative select-none">
@@ -301,10 +377,29 @@ export const ThreeDGarmentViewer: React.FC<ThreeDGarmentViewerProps> = ({
         camera={{ position: [0, 0, 2.8], fov: 45 }}
         gl={{ preserveDrawingBuffer: true, antialias: true }}
       >
-        <ambientLight intensity={1.1} />
-        <directionalLight position={[2, 3, 4]} intensity={1.4} castShadow />
-        <directionalLight position={[-2, -2, -2]} intensity={0.5} />
-        <directionalLight position={[0, 0, 3]} intensity={0.7} />
+        {/* Dynamic Studio Lighting Presets */}
+        {lightingPreset === 'daylight' ? (
+          <>
+            <ambientLight intensity={1.3} color="#FFFBF0" />
+            <directionalLight position={[3, 5, 2]} intensity={1.8} color="#FFF5EB" castShadow />
+            <directionalLight position={[-3, 2, -2]} intensity={0.9} color="#E0F2FE" />
+          </>
+        ) : lightingPreset === 'neon' ? (
+          <>
+            <ambientLight intensity={0.6} color="#1E1B4B" />
+            <directionalLight position={[-3, 2, -2]} intensity={2.2} color="#EC4899" />
+            <directionalLight position={[2, 3, 3]} intensity={2.4} color="#06B6D4" castShadow />
+            <directionalLight position={[0, -3, 2]} intensity={1.0} color="#8B5CF6" />
+          </>
+        ) : (
+          /* Standard Crisp Studio Spotlight */
+          <>
+            <ambientLight intensity={1.1} />
+            <directionalLight position={[2, 3, 4]} intensity={1.4} castShadow />
+            <directionalLight position={[-2, -2, -2]} intensity={0.5} />
+            <directionalLight position={[0, 0, 3]} intensity={0.7} />
+          </>
+        )}
 
         <Float speed={autoRotate ? 1.5 : 0} rotationIntensity={autoRotate ? 0.2 : 0} floatIntensity={autoRotate ? 0.3 : 0}>
           <PhotorealisticGarmentMesh
@@ -321,8 +416,12 @@ export const ThreeDGarmentViewer: React.FC<ThreeDGarmentViewerProps> = ({
             customText={customText}
             customTextColor={customTextColor}
             customTextFont={customTextFont}
+            textArc={textArc}
+            strokeWidth={strokeWidth}
+            strokeColor={strokeColor}
             isEmbroidery={isEmbroidery}
             embroideryThreadColor={embroideryThreadColor}
+            fabricPbr={fabricPbr}
           />
         </Float>
 

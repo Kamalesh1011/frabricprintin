@@ -672,6 +672,150 @@ app.get('/api/health', (req, res) => {
     }
   });
 
+  // GENERATIVE AI DESIGN ASSISTANT API
+  app.post('/api/generate-design', async (req, res) => {
+    try {
+      const { prompt, style = 'streetwear' } = req.body;
+      if (!prompt || typeof prompt !== 'string') {
+        return res.status(400).json({ error: 'Please provide a design prompt description.' });
+      }
+
+      const p = prompt.toLowerCase();
+      let svgContent = '';
+
+      if (p.includes('wave') || p.includes('japan') || p.includes('kanagawa')) {
+        svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+          <defs>
+            <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1E3A8A" />
+              <stop offset="50%" stop-color="#0284C7" />
+              <stop offset="100%" stop-color="#38BDF8" />
+            </linearGradient>
+            <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#EF4444" />
+              <stop offset="100%" stop-color="#991B1B" />
+            </radialGradient>
+            <filter id="glow">
+              <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0284C7" flood-opacity="0.5"/>
+            </filter>
+          </defs>
+          <circle cx="400" cy="400" r="340" fill="none" stroke="#D4AF37" stroke-width="4" stroke-dasharray="12 6" />
+          <circle cx="400" cy="300" r="160" fill="url(#sunGrad)" opacity="0.9" />
+          <polygon points="260,450 400,260 540,450" fill="#1E293B" />
+          <polygon points="360,314 400,260 440,314 425,325 410,315 400,330 390,315 375,325" fill="#FFFFFF" />
+          <path d="M 80,480 Q 200,320 340,460 T 600,420 Q 720,340 760,490 L 760,700 L 80,700 Z" fill="url(#waveGrad)" filter="url(#glow)" />
+          <path d="M 120,530 Q 240,400 380,510 T 660,470 Q 730,420 760,550 L 760,700 L 120,700 Z" fill="#0C4A6E" />
+          <path d="M 100,500 Q 150,440 220,440 Q 260,470 310,430 Q 370,380 430,460" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" />
+          <circle cx="400" cy="400" r="370" fill="none" stroke="#FFFFFF" stroke-width="3" />
+          <text x="400" y="740" font-family="'Cinzel', 'Arial Black', sans-serif" font-size="34" font-weight="900" fill="#F8FAFC" text-anchor="middle" letter-spacing="8">GREAT WAVE • JAPAN</text>
+        </svg>`;
+      } else if (p.includes('wolf') || p.includes('cyber') || p.includes('neon')) {
+        svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+          <defs>
+            <linearGradient id="neonCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#06B6D4" />
+              <stop offset="100%" stop-color="#3B82F6" />
+            </linearGradient>
+            <linearGradient id="neonPink" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#EC4899" />
+              <stop offset="100%" stop-color="#8B5CF6" />
+            </linearGradient>
+            <filter id="neonGlow">
+              <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#06B6D4" flood-opacity="0.8"/>
+            </filter>
+          </defs>
+          <polygon points="400,60 740,240 740,600 400,760 60,600 60,240" fill="none" stroke="url(#neonPink)" stroke-width="5" stroke-dasharray="16 8"/>
+          <polygon points="400,160 300,280 250,220 280,360 210,400 300,480 400,640 500,480 590,400 520,360 550,220 500,280" fill="#090D16" stroke="url(#neonCyan)" stroke-width="8" filter="url(#neonGlow)"/>
+          <polygon points="400,250 340,340 370,420 400,390 430,420 460,340" fill="none" stroke="url(#neonPink)" stroke-width="6"/>
+          <polygon points="340,360 380,380 345,395" fill="#06B6D4" filter="url(#neonGlow)"/>
+          <polygon points="460,360 420,380 455,395" fill="#06B6D4" filter="url(#neonGlow)"/>
+          <polygon points="400,450 370,510 400,560 430,510" fill="url(#neonPink)"/>
+          <text x="400" y="710" font-family="'Impact', 'Arial Black', sans-serif" font-size="42" font-weight="900" fill="#06B6D4" text-anchor="middle" letter-spacing="12">CYBER WOLF • 2077</text>
+        </svg>`;
+      } else if (p.includes('crest') || p.includes('sports') || p.includes('shield') || p.includes('varsity')) {
+        svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+          <defs>
+            <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FDE047" />
+              <stop offset="50%" stop-color="#CA8A04" />
+              <stop offset="100%" stop-color="#854D0E" />
+            </linearGradient>
+            <linearGradient id="shieldBg" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#1E1B4B" />
+              <stop offset="100%" stop-color="#0F172A" />
+            </linearGradient>
+          </defs>
+          <circle cx="400" cy="110" r="14" fill="#FDE047"/>
+          <circle cx="350" cy="120" r="11" fill="#FDE047"/>
+          <circle cx="450" cy="120" r="11" fill="#FDE047"/>
+          <path d="M 400,160 Q 560,160 580,320 Q 590,520 400,680 Q 210,520 220,320 Q 240,160 400,160 Z" fill="url(#shieldBg)" stroke="url(#goldGrad)" stroke-width="12"/>
+          <path d="M 400,190 Q 530,190 550,320 Q 560,490 400,640 Q 240,490 250,320 Q 270,190 400,190 Z" fill="none" stroke="#FFFFFF" stroke-width="3" opacity="0.4"/>
+          <polygon points="400,240 430,300 490,310 445,355 460,420 400,385 340,420 355,355 310,310 370,300" fill="url(#goldGrad)"/>
+          <text x="400" y="520" font-family="'Arial Black', Impact, sans-serif" font-size="54" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="4">VARSITY</text>
+          <text x="400" y="570" font-family="'Arial Black', sans-serif" font-size="28" font-weight="700" fill="#CA8A04" text-anchor="middle" letter-spacing="6">ATHLETIC DEPT</text>
+          <text x="400" y="610" font-family="sans-serif" font-size="18" font-weight="900" fill="#94A3B8" text-anchor="middle" letter-spacing="4">DIV I • EST 1994</text>
+        </svg>`;
+      } else if (p.includes('floral') || p.includes('flower') || p.includes('botanical') || p.includes('minimal')) {
+        svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+          <circle cx="400" cy="400" r="320" fill="none" stroke="#E2E8F0" stroke-width="2"/>
+          <circle cx="400" cy="400" r="300" fill="#FEF2F2" opacity="0.6"/>
+          <path d="M 400,620 Q 400,400 400,200" fill="none" stroke="#1E293B" stroke-width="6" stroke-linecap="round"/>
+          <path d="M 400,520 Q 480,480 500,430 Q 440,440 400,480" fill="#F43F5E" stroke="#1E293B" stroke-width="4"/>
+          <path d="M 400,460 Q 320,420 300,370 Q 360,380 400,420" fill="#FB7185" stroke="#1E293B" stroke-width="4"/>
+          <path d="M 400,400 Q 470,350 480,290 Q 430,320 400,360" fill="#F43F5E" stroke="#1E293B" stroke-width="4"/>
+          <path d="M 400,330 Q 330,290 320,230 Q 370,250 400,290" fill="#FDA4AF" stroke="#1E293B" stroke-width="4"/>
+          <circle cx="400" cy="200" r="45" fill="#E11D48" stroke="#1E293B" stroke-width="5"/>
+          <text x="400" y="710" font-family="'Playfair Display', Georgia, serif" font-style="italic" font-size="36" fill="#1E293B" text-anchor="middle" letter-spacing="6">Botanical Flora • Atelier</text>
+        </svg>`;
+      } else if (p.includes('dragon') || p.includes('flame') || p.includes('fire')) {
+        svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+          <defs>
+            <linearGradient id="fireGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#F59E0B" />
+              <stop offset="50%" stop-color="#EF4444" />
+              <stop offset="100%" stop-color="#7F1D1D" />
+            </linearGradient>
+          </defs>
+          <circle cx="400" cy="400" r="330" fill="#18181B" stroke="#EF4444" stroke-width="8"/>
+          <path d="M 400,140 Q 560,260 520,420 Q 480,560 360,600 Q 440,500 400,420 Q 360,340 400,140 Z" fill="url(#fireGrad)"/>
+          <path d="M 320,280 Q 220,380 260,500 Q 320,440 330,360 Z" fill="#F97316"/>
+          <polygon points="400,320 430,360 480,350 440,390 460,440 410,410 370,450 380,390 340,360 390,360" fill="#FEF08A"/>
+          <text x="400" y="700" font-family="'Impact', sans-serif" font-size="48" font-weight="900" fill="#EF4444" text-anchor="middle" letter-spacing="10">DRAGON FIRE</text>
+        </svg>`;
+      } else {
+        const cleanPrompt = prompt.slice(0, 32).toUpperCase();
+        svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+          <defs>
+            <linearGradient id="mainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#F59E0B" />
+              <stop offset="50%" stop-color="#D97706" />
+              <stop offset="100%" stop-color="#B45309" />
+            </linearGradient>
+          </defs>
+          <rect x="120" y="120" width="560" height="560" rx="40" fill="#0F100F" stroke="#D4AF37" stroke-width="6"/>
+          <circle cx="400" cy="380" r="180" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="10 6" opacity="0.5"/>
+          <polygon points="400,240 480,380 320,380" fill="url(#mainGrad)"/>
+          <polygon points="400,460 320,320 480,320" fill="none" stroke="#F8FAFC" stroke-width="4"/>
+          <text x="400" y="550" font-family="'Impact', 'Arial Black', sans-serif" font-size="44" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="6">${cleanPrompt}</text>
+          <text x="400" y="600" font-family="monospace" font-size="20" font-weight="bold" fill="#D4AF37" text-anchor="middle" letter-spacing="10">ORIGINAL EDITION • FABRIC PRINT</text>
+        </svg>`;
+      }
+
+      const base64Data = Buffer.from(svgContent).toString('base64');
+      const dataUrl = `data:image/svg+xml;base64,${base64Data}`;
+
+      res.json({
+        success: true,
+        prompt,
+        style,
+        imageUrl: dataUrl,
+        svg: svgContent
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Failed to generate design graphic' });
+    }
+  });
+
   // SWATCH BOOKS API
   app.get('/api/swatch-books', (req, res) => {
     res.json(db.getSwatchBooks());

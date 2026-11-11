@@ -25,12 +25,31 @@ import {
   Pause,
   Play,
   Sparkles,
+  Download,
+  Printer,
+  FileDown,
+  Trophy,
+  Users,
+  Sun,
+  Zap,
+  Wand2,
+  Sliders,
+  Type,
+  ShieldCheck,
+  CheckCircle2
 } from 'lucide-react';
 import { GarmentMockup, GarmentModelType } from './GarmentMockup';
-import { ThreeDGarmentViewer } from './ThreeDGarmentViewer';
+import {
+  ThreeDGarmentViewer,
+  FabricPBRType,
+  LightingPreset,
+  StudioViewSide
+} from './ThreeDGarmentViewer';
 import { SAMPLE_GRAPHICS_LIBRARY, ApparelGarmentItem } from '../data/apparelCatalogData';
+import { QuotationModal, QuotationBreakdownItem } from './QuotationModal';
+import { useCart } from '../context/CartContext';
 
-export type ShellSheet = 'none' | 'method' | 'color' | 'add' | 'pad' | 'edit' | 'product';
+export type ShellSheet = 'none' | 'method' | 'color' | 'add' | 'pad' | 'edit' | 'product' | 'jersey' | 'pbr';
 
 export const EMBROIDERY_THREADS = [
   { name: 'Metallic Gold', hex: '#D4AF37' },
@@ -42,6 +61,17 @@ export const EMBROIDERY_THREADS = [
   { name: 'Emerald Green', hex: '#15803D' },
   { name: 'Sunset Orange', hex: '#EA580C' }
 ];
+
+const TYPOGRAPHY_FONTS = [
+  { id: 'Impact', label: 'Varsity Bold', family: "Impact, 'Arial Black', sans-serif" },
+  { id: 'Cinzel', label: 'Street Gothic', family: "'Cinzel', Georgia, serif" },
+  { id: 'Inter', label: 'Modern Sans', family: "'Inter', system-ui, sans-serif" },
+  { id: 'Playfair', label: 'Luxury Serif', family: "'Playfair Display', serif" },
+  { id: 'SpaceGrotesk', label: 'Tech Mono', family: "'Space Grotesk', monospace" },
+  { id: 'Brush', label: 'Signature Script', family: "'Brush Script MT', cursive" },
+];
+
+const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'] as const;
 
 interface ApparelStudioShellProps {
   garment: ApparelGarmentItem;
@@ -109,7 +139,7 @@ const PLACEMENTS = [
   { id: 'full_back', label: 'Full Back', side: 'back' as const },
 ];
 
-const TEXT_COLORS = ['#FFFFFF', '#111827', '#D4AF37', '#DC2626', '#2563EB', '#16A34A'];
+const TEXT_COLORS = ['#FFFFFF', '#111827', '#D4AF37', '#DC2626', '#2563EB', '#16A34A', '#F97316', '#06B6D4'];
 
 export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => {
   const {
@@ -128,6 +158,8 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
     selectedSize, setSelectedSize, quantity, setQuantity, totalPrice,
     onAddToCart, onBuyNow,
   } = props;
+
+  const { addToCart } = useCart();
 
   // Local state fallbacks if not supplied by parent
   const [localMethod, setLocalMethod] = useState<'dtf' | 'embroidery'>('dtf');
@@ -150,11 +182,77 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
   const fileRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // 3D Configurator Advanced State (Module 2)
+  const [viewSide, setViewSide] = useState<StudioViewSide>('front');
+  const [fabricPbr, setFabricPbr] = useState<FabricPBRType>('cotton_jersey');
+  const [lightingPreset, setLightingPreset] = useState<LightingPreset>('studio');
+
+  // Typography Engine Advanced State (Module 1)
+  const [customFont, setCustomFont] = useState<string>('Impact');
+  const [textArc, setTextArc] = useState<number>(0);
+  const [strokeWidth, setStrokeWidth] = useState<number>(0);
+  const [strokeColor, setStrokeColor] = useState<string>('#000000');
+
+  // Sports Jersey & Team Personalizer State (Module 3)
+  const [isJerseyMode, setIsJerseyMode] = useState<boolean>(
+    Boolean(garment.modelType.includes('jersey') || garment.name.toLowerCase().includes('jersey') || garment.name.toLowerCase().includes('sports'))
+  );
+  const [playerNumber, setPlayerNumber] = useState<string>('10');
+  const [playerSquadName, setPlayerSquadName] = useState<string>('CAPTAIN');
+  const [rosterBatch, setRosterBatch] = useState<Array<{ name: string; number: string; size: string }>>([
+    { name: 'DHONI', number: '7', size: 'L' },
+    { name: 'VIRAT', number: '18', size: 'M' },
+    { name: 'ROHIT', number: '45', size: 'XL' }
+  ]);
+  const [rosterNameInput, setRosterNameInput] = useState('');
+  const [rosterNumInput, setRosterNumInput] = useState('');
+  const [rosterSizeInput, setRosterSizeInput] = useState('L');
+
+  // Bulk Matrix State & Dynamic Pricing (Module 4)
+  const [bulkMode, setBulkMode] = useState<'single' | 'matrix'>('single');
+  const [bulkMatrix, setBulkMatrix] = useState<Record<string, number>>({
+    XS: 0,
+    S: 2,
+    M: 6,
+    L: 8,
+    XL: 4,
+    '2XL': 2,
+    '3XL': 0
+  });
+  const [isQuotationModalOpen, setIsQuotationModalOpen] = useState(false);
+
+  // Generative AI Design Assistant State (Module 5)
+  const [aiPrompt, setAiPrompt] = useState<string>('');
+  const [isGeneratingAi, setIsGeneratingAi] = useState<boolean>(false);
+
   const hasDesign = Boolean(activeGraphicUrl || customText);
+
+  // Keep viewSide and activeSide in sync when clicking front/back
+  useEffect(() => {
+    if (activeSide === 'front' || activeSide === 'back') {
+      setViewSide(activeSide);
+    }
+  }, [activeSide]);
+
+  // Bulk Tier Calculation
+  const totalBulkUnits = Object.values(bulkMatrix).reduce((sum, q) => sum + (q || 0), 0);
+  const baseUnitPrice = (garment.price || 499) + (method === 'embroidery' ? 60 : 0);
+
+  const getTierInfo = (qty: number) => {
+    if (qty >= 200) return { discount: 35, name: 'Wholesale Partner Tier (35% OFF)' };
+    if (qty >= 50) return { discount: 25, name: 'Bulk Mill Tier (25% OFF)' };
+    if (qty >= 10) return { discount: 15, name: 'Team & Studio Tier (15% OFF)' };
+    return { discount: 0, name: 'Retail Sampling' };
+  };
+
+  const activeTier = getTierInfo(bulkMode === 'matrix' ? totalBulkUnits : quantity);
+  const discountedUnitPrice = Math.round(baseUnitPrice * (1 - activeTier.discount / 100));
+  const bulkTotalPrice = discountedUnitPrice * totalBulkUnits;
+  const bulkSavings = (baseUnitPrice * totalBulkUnits) - bulkTotalPrice;
 
   // ---------- Share ----------
   const handleShare = async () => {
-    const text = `${garment.name} (${currentColor.name}) — customised on Fabric Print 3D Studio. ₹${totalPrice}`;
+    const text = `${garment.name} (${currentColor.name}) — customised on Fabric Print 3D Studio. ₹${bulkMode === 'matrix' ? bulkTotalPrice : totalPrice}`;
     try {
       const nav = navigator as Navigator & { share?: (d: { title: string; text: string; url: string }) => Promise<void> };
       if (nav.share) {
@@ -171,6 +269,155 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
       }
       setTimeout(() => setShareTick(null), 1800);
     }
+  };
+
+  // ---------- High-DPI 300 DPI Export (Module 1) ----------
+  const exportHighDpiPng = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 2400;
+    canvas.height = 3000;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, 2400, 3000);
+
+    const renderTextToExport = () => {
+      if (customText && customText.trim()) {
+        ctx.save();
+        ctx.font = `bold 180px ${customFont || 'Impact, sans-serif'}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = threadCol || customTextColor || '#FFFFFF';
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 15;
+
+        const textY = activeGraphicUrl ? 2600 : 1500;
+
+        if (textArc && Math.abs(textArc) > 5) {
+          const radius = Math.max(500, 1500 - Math.abs(textArc) * 10);
+          const arcSign = textArc > 0 ? 1 : -1;
+          const arcCenterY = textY + (arcSign > 0 ? radius : -radius);
+          const chars = customText.split('');
+          const totalAngle = (chars.length * 85) / radius;
+          let currentAngle = -totalAngle / 2;
+
+          chars.forEach((char) => {
+            ctx.save();
+            ctx.translate(1200 + Math.sin(currentAngle) * radius, arcCenterY - Math.cos(currentAngle) * radius * arcSign);
+            ctx.rotate(currentAngle * arcSign);
+            if (strokeWidth && strokeWidth > 0) {
+              ctx.strokeStyle = strokeColor || '#000000';
+              ctx.lineWidth = strokeWidth * 6;
+              ctx.strokeText(char, 0, 0);
+            }
+            ctx.fillText(char, 0, 0);
+            ctx.restore();
+            currentAngle += totalAngle / chars.length;
+          });
+        } else {
+          if (strokeWidth && strokeWidth > 0) {
+            ctx.strokeStyle = strokeColor || '#000000';
+            ctx.lineWidth = strokeWidth * 6;
+            ctx.strokeText(customText, 1200, textY);
+          }
+          ctx.fillText(customText, 1200, textY);
+        }
+        ctx.restore();
+      }
+
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const link = document.createElement('a');
+        link.download = `${garment.name.toLowerCase().replace(/\s+/g, '-')}-print-ready-300dpi.png`;
+        link.href = URL.createObjectURL(blob);
+        link.click();
+      }, 'image/png');
+    };
+
+    if (activeGraphicUrl) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const hRatio = customText ? 0.75 : 0.9;
+        const maxW = 2400 * 0.9;
+        const maxH = 3000 * hRatio;
+        const scale = Math.min(maxW / img.width, maxH / img.height);
+        const drawW = img.width * scale;
+        const drawH = img.height * scale;
+        const drawX = (2400 - drawW) / 2;
+        const drawY = customText ? (2200 - drawH) / 2 + 100 : (3000 - drawH) / 2;
+
+        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        renderTextToExport();
+      };
+      img.onerror = () => {
+        renderTextToExport();
+      };
+      img.src = activeGraphicUrl;
+    } else {
+      renderTextToExport();
+    }
+  };
+
+  // ---------- Generative AI Artwork Generator (Module 5) ----------
+  const handleGenerateAiDesign = async (promptToUse?: string) => {
+    const textPrompt = (promptToUse || aiPrompt).trim();
+    if (!textPrompt) return;
+    setIsGeneratingAi(true);
+    try {
+      const res = await fetch('/api/generate-design', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: textPrompt, style: 'streetwear' })
+      });
+      const data: any = await res.json();
+      if (data.imageUrl) {
+        pickSampleGraphic(data.imageUrl);
+        setSheet('pad');
+      }
+    } catch (err) {
+      console.error('Failed to generate AI design:', err);
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
+
+  // ---------- Batch Add Entire Matrix To Cart ----------
+  const handleAddBatchToCart = () => {
+    if (bulkMode === 'single') {
+      onAddToCart();
+      return;
+    }
+    // Add each size in the matrix with qty > 0
+    Object.entries(bulkMatrix).forEach(([sz, qty]) => {
+      if (qty > 0) {
+        addToCart(
+          {
+            id: `${garment.id}-${sz}`,
+            name: `${garment.name} (${sz})`,
+            category: 'Cotton',
+            price: discountedUnitPrice,
+            image: activeGraphicUrl || '/mockups/white_tshirt_front.png',
+            description: `${garment.fabric} • ${garment.gsm} • ${method.toUpperCase()} customized`
+          } as any,
+          'apparel',
+          qty,
+          {
+            process: method === 'embroidery' ? 'direct_reactive' : 'dtf',
+            finish: finish === 'gloss' ? 'gloss' : 'matte'
+          } as any,
+          1,
+          `${sz} / ${currentColor.name}`,
+          {
+            selectedFabricVariant: `${sz} / ${currentColor.name}`,
+            customText: customText || undefined,
+            uploadedArtworkUrl: activeGraphicUrl || undefined,
+          } as any
+        );
+      }
+    });
+    setShareTick('Batch Added to Cart!');
+    setTimeout(() => setShareTick(null), 2000);
   };
 
   // ---------- Design-box drag (move) ----------
@@ -245,7 +492,7 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
     window.addEventListener('pointerup', up);
   };
 
-  const toggleSheet = (s: Exclude<ShellSheet, 'none' | 'product'>) =>
+  const toggleSheet = (s: ShellSheet) =>
     setSheet(prev => (prev === s ? 'none' : s));
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -265,10 +512,28 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
       active ? 'bg-white text-black shadow' : 'text-white/70 active:bg-white/10'
     }`;
 
+  // Quotation breakdown list
+  const quotationBreakdown: QuotationBreakdownItem[] =
+    bulkMode === 'matrix'
+      ? Object.entries(bulkMatrix)
+          .filter(([_, q]) => q > 0)
+          .map(([sz, q]) => ({
+            size: sz,
+            quantity: q,
+            unitPrice: baseUnitPrice
+          }))
+      : [
+          {
+            size: selectedSize,
+            quantity: quantity,
+            unitPrice: baseUnitPrice
+          }
+        ];
+
   return (
-    <div className="bg-[#262624] text-white sm:rounded-[2rem] overflow-hidden sm:border sm:border-white/10 sm:shadow-2xl max-w-md mx-auto sm:my-4 flex flex-col min-h-[100dvh] sm:min-h-[820px] relative">
+    <div className="bg-[#262624] text-white sm:rounded-[2rem] overflow-hidden sm:border sm:border-white/10 sm:shadow-2xl max-w-md mx-auto sm:my-4 flex flex-col min-h-[100dvh] sm:min-h-[840px] relative">
       {/* ===== Top viewport: live 3D garment ===== */}
-      <div className="relative h-[46dvh] min-h-[330px] bg-[radial-gradient(120%_100%_at_50%_0%,#4a4a45_0%,#33332f_45%,#232322_100%)]">
+      <div className="relative h-[48dvh] min-h-[340px] bg-[radial-gradient(120%_100%_at_50%_0%,#4a4a45_0%,#33332f_45%,#232322_100%)]">
         {/* Top bar */}
         <div className="absolute top-0 inset-x-0 z-20 flex items-center justify-between px-3 pt-3 pt-safe">
           <button
@@ -318,13 +583,14 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
             </button>
           </div>
         </div>
+
         {shareTick && (
-          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 bg-black/80 text-[11px] font-bold px-3 py-1.5 rounded-full">
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 bg-amber-500 text-black text-[11px] font-black px-3.5 py-1.5 rounded-full shadow-lg animate-in fade-in">
             {shareTick}
           </div>
         )}
 
-        {/* Floating Technique & Thread Badge */}
+        {/* Floating Technique & Mode Badges */}
         <div className="absolute top-13 left-3 z-20 flex items-center gap-1.5">
           <button
             onClick={() => toggleSheet('method')}
@@ -337,18 +603,38 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
             {method === 'embroidery' ? (
               <>
                 <span className="w-2.5 h-2.5 rounded-full border border-white/40 inline-block shrink-0 shadow-xs" style={{ backgroundColor: threadCol }} />
-                <span>🧵 {embStyle === 'puff3d' ? '3D Puff Embroidery' : embStyle === 'patch' ? 'Crest Patch' : 'Satin Embroidery'}</span>
+                <span>🧵 {embStyle === 'puff3d' ? '3D Puff' : embStyle === 'patch' ? 'Patch' : 'Satin'}</span>
               </>
             ) : (
-              <>
-                <span>🎨 1200 DPI DTF ({finish === 'gloss' ? 'Gloss' : 'Matte'})</span>
-              </>
+              <span>🎨 DTF ({finish === 'gloss' ? 'Gloss' : 'Matte'})</span>
             )}
             <ChevronDown className="w-2.5 h-2.5 opacity-60" />
           </button>
+
+          {/* Sports Jersey Badge */}
+          <button
+            onClick={() => toggleSheet('jersey')}
+            className={`backdrop-blur-md text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1 transition active:scale-95 ${
+              isJerseyMode
+                ? 'bg-amber-500/20 border border-amber-400 text-amber-300'
+                : 'bg-black/60 border border-white/15 text-white/70'
+            }`}
+          >
+            <Trophy className="w-3 h-3 text-amber-400" />
+            <span>{isJerseyMode ? `Jersey #${playerNumber}` : 'Team Kit'}</span>
+          </button>
+
+          {/* PBR Material & Lighting Badge */}
+          <button
+            onClick={() => toggleSheet('pbr')}
+            className="backdrop-blur-md text-[10px] font-black px-2 py-1 rounded-full bg-black/60 border border-white/15 text-white/70 flex items-center gap-1 active:scale-95 transition"
+          >
+            <Sun className="w-3 h-3 text-amber-300" />
+            <span>PBR</span>
+          </button>
         </div>
 
-        {/* Live garment */}
+        {/* Live garment View */}
         <div className="absolute inset-0 pt-12 pb-10">
           {isLive3D ? (
             <ThreeDGarmentViewer
@@ -358,15 +644,21 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
               scalePercent={scalePercent}
               artworkPlacement={artworkPlacement}
               isFlippedH={isFlippedH}
-              side={activeSide}
+              side={viewSide}
               autoRotate={autoRotate}
               modelType={garment.modelType}
               offsetX={offsetX}
               offsetY={offsetY}
               customText={customText}
-              customTextColor={customTextColor}
+              customTextColor={method === 'embroidery' ? threadCol : customTextColor}
+              customTextFont={customFont}
+              textArc={textArc}
+              strokeWidth={strokeWidth}
+              strokeColor={strokeColor}
               isEmbroidery={method === 'embroidery'}
               embroideryThreadColor={threadCol}
+              fabricPbr={fabricPbr}
+              lightingPreset={lightingPreset}
             />
           ) : (
             <GarmentMockup
@@ -393,42 +685,48 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
           )}
         </div>
 
-        {/* View chips: 3D/Flat • Front/Back • 360 */}
-        <div className="absolute bottom-2 inset-x-0 z-20 flex items-center justify-center gap-1.5 px-3">
-          <div className="flex items-center bg-black/60 backdrop-blur rounded-full p-0.5 text-[10px] font-bold">
+        {/* View presets: 3D/Flat • 4 Sides (Front / Back / L-Sleeve / R-Sleeve) • 360 Spin */}
+        <div className="absolute bottom-2 inset-x-0 z-20 flex items-center justify-center gap-1.5 px-2 flex-wrap">
+          <div className="flex items-center bg-black/70 backdrop-blur rounded-full p-0.5 text-[10px] font-bold border border-white/10">
             <button
               onClick={() => setIsLive3D(true)}
-              className={`px-2.5 py-1 rounded-full transition ${isLive3D ? 'bg-white text-black' : 'text-white/70'}`}
+              className={`px-2 py-0.5 rounded-full transition ${isLive3D ? 'bg-white text-black' : 'text-white/70'}`}
             >
               3D
             </button>
             <button
               onClick={() => setIsLive3D(false)}
-              className={`px-2.5 py-1 rounded-full transition ${!isLive3D ? 'bg-white text-black' : 'text-white/70'}`}
+              className={`px-2 py-0.5 rounded-full transition ${!isLive3D ? 'bg-white text-black' : 'text-white/70'}`}
             >
               Flat
             </button>
           </div>
-          <div className="flex items-center bg-black/60 backdrop-blur rounded-full p-0.5 text-[10px] font-bold">
-            <button
-              onClick={() => setActiveSide('front')}
-              className={`px-2.5 py-1 rounded-full transition ${activeSide === 'front' ? 'bg-white text-black' : 'text-white/70'}`}
-            >
-              Front
-            </button>
-            <button
-              onClick={() => setActiveSide('back')}
-              className={`px-2.5 py-1 rounded-full transition ${activeSide === 'back' ? 'bg-white text-black' : 'text-white/70'}`}
-            >
-              Back
-            </button>
+
+          <div className="flex items-center bg-black/70 backdrop-blur rounded-full p-0.5 text-[9px] font-bold border border-white/10">
+            {(['front', 'back', 'left_sleeve', 'right_sleeve'] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => {
+                  setViewSide(s);
+                  if (s === 'front' || s === 'back') setActiveSide(s);
+                }}
+                className={`px-2 py-0.5 rounded-full transition uppercase ${
+                  viewSide === s ? 'bg-amber-400 text-black font-black' : 'text-white/70'
+                }`}
+              >
+                {s === 'left_sleeve' ? 'L-Sleeve' : s === 'right_sleeve' ? 'R-Sleeve' : s}
+              </button>
+            ))}
           </div>
+
           <button
             onClick={() => setAutoRotate(!autoRotate)}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-bold transition ${autoRotate ? 'bg-amber-500 text-black' : 'bg-black/60 text-white/80 backdrop-blur'}`}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition border border-white/10 ${
+              autoRotate ? 'bg-amber-500 text-black' : 'bg-black/70 text-white/80 backdrop-blur'
+            }`}
           >
             {autoRotate ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-            360°
+            <span>360°</span>
           </button>
         </div>
       </div>
@@ -438,15 +736,16 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
         <div ref={panelRef} className="relative z-10 -mt-8 mx-3 rounded-2xl border border-white/15 bg-black/90 shadow-2xl p-3">
           <button
             onClick={() => setShowPrintPanel(false)}
-            aria-label="Hide print area"
-            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition z-20"
+            aria-label="Hide print panel"
+            className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition text-white/70"
           >
             <X className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => setIsFlippedH((v: boolean) => !v)}
-            aria-label="Mirror design"
-            className={`absolute top-2 right-11 w-7 h-7 rounded-full flex items-center justify-center active:scale-90 transition z-20 ${isFlippedH ? 'bg-white text-black' : 'bg-white/10'}`}
+            onClick={handleResetArtwork}
+            aria-label="Reset position"
+            title="Reset position"
+            className="absolute top-2 left-2 w-6 h-6 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition text-white/70"
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
@@ -471,7 +770,7 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
                 className="border border-dashed border-white/30 rounded-xl px-5 py-4 text-center active:scale-95 transition"
               >
                 <Upload className="w-5 h-5 mx-auto mb-1 opacity-70" />
-                <span className="text-[11px] font-bold text-white/70">Tap Add to place your design</span>
+                <span className="text-[11px] font-bold text-white/70">Tap Add to place your design or AI prompt</span>
               </button>
             ) : (
               <div className="relative">
@@ -491,7 +790,10 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
                     <img src={activeGraphicUrl} alt="design" className="w-full h-full object-contain pointer-events-none" draggable={false} />
                   )}
                   {customText && (
-                    <div className="absolute inset-x-0 top-1 text-center font-black text-sm pointer-events-none" style={{ color: customTextColor }}>
+                    <div
+                      className="absolute inset-x-0 top-1 text-center font-black text-sm pointer-events-none truncate px-1"
+                      style={{ color: method === 'embroidery' ? threadCol : customTextColor, fontFamily: customFont }}
+                    >
                       {customText}
                     </div>
                   )}
@@ -530,18 +832,27 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
         </div>
       )}
 
-      {/* ===== Delete ===== */}
-      <div className="px-3 mt-2">
+      {/* ===== Action Buttons: High-DPI Export & Delete ===== */}
+      <div className="px-3 mt-2 grid grid-cols-2 gap-2">
+        <button
+          onClick={exportHighDpiPng}
+          disabled={!hasDesign}
+          className="py-2.5 rounded-xl bg-white/10 hover:bg-white/15 disabled:opacity-30 text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition"
+        >
+          <FileDown className="w-3.5 h-3.5 text-amber-400" />
+          <span>300 DPI Export</span>
+        </button>
         <button
           onClick={clearDesign}
           disabled={!hasDesign}
-          className="w-full py-3 rounded-xl bg-[#F4511E] disabled:opacity-30 text-white text-sm font-bold active:scale-[0.98] transition touch-manipulation"
+          className="py-2.5 rounded-xl bg-[#F4511E]/80 hover:bg-[#F4511E] disabled:opacity-30 text-white text-xs font-bold active:scale-[0.98] transition"
         >
-          Delete
+          Clear Design
         </button>
       </div>
 
       {/* ===== Sheets ===== */}
+
       {/* 1. Method Sheet (DTF Printing vs 3D Embroidery) */}
       {sheet === 'method' && (
         <div className="mx-3 mt-2 rounded-2xl bg-black/90 border border-white/10 p-3.5 space-y-3 animate-in slide-in-from-bottom-2">
@@ -554,9 +865,7 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
             </span>
           </div>
 
-          {/* 2 Primary Method Cards: DTF vs Embroidery */}
           <div className="grid grid-cols-2 gap-2">
-            {/* DTF Card */}
             <button
               onClick={() => setMethod('dtf')}
               className={`p-3 rounded-xl border text-left transition relative flex flex-col justify-between ${
@@ -579,7 +888,6 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
               </div>
             </button>
 
-            {/* Embroidery Card */}
             <button
               onClick={() => setMethod('embroidery')}
               className={`p-3 rounded-xl border text-left transition relative flex flex-col justify-between ${
@@ -603,7 +911,6 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
             </button>
           </div>
 
-          {/* Detailed options depending on selected method */}
           {method === 'dtf' ? (
             <div className="pt-2 border-t border-white/10 space-y-2">
               <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider block">
@@ -634,7 +941,6 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
             </div>
           ) : (
             <div className="pt-2 border-t border-white/10 space-y-2.5">
-              {/* Embroidery Stitch Style */}
               <div>
                 <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider block mb-1">
                   Embroidery Stitch Style
@@ -661,7 +967,6 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
                 </div>
               </div>
 
-              {/* Embroidery Thread Colors */}
               <div>
                 <div className="flex items-center justify-between text-[10px] font-bold text-white/50 uppercase tracking-wider mb-1">
                   <span>Thread Color</span>
@@ -695,6 +1000,7 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
         </div>
       )}
 
+      {/* 2. Color Sheet */}
       {sheet === 'color' && (
         <div className="mx-3 mt-2 rounded-2xl bg-black/80 border border-white/10 p-3 animate-in slide-in-from-bottom-2">
           <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider mb-2">Color • {currentColor.name}</div>
@@ -715,45 +1021,112 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
         </div>
       )}
 
+      {/* 3. Add Sheet (Upload, URL, Sample Library & Generative AI Assistant) */}
       {sheet === 'add' && (
-        <div className="mx-3 mt-2 rounded-2xl bg-black/80 border border-white/10 p-3 animate-in slide-in-from-bottom-2">
+        <div className="mx-3 mt-2 rounded-2xl bg-black/90 border border-white/10 p-3.5 space-y-3 animate-in slide-in-from-bottom-2">
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
-          <div className="grid grid-cols-2 gap-2 mb-2">
+          
+          <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => fileRef.current?.click()}
-              className="py-2.5 rounded-xl bg-white text-black text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition"
+              className="py-2.5 rounded-xl bg-white text-black text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition shadow"
             >
-              <Upload className="w-4 h-4" /> Upload
+              <Upload className="w-4 h-4" /> Upload File
             </button>
             <button
               onClick={onOpenUrlImport}
               className="py-2.5 rounded-xl bg-white/10 text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition"
             >
-              <Link2 className="w-4 h-4" /> From URL
+              <Link2 className="w-4 h-4" /> From Web URL
             </button>
           </div>
-          <div className="grid grid-cols-4 gap-1.5">
-            {SAMPLE_GRAPHICS_LIBRARY.map(sg => (
+
+          {/* ✨ Generative AI Design Assistant (Module 5) */}
+          <div className="p-3 rounded-xl bg-gradient-to-r from-purple-950/60 via-indigo-950/60 to-black/80 border border-purple-500/30 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black text-purple-300 flex items-center gap-1">
+                <Wand2 className="w-3.5 h-3.5 text-purple-400" />
+                <span>Generative AI Design Studio</span>
+              </span>
+              <span className="text-[9px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full">
+                AI Vector
+              </span>
+            </div>
+            
+            <div className="flex gap-1.5">
+              <input
+                value={aiPrompt}
+                onChange={e => setAiPrompt(e.target.value)}
+                placeholder="e.g. Cyberpunk neon wolf, Japanese wave art..."
+                className="flex-1 px-3 py-2 rounded-xl bg-black/60 border border-white/15 text-xs text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-purple-400"
+              />
               <button
-                key={sg.id}
-                onClick={() => { pickSampleGraphic(sg.url); setSheet('pad'); }}
-                className={`rounded-lg overflow-hidden border-2 transition ${activeGraphicUrl === sg.url ? 'border-amber-500' : 'border-white/10'}`}
+                onClick={() => handleGenerateAiDesign()}
+                disabled={isGeneratingAi || !aiPrompt.trim()}
+                className="px-3 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 disabled:opacity-40 text-xs font-black text-white shrink-0 active:scale-95 transition"
               >
-                <img src={sg.url} alt={sg.name} className="w-full aspect-square object-cover" />
+                {isGeneratingAi ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Generate'}
               </button>
-            ))}
+            </div>
+
+            {/* Quick Inspiration Chips */}
+            <div className="flex gap-1 overflow-x-auto pb-1 text-[9px] font-bold text-purple-200">
+              {[
+                { label: '🌊 Japanese Wave', prompt: 'Great Wave off Kanagawa Japan minimalist' },
+                { label: '🐺 Cyberpunk Wolf', prompt: 'Cyberpunk neon wolf streetwear 2077' },
+                { label: '🛡️ Varsity Crest', prompt: 'Varsity athletic department gold shield crest' },
+                { label: '🌸 Minimal Floral', prompt: 'Botanical rose floral line art minimal' },
+                { label: '🐉 Dragon Fire', prompt: 'Dragon flame emblem bold streetwear' },
+              ].map(chip => (
+                <button
+                  key={chip.label}
+                  onClick={() => {
+                    setAiPrompt(chip.prompt);
+                    handleGenerateAiDesign(chip.prompt);
+                  }}
+                  className="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 shrink-0 transition"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Sample Vector Library */}
+          <div>
+            <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider mb-1.5">
+              Curated Graphic Library
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {SAMPLE_GRAPHICS_LIBRARY.map(sg => (
+                <button
+                  key={sg.id}
+                  onClick={() => { pickSampleGraphic(sg.url); setSheet('pad'); }}
+                  className={`rounded-lg overflow-hidden border-2 transition ${activeGraphicUrl === sg.url ? 'border-amber-500' : 'border-white/10'}`}
+                >
+                  <img src={sg.url} alt={sg.name} className="w-full aspect-square object-cover" />
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
+      {/* 4. Pad Sheet (Print Area Placement) */}
       {sheet === 'pad' && (
         <div className="mx-3 mt-2 rounded-2xl bg-black/80 border border-white/10 p-3 animate-in slide-in-from-bottom-2">
-          <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider mb-2">Print area</div>
+          <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider mb-2">Print Area Placement</div>
           <div className="grid grid-cols-3 gap-1.5">
             {PLACEMENTS.map(p => (
               <button
                 key={p.id}
-                onClick={() => { setArtworkPlacement(p.id); setActiveSide(p.side); setOffsetX(0); setOffsetY(0); }}
+                onClick={() => {
+                  setArtworkPlacement(p.id);
+                  setActiveSide(p.side);
+                  setViewSide(p.side);
+                  setOffsetX(0);
+                  setOffsetY(0);
+                }}
                 className={`py-2 rounded-xl text-[11px] font-bold border transition ${artworkPlacement === p.id ? 'bg-white text-black border-white' : 'border-white/15 text-white/75'}`}
               >
                 {p.label}
@@ -763,11 +1136,13 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
         </div>
       )}
 
+      {/* 5. Edit Sheet (Advanced Typography, Curved Arc, Strokes & Scale) */}
       {sheet === 'edit' && (
-        <div className="mx-3 mt-2 rounded-2xl bg-black/80 border border-white/10 p-3 space-y-2.5 animate-in slide-in-from-bottom-2">
+        <div className="mx-3 mt-2 rounded-2xl bg-black/90 border border-white/10 p-3.5 space-y-3 animate-in slide-in-from-bottom-2">
+          {/* Scale Slider */}
           <div>
             <div className="flex justify-between text-[10px] font-bold text-white/50 uppercase tracking-wider mb-1">
-              <span>Size</span><span>{scalePercent}%</span>
+              <span>Artwork Scale</span><span>{scalePercent}%</span>
             </div>
             <input
               type="range" min={25} max={260} value={scalePercent}
@@ -775,6 +1150,8 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
               className="w-full accent-amber-500"
             />
           </div>
+
+          {/* Quick transform controls */}
           <div className="grid grid-cols-4 gap-1.5">
             <button onClick={() => setRotation(r => { const n = (typeof r === 'number' ? r : 0) - 15; return ((n + 180) % 360 + 360) % 360 - 180; })} className="py-2 rounded-xl bg-white/10 text-[11px] font-bold">⟲ -15°</button>
             <button onClick={() => setRotation(r => { const n = (typeof r === 'number' ? r : 0) + 15; return ((n + 180) % 360 + 360) % 360 - 180; })} className="py-2 rounded-xl bg-white/10 text-[11px] font-bold">⟳ +15°</button>
@@ -785,24 +1162,71 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
               <Move className="w-3.5 h-3.5" /> Center
             </button>
           </div>
-          <div>
-            <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider mb-1">Custom text</div>
+
+          {/* Typography Engine (Module 1) */}
+          <div className="pt-2 border-t border-white/10 space-y-2">
+            <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider">Typography & Text Tool</div>
             <div className="flex gap-1.5">
               <input
                 value={customText}
                 onChange={e => setCustomText(e.target.value)}
-                placeholder="YOUR TEXT"
+                placeholder="TYPE CUSTOM TEXT"
                 className="flex-1 px-3 py-2 rounded-xl bg-white/10 text-xs font-bold placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
               <div className="flex items-center gap-1">
-                {TEXT_COLORS.map(c => (
+                {TEXT_COLORS.slice(0, 4).map(c => (
                   <button
                     key={c}
                     onClick={() => setCustomTextColor(c)}
                     className={`w-6 h-6 rounded-full border-2 ${customTextColor === c ? 'border-white scale-110' : 'border-white/20'}`}
                     style={{ backgroundColor: c }}
-                    aria-label={c}
                   />
+                ))}
+              </div>
+            </div>
+
+            {/* Font Family Selector */}
+            <div className="grid grid-cols-3 gap-1.5">
+              {TYPOGRAPHY_FONTS.map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setCustomFont(f.id)}
+                  className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition truncate ${
+                    customFont === f.id ? 'bg-amber-400 text-black border-amber-400' : 'bg-white/5 border-white/10 text-white/70'
+                  }`}
+                  style={{ fontFamily: f.family }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Curved Arc Radius Control */}
+            <div>
+              <div className="flex justify-between text-[10px] font-bold text-white/50 uppercase tracking-wider mb-1">
+                <span>Curved Arc / Banner</span><span>{textArc > 0 ? `+${textArc}` : textArc}</span>
+              </div>
+              <input
+                type="range" min={-80} max={80} value={textArc}
+                onChange={e => setTextArc(Number(e.target.value))}
+                className="w-full accent-amber-500"
+              />
+            </div>
+
+            {/* Outline Stroke Width */}
+            <div className="flex items-center justify-between text-[10px] font-bold text-white/60">
+              <span>Text Outline Stroke:</span>
+              <div className="flex gap-1">
+                {[0, 1, 2, 4].map(sw => (
+                  <button
+                    key={sw}
+                    onClick={() => setStrokeWidth(sw)}
+                    className={`px-2 py-0.5 rounded-lg border text-[10px] ${
+                      strokeWidth === sw ? 'bg-white text-black border-white' : 'border-white/15 bg-white/5'
+                    }`}
+                  >
+                    {sw === 0 ? 'None' : `${sw}px`}
+                  </button>
                 ))}
               </div>
             </div>
@@ -810,59 +1234,310 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
         </div>
       )}
 
+      {/* 6. Sports Jersey & Team Personalizer Sheet (Module 3) */}
+      {sheet === 'jersey' && (
+        <div className="mx-3 mt-2 rounded-2xl bg-black/90 border border-white/10 p-3.5 space-y-3 animate-in slide-in-from-bottom-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Trophy className="w-3.5 h-3.5" />
+              <span>Sports Jersey Personalizer</span>
+            </span>
+            <button
+              onClick={() => setIsJerseyMode(!isJerseyMode)}
+              className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${
+                isJerseyMode ? 'bg-amber-400 text-black border-amber-400' : 'bg-white/10 text-white/60 border-white/15'
+              }`}
+            >
+              {isJerseyMode ? 'Enabled' : 'Disabled'}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <span className="text-[10px] font-bold text-white/50 uppercase block mb-1">Squad Number (0–99)</span>
+              <input
+                type="number"
+                min={0}
+                max={99}
+                value={playerNumber}
+                onChange={e => {
+                  const num = e.target.value.slice(0, 2);
+                  setPlayerNumber(num);
+                  setCustomText(`${playerSquadName} ${num}`);
+                }}
+                className="w-full px-3 py-2 rounded-xl bg-white/10 text-center font-black text-lg text-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold text-white/50 uppercase block mb-1">Player Name</span>
+              <input
+                value={playerSquadName}
+                onChange={e => {
+                  const nm = e.target.value.toUpperCase();
+                  setPlayerSquadName(nm);
+                  setCustomText(`${nm} ${playerNumber}`);
+                }}
+                className="w-full px-3 py-2 rounded-xl bg-white/10 font-black text-xs text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+          </div>
+
+          {/* Quick Roster Batch Table */}
+          <div className="pt-2 border-t border-white/10">
+            <div className="flex items-center justify-between text-[10px] font-bold text-white/60 mb-1.5">
+              <span className="flex items-center gap-1"><Users className="w-3 h-3 text-amber-400" /> Team Roster Batch</span>
+              <span className="text-amber-400">{rosterBatch.length} Players</span>
+            </div>
+
+            <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
+              {rosterBatch.map((p, idx) => (
+                <div key={idx} className="flex items-center justify-between bg-white/5 px-2.5 py-1.5 rounded-lg text-xs font-bold border border-white/10">
+                  <div className="flex items-center gap-2">
+                    <span className="text-amber-400 font-mono">#{p.number}</span>
+                    <span>{p.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white/50 text-[10px]">{p.size}</span>
+                    <button
+                      onClick={() => setRosterBatch(rosterBatch.filter((_, i) => i !== idx))}
+                      className="text-white/40 hover:text-red-400"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Quick Add Player form */}
+            <div className="flex gap-1.5 mt-2">
+              <input
+                value={rosterNameInput}
+                onChange={e => setRosterNameInput(e.target.value)}
+                placeholder="NAME"
+                className="flex-1 px-2.5 py-1.5 rounded-lg bg-white/10 text-xs font-bold uppercase placeholder:text-white/30"
+              />
+              <input
+                value={rosterNumInput}
+                onChange={e => setRosterNumInput(e.target.value.slice(0, 2))}
+                placeholder="#"
+                className="w-12 px-2 py-1.5 rounded-lg bg-white/10 text-xs font-black text-center text-amber-400"
+              />
+              <select
+                value={rosterSizeInput}
+                onChange={e => setRosterSizeInput(e.target.value)}
+                className="bg-white/10 text-xs font-bold rounded-lg px-2 text-white"
+              >
+                {ALL_SIZES.map(s => <option key={s} value={s} className="bg-black text-white">{s}</option>)}
+              </select>
+              <button
+                onClick={() => {
+                  if (rosterNameInput.trim()) {
+                    setRosterBatch([...rosterBatch, { name: rosterNameInput.trim().toUpperCase(), number: rosterNumInput || '0', size: rosterSizeInput }]);
+                    setRosterNameInput('');
+                    setRosterNumInput('');
+                  }
+                }}
+                className="px-2.5 py-1.5 rounded-lg bg-amber-500 font-black text-black text-xs"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. PBR Material & Lighting Studio Sheet (Module 2) */}
+      {sheet === 'pbr' && (
+        <div className="mx-3 mt-2 rounded-2xl bg-black/90 border border-white/10 p-3.5 space-y-3 animate-in slide-in-from-bottom-2">
+          <div>
+            <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider mb-1.5">
+              Fabric Weave & PBR Material Texture
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {[
+                { id: 'cotton_jersey' as const, label: 'Single Jersey Cotton', desc: '220 GSM • Soft Matte' },
+                { id: 'french_terry' as const, label: 'French Terry', desc: '320 GSM • Loop Texture' },
+                { id: 'interlock_poly' as const, label: 'Interlock Polyester', desc: 'Micro-perforated Sheen' },
+                { id: 'linen_silk' as const, label: 'Linen & Silk Blend', desc: 'Lustrous Slub Weave' }
+              ].map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => setFabricPbr(m.id)}
+                  className={`p-2 rounded-xl text-left border transition ${
+                    fabricPbr === m.id ? 'bg-amber-500/20 border-amber-400 text-white' : 'bg-white/5 border-white/10 text-white/70'
+                  }`}
+                >
+                  <span className="block text-xs font-black">{m.label}</span>
+                  <span className="block text-[9px] opacity-70 mt-0.5">{m.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider mb-1.5">
+              Studio Lighting Atmosphere
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                { id: 'studio' as const, label: 'Spotlight', desc: 'Crisp Mill' },
+                { id: 'daylight' as const, label: 'Daylight', desc: 'Natural Sun' },
+                { id: 'neon' as const, label: 'Neon Tokyo', desc: 'Cyberpunk' }
+              ].map(l => (
+                <button
+                  key={l.id}
+                  onClick={() => setLightingPreset(l.id)}
+                  className={`p-2 rounded-xl text-center border transition ${
+                    lightingPreset === l.id ? 'bg-white text-black border-white' : 'bg-white/5 border-white/10 text-white/70'
+                  }`}
+                >
+                  <span className="block text-xs font-black">{l.label}</span>
+                  <span className="block text-[9px] opacity-70 mt-0.5">{l.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 8. Product & Bulk Order Matrix Sheet (Module 4) */}
       {sheet === 'product' && (
-        <div className="mx-3 mt-2 rounded-2xl bg-black/90 border border-white/10 p-3 space-y-2.5 animate-in slide-in-from-bottom-2">
+        <div className="mx-3 mt-2 rounded-2xl bg-black/95 border border-white/10 p-3.5 space-y-3 animate-in slide-in-from-bottom-2">
           <div className="flex items-start justify-between gap-2">
             <div>
               <div className="text-sm font-black">{garment.name}</div>
-              <div className="text-[11px] text-white/50">{garment.fabric} • {garment.gsm}</div>
+              <div className="text-[11px] text-white/50">{garment.fabric} • {garment.gsm} • {currentColor.name}</div>
             </div>
             <button onClick={() => setSheet('pad')} className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div>
-            <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider mb-1">Size</div>
-            <div className="flex flex-wrap gap-1.5">
-              {garment.sizes.map(s => (
-                <button
-                  key={s}
-                  onClick={() => setSelectedSize(s)}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border ${selectedSize === s ? 'bg-white text-black border-white' : 'border-white/15 text-white/75'}`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-          {/* Technique Summary Badge */}
-          <div className="flex items-center justify-between text-xs bg-white/5 p-2 rounded-xl border border-white/10">
-            <span className="text-white/60 font-medium">Technique:</span>
-            <span className="font-bold text-amber-400">
-              {method === 'embroidery'
-                ? `🧵 ${embStyle === 'puff3d' ? '3D Puff' : embStyle === 'patch' ? 'Crest Patch' : 'Satin'} Embroidery`
-                : `🎨 DTF Print (${finish === 'gloss' ? 'Gloss' : 'Matte'})`}
-            </span>
+
+          {/* Mode Switcher: Single Piece vs Bulk Matrix */}
+          <div className="flex bg-white/10 p-1 rounded-xl text-xs font-bold">
+            <button
+              onClick={() => setBulkMode('single')}
+              className={`flex-1 py-1.5 rounded-lg transition text-center ${bulkMode === 'single' ? 'bg-white text-black shadow' : 'text-white/70'}`}
+            >
+              Single Size
+            </button>
+            <button
+              onClick={() => setBulkMode('matrix')}
+              className={`flex-1 py-1.5 rounded-lg transition text-center flex items-center justify-center gap-1 ${bulkMode === 'matrix' ? 'bg-amber-400 text-black shadow font-black' : 'text-white/70'}`}
+            >
+              <span>Bulk Matrix (XS–3XL)</span>
+              <span className="text-[9px] bg-black/30 px-1.5 py-0.5 rounded-full">Save 35%</span>
+            </button>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <button onClick={() => setQuantity(q => Math.max(1, (typeof q === 'number' ? q : 1) - 1))} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-                <Minus className="w-4 h-4" />
-              </button>
-              <span className="font-black w-6 text-center">{quantity}</span>
-              <button onClick={() => setQuantity(q => (typeof q === 'number' ? q : 1) + 1)} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-                <Plus className="w-4 h-4" />
-              </button>
+          {bulkMode === 'single' ? (
+            /* Single Size selector */
+            <div className="space-y-3">
+              <div>
+                <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider mb-1">Select Size</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {garment.sizes.map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setSelectedSize(s)}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border ${selectedSize === s ? 'bg-white text-black border-white' : 'border-white/15 text-white/75'}`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setQuantity(q => Math.max(1, (typeof q === 'number' ? q : 1) - 1))} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="font-black w-6 text-center">{quantity}</span>
+                  <button onClick={() => setQuantity(q => (typeof q === 'number' ? q : 1) + 1)} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="text-xl font-black">₹{totalPrice}</div>
+              </div>
             </div>
-            <div className="text-xl font-black">₹{totalPrice}</div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={onAddToCart} className="py-3 rounded-xl bg-white/10 text-xs font-black flex items-center justify-center gap-1.5">
-              <ShoppingCart className="w-4 h-4" /> Add to Cart
+          ) : (
+            /* Bulk Order Matrix Grid (Module 4) */
+            <div className="space-y-2.5">
+              <div className="text-[10px] font-bold text-white/50 uppercase tracking-wider flex justify-between items-center">
+                <span>Quantity per Size Matrix</span>
+                <span className="text-amber-400 font-extrabold">{totalBulkUnits} Garments Total</span>
+              </div>
+
+              <div className="grid grid-cols-4 gap-1.5">
+                {ALL_SIZES.map(sz => (
+                  <div key={sz} className="p-1.5 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center">
+                    <span className="text-[10px] font-black text-white/70 mb-1">{sz}</span>
+                    <div className="flex items-center gap-1 w-full justify-between">
+                      <button
+                        onClick={() => setBulkMatrix({ ...bulkMatrix, [sz]: Math.max(0, (bulkMatrix[sz] || 0) - 1) })}
+                        className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-xs"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min={0}
+                        value={bulkMatrix[sz] || 0}
+                        onChange={e => setBulkMatrix({ ...bulkMatrix, [sz]: Math.max(0, parseInt(e.target.value) || 0) })}
+                        className="w-7 text-center font-black text-xs bg-transparent text-amber-400 focus:outline-none"
+                      />
+                      <button
+                        onClick={() => setBulkMatrix({ ...bulkMatrix, [sz]: (bulkMatrix[sz] || 0) + 1 })}
+                        className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-xs"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tier Discount Banner */}
+              <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-xs space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-extrabold text-amber-300 flex items-center gap-1">
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>{activeTier.name}</span>
+                  </span>
+                  <span className="font-black text-white">₹{discountedUnitPrice}/unit</span>
+                </div>
+                {bulkSavings > 0 && (
+                  <p className="text-[10px] text-emerald-400 font-bold">
+                    ⚡ You save ₹{bulkSavings} on this volume tier!
+                  </p>
+                )}
+              </div>
+
+              {/* Total Summary */}
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-xs text-white/70">Batch Estimated Total:</span>
+                <span className="text-2xl font-black text-white">₹{bulkTotalPrice}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons: Add Batch, Quotation & Buy */}
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <button
+              onClick={handleAddBatchToCart}
+              className="py-3 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-black flex items-center justify-center gap-1.5 transition"
+            >
+              <ShoppingCart className="w-4 h-4 text-amber-400" />
+              <span>{bulkMode === 'matrix' ? 'Add Entire Batch' : 'Add to Cart'}</span>
             </button>
-            <button onClick={onBuyNow} className="py-3 rounded-xl bg-white text-black text-xs font-black flex items-center justify-center gap-1.5">
-              <CreditCard className="w-4 h-4" /> Buy Now
+            <button
+              onClick={() => setIsQuotationModalOpen(true)}
+              className="py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black flex items-center justify-center gap-1.5 transition shadow"
+            >
+              <FileDown className="w-4 h-4" />
+              <span>Print Quotation</span>
             </button>
           </div>
         </div>
@@ -890,6 +1565,22 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
           </button>
         </div>
       </div>
+
+      {/* Official Mill Quotation Modal */}
+      <QuotationModal
+        isOpen={isQuotationModalOpen}
+        onClose={() => setIsQuotationModalOpen(false)}
+        productName={garment.name}
+        fabricGsm={`${garment.fabric} • ${garment.gsm}`}
+        colorName={currentColor.name}
+        methodName={method === 'embroidery' ? `3D Puff Embroidery (${threadCol})` : `1200 DPI DTF Print (${finish})`}
+        placement={artworkPlacement}
+        artworkUrl={activeGraphicUrl}
+        customText={customText}
+        breakdown={quotationBreakdown}
+        tierDiscountPercent={activeTier.discount}
+        tierName={activeTier.name}
+      />
     </div>
   );
 };
