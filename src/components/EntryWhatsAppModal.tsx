@@ -4,6 +4,7 @@ import { MessageCircle, Phone, X, CheckCircle2, ArrowRight, Upload, FileText } f
 interface EntryWhatsAppModalProps {
   phoneNumber?: string;
   displayPhone?: string;
+  onClose?: () => void;
 }
 
 const QUICK_OPTIONS = [
@@ -20,6 +21,7 @@ const QUICK_OPTIONS = [
 export const EntryWhatsAppModal: React.FC<EntryWhatsAppModalProps> = ({
   phoneNumber = '918903120006',
   displayPhone = '+91 89031 20006',
+  onClose,
 }) => {
   // Opens automatically in front on page visit
   const [isOpen, setIsOpen] = useState(true);
@@ -59,6 +61,11 @@ export const EntryWhatsAppModal: React.FC<EntryWhatsAppModalProps> = ({
   const handleClose = () => {
     sessionStorage.setItem('fabric_print_entry_modal_seen', 'true');
     setIsOpen(false);
+    if (onClose) {
+      onClose();
+    } else {
+      window.location.hash = '#home';
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,7 +236,7 @@ export const EntryWhatsAppModal: React.FC<EntryWhatsAppModalProps> = ({
             onClick={handleClose}
             className="text-xs text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white transition font-medium hover:underline inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
           >
-            <span>Close &amp; Browse Website</span>
+            <span>Close &amp; Go to Home</span>
             <span>→</span>
           </button>
         </div>

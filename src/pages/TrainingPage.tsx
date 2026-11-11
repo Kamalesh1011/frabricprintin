@@ -622,7 +622,7 @@ export const TrainingPage: React.FC<TrainingPageProps> = ({ onGoToHome, onOpenBu
               </div>
             </div>
           </div>
-          <div ref={gridRef} className="space-y-14 md:space-y-24 lg:pl-20">
+          <div ref={gridRef} className="space-y-14 md:space-y-24 lg:pl-20 overflow-x-clip">
           {filteredCourses.map((course, index) => {
             const flip = index % 2 === 1;
             const num = String(index + 1).padStart(2, '0');

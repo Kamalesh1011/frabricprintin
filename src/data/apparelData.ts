@@ -617,7 +617,7 @@ export const SPORTS_KIT_PRESETS = [
   {
     sport: 'Football',
     subtitle: 'Club, academy and five-a-side kits',
-    image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=60&w=600',
+    image: '/mockups/jersey_team_action.jpg',
     tag: 'V-neck & breathable'
   },
   {

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { X, Sparkles, Send, CheckCircle2 } from 'lucide-react';
+import { BUSINESS_INFO } from '../config/businessInfo';
+import { inquiryWhatsAppUrl, submitInquiry } from '../services/api';
 
 interface BulkInquiryModalProps {
   isOpen: boolean;
@@ -14,16 +16,45 @@ export const BulkInquiryModal: React.FC<BulkInquiryModalProps> = ({ isOpen, onCl
   const [fabricType, setFabricType] = useState('Cotton Mulmul');
   const [notes, setNotes] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const waUrl = () =>
+    inquiryWhatsAppUrl(BUSINESS_INFO.whatsapp.number, 'Hi Fabric Print, bulk order inquiry from your website:', [
+      `Name: ${name}`,
+      company && `Brand/Studio: ${company}`,
+      `Phone: ${phone}`,
+      `Estimated meters: ${meters}`,
+      `Fabric/Product: ${fabricType}`,
+      notes && `Notes: ${notes}`
+    ]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      onClose();
-    }, 2500);
+    setSending(true);
+    setSendError('');
+    try {
+      await submitInquiry({
+        type: 'bulk',
+        name,
+        phone,
+        message: notes,
+        details: { company, meters, fabricType }
+      });
+      setSubmitted(true);
+    } catch (err: any) {
+      setSendError(err?.message || 'Could not send. Please message us on WhatsApp instead.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleClose = () => {
+    setSubmitted(false);
+    setSendError('');
+    onClose();
   };
 
   return (
@@ -31,7 +62,8 @@ export const BulkInquiryModal: React.FC<BulkInquiryModalProps> = ({ isOpen, onCl
       <div className="bg-white dark:bg-[#1A1C1A] text-[#0F100F] dark:text-white rounded-[32px] max-w-md w-full p-6 border border-[#ECECEC] dark:border-white/[0.08] shadow-2xl relative">
         
         <button
-          onClick={onClose}
+          onClick={handleClose}
+          aria-label="Close"
           className="absolute top-4 right-4 text-gray-400 hover:text-black dark:hover:text-white p-1"
         >
           <X className="w-5 h-5" />
@@ -46,6 +78,14 @@ export const BulkInquiryModal: React.FC<BulkInquiryModalProps> = ({ isOpen, onCl
             <p className="text-xs text-[#8A8883] dark:text-gray-400">
               Our Textile Mill Specialist will contact you at <strong>{phone}</strong> within 2 hours with discounted pricing.
             </p>
+            <a
+                  href={waUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 mt-2 px-4 py-2.5 rounded-full bg-[#25D366] text-white text-xs font-bold hover:opacity-90 transition"
+                >
+                  For a faster reply, also send on WhatsApp
+                </a>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -146,12 +186,19 @@ export const BulkInquiryModal: React.FC<BulkInquiryModalProps> = ({ isOpen, onCl
               </div>
             </div>
 
+            {sendError && (
+              <p className="text-xs text-red-500 font-semibold">
+                {sendError}{' '}
+                <a href={waUrl()} target="_blank" rel="noopener noreferrer" className="underline">Send on WhatsApp</a>
+              </p>
+            )}
             <button
               type="submit"
-              className="w-full bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold py-3 rounded-full text-xs hover:opacity-90 transition shadow-md flex items-center justify-center space-x-2"
+              disabled={sending}
+              className="w-full bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] font-bold py-3 rounded-full text-xs hover:opacity-90 transition shadow-md flex items-center justify-center space-x-2 disabled:opacity-60"
             >
               <Send className="w-4 h-4" />
-              <span>Submit Mill Bulk Inquiry</span>
+              <span>{sending ? 'Sending…' : 'Submit Mill Bulk Inquiry'}</span>
             </button>
           </form>
         )}

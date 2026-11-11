@@ -921,5 +921,5 @@ export const SAMPLE_GRAPHICS_LIBRARY = [
   { id: 'sg-3', name: 'California Surf Club', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=60&w=400' },
   { id: 'sg-4', name: 'Bauhaus Modernism', url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=60&w=400' },
   { id: 'sg-5', name: 'Dark Tokyo Cyberpunk', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=60&w=400' },
-  { id: 'sg-6', name: 'Retro Sunset Horizon', url: 'https://images.unsplash.com/photo-1509728148871-303c28062828?auto=format&fit=crop&q=60&w=400' }
+  { id: 'sg-6', name: 'Retro Sunset Horizon', url: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?auto=format&fit=crop&q=60&w=400' }
 ];

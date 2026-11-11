@@ -1033,7 +1033,7 @@ export const JerseyPage: React.FC<JerseyPageProps> = ({
         </div>
 
         {/* Studio Workspace Grid: Left Preview Canvas | Right Configurator Tabs */}
-        <div className="grid lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left: Studio Live Preview Canvas with Angle Thumbnails (Sticky on desktop) */}
           <div className="lg:col-span-7 lg:sticky lg:top-24 bg-white dark:bg-[#141514] rounded-3xl border border-black/10 dark:border-white/10 p-3.5 sm:p-5 shadow-sm">
             <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 items-center">

@@ -1,12 +1,46 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "frabricprintin",
+  "account_id": "d798bbc8cbee648ce1697e580547335a",
   "main": "./worker/index.ts",
   "compatibility_date": "2026-10-20",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
-    "not_found_handling": "single-page-application"
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // The Worker runs first for page routes so it can inject per-route SEO
+    // metadata; hashed bundles and images are served straight from assets.
+    "run_worker_first": ["/*", "!/assets/*", "!/mockups/*", "!/uniforms/*", "!/leaf-logo.png", "!/logo.png", "!/og-image.jpg"]
+  },
+  "vars": {
+    "SITE_URL": "https://www.fabricprint.in",
+    "ADMIN_EMAIL": "admin@fabricprint.in"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "fabricprint-db",
+      "database_id": "75d9360c-e96a-4ca1-b7d9-e6ae56964926",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "UPLOADS",
+      "id": "0071065b7d22499487d8eb8b851e1080"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "AUTH_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 10, "period": 60 }
+    }
+  ],
+  "observability": {
+    "enabled": true
   }
+  // Secrets (not in this file): AUTH_SECRET, ADMIN_PASSWORD,
+  // RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET.
 }

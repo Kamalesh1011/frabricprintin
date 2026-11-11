@@ -1,1028 +1,805 @@
-import { Hono } from 'hono';
-import { cors } from 'hono/cors';
+import { Hono, type Context, type Next } from 'hono';
+import type { Product, Category, Order, User, AdminCustomizerSettings, PreloadedDesign } from '../src/types';
 import {
-  INITIAL_PRODUCTS,
-  INITIAL_CATEGORIES,
-  INITIAL_USERS,
-  INITIAL_ORDERS,
-  INITIAL_CUSTOMIZER_SETTINGS,
-  INITIAL_SWATCH_BOOKS
-} from '../src/data/mockData';
+  bearerToken,
+  hashPassword,
+  safeEqual,
+  signSession,
+  verifyPassword,
+  verifySession,
+  type SessionClaims
+} from './lib/auth';
 import {
-  Product,
-  Category,
-  Order,
-  User,
-  AdminCustomizerSettings,
-  PreloadedDesign,
-  SwatchBook
-} from '../src/types';
+  addCategory,
+  countCustomers,
+  deleteProduct,
+  ensureSeeded,
+  externalizeDataUrls,
+  findUserByEmail,
+  getCustomizerSettings,
+  getOrder,
+  getOrderByRazorpayId,
+  getProduct,
+  getSwatchBooks,
+  getUser,
+  insertOrder,
+  insertUser,
+  listCategories,
+  listOrders,
+  listProducts,
+  markOrderPaid,
+  putProduct,
+  putSetting,
+  saveOrder,
+  storeDataUrl,
+  updateUserData,
+  type OrderRecord
+} from './lib/store';
+import {
+  createRazorpayOrder,
+  fetchRazorpayOrder,
+  razorpayConfigured,
+  verifyCheckoutSignature,
+  verifyWebhookSignature
+} from './lib/razorpay';
+import {
+  DEFAULT_SITE_URL,
+  matchRoute,
+  notFoundMeta,
+  productRouteMeta,
+  renderRobots,
+  renderSitemap,
+  rewriteShell,
+  type RouteMeta
+} from './lib/seo';
 
 export interface Env {
-  ASSETS: {
-    fetch: typeof fetch;
-  };
-  NVIDIA_NIM_API_KEY?: string;
-  OPENROUTER_API_KEY?: string;
-  CHAT_ROUTING_MODE?: string;
-  CHAT_DEFAULT_MODEL?: string;
-  NIM_BASE_URL?: string;
-  OPENROUTER_DEFAULT_MODEL?: string;
+  ASSETS: Fetcher;
+  DB: D1Database;
+  UPLOADS: KVNamespace;
+  AUTH_LIMITER?: RateLimit;
+  SITE_URL?: string;
+  ADMIN_EMAIL?: string;
+  // Secrets (wrangler secret put ...)
+  AUTH_SECRET?: string;
+  ADMIN_PASSWORD?: string;
+  RAZORPAY_KEY_ID?: string;
+  RAZORPAY_KEY_SECRET?: string;
+  RAZORPAY_WEBHOOK_SECRET?: string;
 }
 
-// In-memory worker stores initialized with mock seed data
-let products: Product[] = [...INITIAL_PRODUCTS];
-let categories: Category[] = [...INITIAL_CATEGORIES];
-let swatchBooks: SwatchBook[] = [...INITIAL_SWATCH_BOOKS];
-let users: User[] = [...INITIAL_USERS];
-let orders: Order[] = [];
-let customizerSettings: AdminCustomizerSettings = JSON.parse(
-  JSON.stringify(INITIAL_CUSTOMIZER_SETTINGS)
-);
-const userPasswords = new Map<string, string>();
+type Vars = { session: SessionClaims | null };
+type AppContext = Context<{ Bindings: Env; Variables: Vars }>;
 
-const app = new Hono<{ Bindings: Env }>();
+const app = new Hono<{ Bindings: Env; Variables: Vars }>().basePath('/api');
 
-// Enable CORS for API routes
-app.use('*', cors({
-  origin: '*',
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
-}));
+const siteUrl = (env: Env) => (env.SITE_URL || DEFAULT_SITE_URL).replace(/\/+$/, '');
+const adminEmail = (env: Env) => (env.ADMIN_EMAIL || 'admin@fabricprint.in').toLowerCase().trim();
 
-// ==========================================
-// 1. ROOT & HEALTH CHECK
-// ==========================================
-app.get('/api', (c) => {
-  return c.json({
-    status: 'ok',
-    name: 'Fabric Print Mill API (Cloudflare Worker Edition)',
-    timestamp: new Date().toISOString()
-  });
-});
-
-app.get('/api/health', (c) => {
-  return c.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// ==========================================
-// 2. CHATBOT MULTI-PROVIDER ROUTER (NIM & OPENROUTER)
-// ==========================================
-
-function getEffectiveEnvKeys(env: Env) {
-  const clean = (val?: string) => {
-    if (!val) return '';
-    const trimmed = val.trim().replace(/^["']|["']$/g, '');
-    if (
-      trimmed === 'MY_OPENROUTER_API_KEY' ||
-      trimmed === 'MY_NVIDIA_NIM_API_KEY' ||
-      trimmed === 'undefined' ||
-      trimmed === 'null'
-    ) {
-      return '';
-    }
-    return trimmed;
-  };
-
-  const nimKey = clean(env.NVIDIA_NIM_API_KEY);
-  const openRouterKey = clean(env.OPENROUTER_API_KEY);
-
-  return { nimKey, openRouterKey };
+function authSecret(env: Env): string {
+  if (!env.AUTH_SECRET || env.AUTH_SECRET.length < 32) {
+    throw new Error('AUTH_SECRET is not configured');
+  }
+  return env.AUTH_SECRET;
 }
 
-app.get('/api/chat/config', (c) => {
-  const { nimKey, openRouterKey } = getEffectiveEnvKeys(c.env);
-  const hasNimServerKey = !!nimKey;
-  const hasOpenRouterServerKey = !!openRouterKey;
-
-  return c.json({
-    hasServerNimKey: hasNimServerKey,
-    hasServerOpenRouterKey: hasOpenRouterServerKey,
-    hasServerKey: hasNimServerKey || hasOpenRouterServerKey,
-    defaultProvider: c.env.CHAT_ROUTING_MODE || 'auto',
-    defaultModel: c.env.CHAT_DEFAULT_MODEL || 'auto/smart-best',
-    recommendedModels: [
-      {
-        id: 'auto/smart-best',
-        name: 'Auto: Best Available (NIM or OpenRouter)',
-        provider: 'Auto Router',
-        tier: 'Auto',
-        description: 'Automatically picks fastest & highest quality model with instant failover'
-      },
-      {
-        id: 'auto/llama-3.3-70b',
-        name: 'Auto: Llama 3.3 70B (Auto NIM / OpenRouter)',
-        provider: 'Auto Router',
-        tier: 'Auto',
-        description: 'High-speed 70B parameter model with dual redundancy'
-      },
-      {
-        id: 'auto/deepseek-r1',
-        name: 'Auto: DeepSeek R1 Reasoning',
-        provider: 'Auto Router',
-        tier: 'Auto',
-        description: 'State-of-the-art chain of thought reasoning model'
-      },
-      {
-        id: 'meta/llama-3.3-70b-instruct',
-        name: 'Llama 3.3 70B Instruct (Ultra Fast)',
-        provider: 'NVIDIA NIM',
-        tier: 'NIM',
-        description: 'NVIDIA NIM low-latency enterprise inference'
-      },
-      {
-        id: 'deepseek-ai/deepseek-r1',
-        name: 'DeepSeek R1 (NIM Reasoning Engine)',
-        provider: 'NVIDIA NIM',
-        tier: 'NIM',
-        description: 'NVIDIA NIM optimized reasoning model'
-      },
-      {
-        id: 'deepseek-ai/deepseek-v3',
-        name: 'DeepSeek V3 (NIM 671B MoE)',
-        provider: 'NVIDIA NIM',
-        tier: 'NIM',
-        description: 'Flagship open-weights model hosted on NVIDIA NIM'
-      },
-      {
-        id: 'nvidia/llama-3.1-nemotron-70b-instruct',
-        name: 'Llama 3.1 Nemotron 70B',
-        provider: 'NVIDIA NIM',
-        tier: 'NIM',
-        description: 'NVIDIA customized model for high accuracy'
-      },
-      {
-        id: 'meta/llama-3.1-8b-instruct',
-        name: 'Llama 3.1 8B Instruct (Instant)',
-        provider: 'NVIDIA NIM',
-        tier: 'NIM',
-        description: 'Ultra-lightweight fast response model'
-      },
-      {
-        id: 'mistralai/mistral-large-2-instruct',
-        name: 'Mistral Large 2 (NIM)',
-        provider: 'NVIDIA NIM',
-        tier: 'NIM',
-        description: 'Top-tier reasoning & multilingual capabilities'
-      },
-      {
-        id: 'qwen/qwen2.5-72b-instruct',
-        name: 'Qwen 2.5 72B Instruct (NIM)',
-        provider: 'NVIDIA NIM',
-        tier: 'NIM',
-        description: 'High precision and coding capability'
-      },
-      {
-        id: 'openai/gpt-4o-mini',
-        name: 'GPT-4o Mini (Fast & Smart)',
-        provider: 'OpenAI',
-        tier: 'OpenRouter',
-        description: 'Balanced performance, speed and fabric domain knowledge'
-      },
-      {
-        id: 'anthropic/claude-3.5-sonnet',
-        name: 'Claude 3.5 Sonnet (Advanced Reasoning)',
-        provider: 'Anthropic',
-        tier: 'OpenRouter',
-        description: 'Exceptional nuanced reasoning and garment design advisory'
-      },
-      {
-        id: 'google/gemini-2.0-flash-001',
-        name: 'Gemini 2.0 Flash (Super High Speed)',
-        provider: 'Google',
-        tier: 'OpenRouter',
-        description: 'Next-gen Google multimodal speed champion'
-      },
-      {
-        id: 'deepseek/deepseek-chat',
-        name: 'DeepSeek V3 (OpenRouter)',
-        provider: 'DeepSeek',
-        tier: 'OpenRouter',
-        description: 'Powerful general purpose assistant'
-      },
-      {
-        id: 'meta-llama/llama-3.3-70b-instruct',
-        name: 'Llama 3.3 70B (OpenRouter)',
-        provider: 'Meta',
-        tier: 'OpenRouter',
-        description: 'OpenRouter hosted Meta Llama 3.3'
-      },
-      {
-        id: 'meta-llama/llama-3.1-8b-instruct:free',
-        name: 'Llama 3.1 8B (OpenRouter Free Tier)',
-        provider: 'Meta',
-        tier: 'OpenRouter',
-        description: 'Free tier model with no API balance needed',
-        isFree: true
-      },
-      {
-        id: 'deepseek/deepseek-r1:free',
-        name: 'DeepSeek R1 (OpenRouter Free Tier)',
-        provider: 'DeepSeek',
-        tier: 'OpenRouter',
-        description: 'Free tier reasoning model',
-        isFree: true
-      }
-    ]
-  });
-});
-
-async function callNvidiaNim(
-  messages: any[],
-  model: string,
-  apiKey: string,
-  temperature = 0.7,
-  max_tokens = 1200,
-  nimBaseUrl = 'https://integrate.api.nvidia.com/v1'
-) {
-  let targetModel = model;
-  if (model === 'auto/smart-best' || model === 'auto/llama-3.3-70b') {
-    targetModel = 'meta/llama-3.3-70b-instruct';
-  } else if (model === 'auto/deepseek-r1') {
-    targetModel = 'deepseek-ai/deepseek-r1';
-  } else if (model.startsWith('meta-llama/')) {
-    targetModel = model.replace('meta-llama/', 'meta/').replace(':free', '');
-  } else if (model.startsWith('deepseek/')) {
-    targetModel = model.replace('deepseek/', 'deepseek-ai/').replace(':free', '');
-  }
-
-  const response = await fetch(`${nimBaseUrl.replace(/\/+$/, '')}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: targetModel,
-      messages,
-      temperature,
-      max_tokens
-    })
-  });
-
-  const data: any = await response.json();
-  if (!response.ok) {
-    const errorMsg =
-      data?.error?.message ||
-      data?.message ||
-      `NVIDIA NIM Error: ${response.status} ${response.statusText}`;
-    throw new Error(errorMsg);
-  }
-
-  return {
-    data,
-    provider: 'nim',
-    modelUsed: targetModel
-  };
+// Short, unguessable ids: 10 random base32 characters (50 bits).
+const ID_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+function newId(prefix: string): string {
+  const rand = crypto.getRandomValues(new Uint8Array(10));
+  return prefix + Array.from(rand, (b) => ID_ALPHABET[b % ID_ALPHABET.length]).join('');
 }
 
-async function callOpenRouter(
-  messages: any[],
-  model: string,
-  apiKey: string,
-  temperature = 0.7,
-  max_tokens = 1200,
-  referer = 'https://fabricprint.in',
-  defaultModel = 'openai/gpt-4o-mini'
-) {
-  let targetModel = model;
-  if (model === 'auto/smart-best') {
-    targetModel = defaultModel;
-  } else if (model === 'auto/llama-3.3-70b') {
-    targetModel = 'meta-llama/llama-3.3-70b-instruct';
-  } else if (model === 'auto/deepseek-r1') {
-    targetModel = 'deepseek/deepseek-r1:free';
-  } else if (model.startsWith('meta/') && !model.startsWith('meta-llama/')) {
-    targetModel = model.replace('meta/', 'meta-llama/');
-  } else if (model.startsWith('deepseek-ai/')) {
-    targetModel = model.replace('deepseek-ai/', 'deepseek/');
-  }
-
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'HTTP-Referer': referer,
-      'X-Title': 'Fabric Print Mill AI Assistant',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: targetModel,
-      messages,
-      temperature,
-      max_tokens
-    })
-  });
-
-  const data: any = await response.json();
-  if (!response.ok) {
-    const errorMsg =
-      data?.error?.message ||
-      data?.message ||
-      `OpenRouter API Error: ${response.status} ${response.statusText}`;
-    throw new Error(errorMsg);
-  }
-
-  return {
-    data,
-    provider: 'openrouter',
-    modelUsed: targetModel
-  };
-}
-
-const handleChatCompletions = async (c: any) => {
+async function readJson<T = any>(c: AppContext): Promise<T> {
   try {
-    const body = await c.req.json();
-    const {
-      messages,
-      model = 'auto/smart-best',
-      provider = 'auto',
-      nimApiKey,
-      openRouterApiKey,
-      apiKey,
-      temperature = 0.7,
-      max_tokens = 1200
-    } = body;
-
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return c.json({ error: 'Messages array is required.' }, 400);
-    }
-
-    const envKeys = getEffectiveEnvKeys(c.env);
-    const effectiveNimKey = (nimApiKey ? nimApiKey.trim() : envKeys.nimKey).replace(/^["']|["']$/g, '');
-    const effectiveOpenRouterKey = (
-      openRouterApiKey ? openRouterApiKey.trim() : apiKey ? apiKey.trim() : envKeys.openRouterKey
-    ).replace(/^["']|["']$/g, '');
-
-    const hasNim = !!effectiveNimKey && effectiveNimKey !== 'MY_NVIDIA_NIM_API_KEY';
-    const hasOpenRouter = !!effectiveOpenRouterKey && effectiveOpenRouterKey !== 'MY_OPENROUTER_API_KEY';
-
-    if (!hasNim && !hasOpenRouter) {
-      return c.json(
-        {
-          error: 'No active AI API Key found in Worker environment or request.',
-          needApiKey: true,
-          message: 'Please configure NVIDIA_NIM_API_KEY or OPENROUTER_API_KEY secrets in Cloudflare Wrangler.'
-        },
-        401
-      );
-    }
-
-    let primaryProvider: 'nim' | 'openrouter';
-    let allowFailover = true;
-
-    if (provider === 'nim') {
-      if (!hasNim) {
-        return c.json({ error: 'NVIDIA NIM API Key missing.', needApiKey: true }, 401);
-      }
-      primaryProvider = 'nim';
-      allowFailover = hasOpenRouter;
-    } else if (provider === 'openrouter') {
-      if (!hasOpenRouter) {
-        return c.json({ error: 'OpenRouter API Key missing.', needApiKey: true }, 401);
-      }
-      primaryProvider = 'openrouter';
-      allowFailover = hasNim;
-    } else {
-      if (hasNim && hasOpenRouter) {
-        const isNimNative =
-          model.startsWith('meta/') ||
-          model.startsWith('deepseek-ai/') ||
-          model.startsWith('nvidia/') ||
-          model.startsWith('mistralai/') ||
-          model.startsWith('qwen/') ||
-          model === 'auto/llama-3.3-70b' ||
-          model === 'auto/smart-best' ||
-          model === 'auto/deepseek-r1';
-
-        primaryProvider = isNimNative ? 'nim' : 'openrouter';
-      } else if (hasNim) {
-        primaryProvider = 'nim';
-      } else {
-        primaryProvider = 'openrouter';
-      }
-    }
-
-    const referer = c.req.header('referer') || 'https://fabricprint.in';
-    const nimBaseUrl = c.env.NIM_BASE_URL || 'https://integrate.api.nvidia.com/v1';
-    const openRouterDefault = c.env.OPENROUTER_DEFAULT_MODEL || 'openai/gpt-4o-mini';
-
-    try {
-      if (primaryProvider === 'nim') {
-        const result = await callNvidiaNim(
-          messages,
-          model,
-          effectiveNimKey,
-          temperature,
-          max_tokens,
-          nimBaseUrl
-        );
-        return c.json({
-          ...result.data,
-          provider: 'nim',
-          model: result.modelUsed,
-          isFailover: false
-        });
-      } else {
-        const result = await callOpenRouter(
-          messages,
-          model,
-          effectiveOpenRouterKey,
-          temperature,
-          max_tokens,
-          referer,
-          openRouterDefault
-        );
-        return c.json({
-          ...result.data,
-          provider: 'openrouter',
-          model: result.modelUsed,
-          isFailover: false
-        });
-      }
-    } catch (primaryError: any) {
-      if (
-        allowFailover &&
-        ((primaryProvider === 'nim' && hasOpenRouter) ||
-          (primaryProvider === 'openrouter' && hasNim))
-      ) {
-        const fallbackProvider = primaryProvider === 'nim' ? 'openrouter' : 'nim';
-        try {
-          if (fallbackProvider === 'openrouter') {
-            const fallbackResult = await callOpenRouter(
-              messages,
-              model,
-              effectiveOpenRouterKey,
-              temperature,
-              max_tokens,
-              referer,
-              openRouterDefault
-            );
-            return c.json({
-              ...fallbackResult.data,
-              provider: 'openrouter',
-              model: fallbackResult.modelUsed,
-              isFailover: true,
-              fallbackNotice: `Automatically failed over from NVIDIA NIM due to: ${primaryError.message}`
-            });
-          } else {
-            const fallbackResult = await callNvidiaNim(
-              messages,
-              model,
-              effectiveNimKey,
-              temperature,
-              max_tokens,
-              nimBaseUrl
-            );
-            return c.json({
-              ...fallbackResult.data,
-              provider: 'nim',
-              model: fallbackResult.modelUsed,
-              isFailover: true,
-              fallbackNotice: `Automatically failed over from OpenRouter due to: ${primaryError.message}`
-            });
-          }
-        } catch (failoverError: any) {
-          return c.json(
-            {
-              error: `Both AI providers failed. Primary (${primaryProvider}): ${primaryError.message}. Secondary (${fallbackProvider}): ${failoverError.message}`
-            },
-            502
-          );
-        }
-      }
-
-      return c.json({ error: primaryError.message || `Failed to communicate with ${primaryProvider}.` }, 500);
-    }
-  } catch (err: any) {
-    return c.json({ error: 'Internal chat server error', details: err?.message }, 500);
+    return (await c.req.json()) as T;
+  } catch {
+    throw new HttpError(400, 'Invalid JSON body');
   }
+}
+
+class HttpError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
+// ---------- middleware ----------
+
+app.use('*', async (c, next) => {
+  await ensureSeeded(c.env);
+  const token = bearerToken(c.req.header('Authorization'));
+  c.set('session', token && c.env.AUTH_SECRET ? await verifySession(c.env.AUTH_SECRET, token) : null);
+  await next();
+  c.header('Cache-Control', c.res.headers.get('Cache-Control') || 'no-store');
+});
+
+const requireUser = async (c: AppContext, next: Next) => {
+  if (!c.get('session')) return c.json({ error: 'Unauthorized: please sign in again' }, 401);
+  await next();
 };
 
-app.post('/api/chat/message', handleChatCompletions);
-app.post('/api/chat/openrouter', handleChatCompletions);
+const requireAdmin = async (c: AppContext, next: Next) => {
+  const s = c.get('session');
+  if (!s) return c.json({ error: 'Unauthorized: please sign in again' }, 401);
+  if (s.role !== 'admin') return c.json({ error: 'Forbidden: Admin access required' }, 403);
+  await next();
+};
 
-// ==========================================
-// 3. SMART IMAGE URL & GOOGLE IMAGE EXTRACTOR
-// ==========================================
-app.post('/api/extract-image-url', async (c) => {
-  try {
-    const { url } = await c.req.json();
-    if (!url || typeof url !== 'string') {
-      return c.json({ error: 'Please provide a valid image URL.' }, 400);
-    }
+async function rateLimit(c: AppContext, bucket: string): Promise<boolean> {
+  if (!c.env.AUTH_LIMITER) return true;
+  const ip = c.req.header('CF-Connecting-IP') || 'unknown';
+  const { success } = await c.env.AUTH_LIMITER.limit({ key: `${bucket}:${ip}` });
+  return success;
+}
 
-    const trimmed = url.trim();
-    let extractedUrl = trimmed;
-    let title = 'Extracted Motif Artwork';
-
-    if (trimmed.includes('google.com') && (trimmed.includes('imgurl=') || trimmed.includes('imgrefurl='))) {
-      try {
-        const parsedUrl = new URL(trimmed);
-        const imgUrlParam = parsedUrl.searchParams.get('imgurl');
-        if (imgUrlParam) extractedUrl = decodeURIComponent(imgUrlParam);
-      } catch {
-        const match = trimmed.match(/imgurl=([^&]+)/);
-        if (match && match[1]) extractedUrl = decodeURIComponent(match[1]);
-      }
-    }
-
-    const isDirectImage =
-      /\.(jpeg|jpg|png|webp|gif|svg|tiff)($|\?)/i.test(extractedUrl) ||
-      extractedUrl.startsWith('data:image/') ||
-      extractedUrl.includes('images.unsplash.com') ||
-      extractedUrl.includes('i.pinimg.com') ||
-      extractedUrl.includes('imgur.com');
-
-    if (!isDirectImage && (extractedUrl.startsWith('http://') || extractedUrl.startsWith('https://'))) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
-        const response = await fetch(extractedUrl, {
-          headers: {
-            'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/*,*/*;q=0.8'
-          },
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.startsWith('image/')) {
-          extractedUrl = response.url;
-        } else {
-          const html = await response.text();
-          const ogMatch =
-            html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
-            html.match(/<meta\s+content=["']([^"']+)["']\s+property=["']og:image["']/i) ||
-            html.match(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i);
-
-          if (ogMatch && ogMatch[1]) {
-            extractedUrl = ogMatch[1];
-          } else {
-            const imgMatch = html.match(
-              /<img[^>]+src=["'](https?:\/\/[^"']+\.(?:png|jpg|jpeg|webp))["']/i
-            );
-            if (imgMatch && imgMatch[1]) {
-              extractedUrl = imgMatch[1];
-            }
-          }
-
-          const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-          if (titleMatch && titleMatch[1]) {
-            title = titleMatch[1].trim().slice(0, 50);
-          }
-        }
-      } catch (fetchErr) {
-        // retain original URL as fallback candidate
-      }
-    }
-
-    const defaultPalettes = [
-      ['#1E3A8A', '#F59E0B', '#10B981', '#E11D48', '#F8FAFC'],
-      ['#0F766E', '#D97706', '#4F46E5', '#9333EA', '#FFFBEB'],
-      ['#9A3412', '#0284C7', '#16A34A', '#E11D48', '#FAFAF9'],
-      ['#312E81', '#BE185D', '#047857', '#CA8A04', '#F1F5F9']
-    ];
-    const randomPalette = defaultPalettes[Math.floor(Math.random() * defaultPalettes.length)];
-
-    const pantoneMatches = [
-      { name: 'Royal Cobalt', hex: randomPalette[0], code: 'PANTONE 19-4052 TCX' },
-      { name: 'Radiant Gold', hex: randomPalette[1], code: 'PANTONE 14-0848 TCX' },
-      { name: 'Forest Emerald', hex: randomPalette[2], code: 'PANTONE 17-5641 TCX' },
-      { name: 'Berry Magenta', hex: randomPalette[3], code: 'PANTONE 18-2043 TCX' }
-    ];
-
-    return c.json({
-      success: true,
-      originalUrl: trimmed,
-      extractedImageUrl: extractedUrl,
-      title,
-      width: 3200,
-      height: 3200,
-      format: 'PNG / High-Def Textile Raster',
-      fileSizeMb: 4.2,
-      palette: randomPalette,
-      pantoneMatches,
-      extractedAt: new Date().toISOString()
-    });
-  } catch (err: any) {
-    return c.json({ error: err.message || 'Failed to extract image from the provided URL.' }, 500);
-  }
+app.onError((err, c) => {
+  if (err instanceof HttpError) return c.json({ error: err.message }, err.status as any);
+  console.error('API error', c.req.method, c.req.path, err);
+  return c.json({ error: 'Internal server error' }, 500);
 });
 
-// ==========================================
-// 4. SWATCH BOOKS API
-// ==========================================
-app.get('/api/swatch-books', (c) => {
-  return c.json(swatchBooks);
-});
+app.notFound((c) => c.json({ error: 'Not found' }, 404));
 
-// ==========================================
-// 5. PRODUCTS API
-// ==========================================
-app.get('/api/products', (c) => {
-  const category = c.req.query('category');
-  const search = c.req.query('search');
-  const gsmMin = c.req.query('gsmMin');
-  const gsmMax = c.req.query('gsmMax');
-  const certified = c.req.query('certified');
+// ---------- health ----------
 
-  let filtered = [...products];
+app.get('/', (c) => c.json({ status: 'ok', name: 'Fabric Print API', timestamp: new Date().toISOString() }));
+app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
-  if (category && category !== 'All') {
-    filtered = filtered.filter((p) => p.category.toLowerCase() === category.toLowerCase());
-  }
+// ---------- auth ----------
 
-  if (search) {
-    const q = search.toLowerCase();
-    filtered = filtered.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q) ||
-        p.count.toLowerCase().includes(q) ||
-        p.color.toLowerCase().includes(q)
-    );
-  }
+const publicUser = (u: User): User => ({ ...u });
 
-  if (gsmMin) {
-    filtered = filtered.filter((p) => p.gsm >= Number(gsmMin));
-  }
-  if (gsmMax) {
-    filtered = filtered.filter((p) => p.gsm <= Number(gsmMax));
-  }
-  if (certified === 'true') {
-    filtered = filtered.filter((p) => p.certifications && p.certifications.length > 0);
-  }
-
-  return c.json(filtered);
-});
-
-app.get('/api/products/:id', (c) => {
-  const id = c.req.param('id');
-  const product = products.find((p) => p.id === id);
-  if (!product) {
-    return c.json({ error: 'Product not found' }, 404);
-  }
-  return c.json(product);
-});
-
-app.post('/api/products', async (c) => {
-  const body = await c.req.json();
-  const newProduct: Product = {
-    ...body,
-    id: `p-${Date.now()}`,
-    in_stock: body.in_stock ?? true,
-    images:
-      body.images?.length > 0
-        ? body.images
-        : ['https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=60&w=800'],
-    rating: 5.0,
-    reviews_count: 0
-  };
-  products.unshift(newProduct);
-
-  const cat = categories.find((catItem) => catItem.name === newProduct.category);
-  if (cat) cat.itemCount += 1;
-
-  return c.json(newProduct, 201);
-});
-
-app.put('/api/products/:id', async (c) => {
-  const id = c.req.param('id');
-  const body = await c.req.json();
-  const idx = products.findIndex((p) => p.id === id);
-  if (idx === -1) {
-    return c.json({ error: 'Product not found' }, 404);
-  }
-  products[idx] = { ...products[idx], ...body };
-  return c.json(products[idx]);
-});
-
-app.delete('/api/products/:id', (c) => {
-  const id = c.req.param('id');
-  const idx = products.findIndex((p) => p.id === id);
-  if (idx === -1) {
-    return c.json({ error: 'Product not found' }, 404);
-  }
-  const deleted = products.splice(idx, 1)[0];
-  return c.json({ message: 'Product deleted', product: deleted });
-});
-
-// ==========================================
-// 6. CATEGORIES API
-// ==========================================
-app.get('/api/categories', (c) => {
-  return c.json(categories);
-});
-
-app.post('/api/categories', async (c) => {
-  const body = await c.req.json();
-  const newCategory: Category = {
-    ...body,
-    id: `cat-${Date.now()}`,
-    itemCount: 0
-  };
-  categories.push(newCategory);
-  return c.json(newCategory, 201);
-});
-
-// ==========================================
-// 7. UPLOAD DESIGN ARTWORK API
-// ==========================================
-app.post('/api/upload-design', async (c) => {
-  const body = await c.req.json();
-  const { fileName, fileData, fileType, fileSizeMb } = body;
-  if (!fileData) {
-    return c.json({ error: 'No file data provided' }, 400);
-  }
-
-  if (fileSizeMb > 25) {
-    return c.json({ error: 'Design artwork exceeds max allowed size of 25MB' }, 400);
-  }
-
-  return c.json({
-    success: true,
-    url: fileData,
-    fileName,
-    fileType,
-    fileSizeMb,
-    uploadedAt: new Date().toISOString()
-  });
-});
-
-// ==========================================
-// 8. CUSTOMIZER SETTINGS & PRELOADED DESIGNS
-// ==========================================
-app.get('/api/customizer-settings', (c) => {
-  return c.json(customizerSettings);
-});
-
-app.put('/api/customizer-settings', async (c) => {
-  const body = await c.req.json();
-  customizerSettings = {
-    ...customizerSettings,
-    ...body
-  };
-  return c.json(customizerSettings);
-});
-
-app.get('/api/preloaded-designs', (c) => {
-  return c.json(customizerSettings.preloadedDesigns.filter((d) => d.active));
-});
-
-app.post('/api/preloaded-designs', async (c) => {
-  const body = await c.req.json();
-  const newDesign: PreloadedDesign = {
-    id: `design-${Date.now()}`,
-    name: body.name || 'New Design Motif',
-    category: body.category || 'General',
-    imageUrl:
-      body.imageUrl ||
-      'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=60&w=800',
-    widthPx: body.widthPx || 3000,
-    heightPx: body.heightPx || 3000,
-    active: true
-  };
-  customizerSettings.preloadedDesigns.unshift(newDesign);
-  return c.json(newDesign, 201);
-});
-
-app.delete('/api/preloaded-designs/:id', (c) => {
-  const id = c.req.param('id');
-  const idx = customizerSettings.preloadedDesigns.findIndex((d) => d.id === id);
-  if (idx !== -1) {
-    customizerSettings.preloadedDesigns.splice(idx, 1);
-  }
-  return c.json({ success: true, id });
-});
-
-// ==========================================
-// 9. ORDERS API
-// ==========================================
-app.get('/api/orders', (c) => {
-  const authHeader = c.req.header('Authorization') || '';
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return c.json({ error: 'Unauthorized: Authentication required to view orders' }, 401);
-  }
-
-  const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
-  const userId = c.req.query('userId');
-
-  if (isAdmin) {
-    if (userId) {
-      const userOrders = orders.filter((o) => o.userId === userId);
-      return c.json(userOrders);
-    }
-    return c.json(orders);
-  }
-
-  // Regular user can only view their own orders
-  const tokenUserId = token.startsWith('fp-usr-') ? token.replace('fp-usr-', '') : null;
-  const targetUserId = userId || tokenUserId;
-
-  if (!targetUserId || (tokenUserId && targetUserId !== tokenUserId)) {
-    return c.json({ error: 'Forbidden: You can only access your own orders' }, 403);
-  }
-
-  return c.json(orders.filter((o) => o.userId === targetUserId));
-});
-
-app.get('/api/orders/:id', (c) => {
-  const authHeader = c.req.header('Authorization') || '';
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return c.json({ error: 'Unauthorized: Authentication required to view order' }, 401);
-  }
-
-  const id = c.req.param('id');
-  const order = orders.find((o) => o.id === id);
-  if (!order) {
-    return c.json({ error: 'Order not found' }, 404);
-  }
-
-  const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
-  const tokenUserId = token.startsWith('fp-usr-') ? token.replace('fp-usr-', '') : null;
-
-  if (!isAdmin && order.userId && order.userId !== tokenUserId) {
-    return c.json({ error: 'Forbidden: You cannot access this order' }, 403);
-  }
-
-  return c.json(order);
-});
-
-app.post('/api/orders', async (c) => {
-  const orderData = await c.req.json();
-  const newOrder: Order = {
-    ...orderData,
-    id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-    paymentId: orderData.paymentId || `pay_razor_${Date.now().toString(36)}`,
-    paymentStatus: 'Paid',
-    orderStatus: 'Pending',
-    createdAt: new Date().toISOString()
-  };
-  orders.unshift(newOrder);
-  return c.json(newOrder, 201);
-});
-
-app.put('/api/orders/:id/status', async (c) => {
-  const authHeader = c.req.header('Authorization') || '';
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-  const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
-  if (!isAdmin) {
-    return c.json({ error: 'Forbidden: Admin access required' }, 403);
-  }
-
-  const id = c.req.param('id');
-  const { orderStatus, trackingNumber } = await c.req.json();
-  const order = orders.find((o) => o.id === id);
-  if (!order) {
-    return c.json({ error: 'Order not found' }, 404);
-  }
-  if (orderStatus) order.orderStatus = orderStatus;
-  if (trackingNumber) order.trackingNumber = trackingNumber;
-  return c.json(order);
-});
-
-// ==========================================
-// 10. ANALYTICS API (FOR ADMIN DASHBOARD)
-// ==========================================
-app.get('/api/analytics', (c) => {
-  const authHeader = c.req.header('Authorization') || '';
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-  const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
-  if (!isAdmin) {
-    return c.json({ error: 'Forbidden: Admin access required' }, 403);
-  }
-
-  const totalRevenue = orders.reduce(
-    (acc, o) => acc + (o.paymentStatus === 'Paid' ? o.totalAmount : 0),
-    0
-  );
-  const totalOrders = orders.length;
-  const totalCustomers = users.filter((u) => u.role === 'user').length;
-  const totalProducts = products.length;
-
-  const catSalesMap: Record<string, number> = {};
-  orders.forEach((o) => {
-    o.items.forEach((item) => {
-      const prod = products.find((p) => p.id === item.productId);
-      const cat = prod?.category || 'Cotton';
-      catSalesMap[cat] = (catSalesMap[cat] || 0) + item.totalPrice;
-    });
-  });
-
-  const salesByCategory = Object.entries(catSalesMap).map(([category, sales]) => ({
-    category,
-    sales: Math.round(sales * 100) / 100
-  }));
-
-  return c.json({
-    totalRevenue: Math.round(totalRevenue * 100) / 100,
-    totalOrders,
-    totalCustomers,
-    totalProducts,
-    recentOrders: orders.slice(0, 5),
-    salesByCategory,
-    monthlyRevenue: [
-      { month: 'Apr', revenue: 42000 },
-      { month: 'May', revenue: 58500 },
-      { month: 'Jun', revenue: 74000 },
-      { month: 'Jul', revenue: 91000 },
-      { month: 'Aug', revenue: Math.round(totalRevenue * 100) / 100 }
-    ]
-  });
-});
-
-// ==========================================
-// 11. AUTH API
-// ==========================================
-app.post('/api/auth/login', async (c) => {
-  const { email, password } = await c.req.json();
+app.post('/auth/login', async (c) => {
+  if (!(await rateLimit(c, 'login'))) return c.json({ error: 'Too many attempts. Please wait a minute.' }, 429);
+  const { email, password } = await readJson<{ email?: string; password?: string }>(c);
   const cleanEmail = (email || '').toLowerCase().trim();
+  if (!cleanEmail || !password) return c.json({ error: 'Email and password are required' }, 400);
+  const secret = authSecret(c.env);
 
-  // Admin login check
-  if (cleanEmail === 'admin@fabricprint.in' || cleanEmail.includes('admin')) {
-    const adminPass = (c.env as any)?.ADMIN_PASSWORD || 'Admin@FabricPrint2026!';
-    if (password !== adminPass && password !== 'admin123') {
-      return c.json({ error: 'Invalid admin credentials' }, 401);
+  if (cleanEmail === adminEmail(c.env)) {
+    if (!c.env.ADMIN_PASSWORD || !safeEqual(password, c.env.ADMIN_PASSWORD)) {
+      return c.json({ error: 'Invalid email or password' }, 401);
     }
-    const adminUser = users.find((u) => u.role === 'admin') || {
+    const adminUser: User = {
       id: 'usr-admin',
       name: 'Mill Admin',
-      email: 'admin@fabricprint.in',
+      email: adminEmail(c.env),
       role: 'admin',
       addresses: [],
-      createdAt: new Date().toISOString()
+      createdAt: '2026-01-01T00:00:00Z'
     };
-    return c.json({ user: adminUser, token: `fp-admin-${Date.now()}` });
+    const token = await signSession(secret, { sub: adminUser.id, role: 'admin', email: adminUser.email });
+    return c.json({ user: adminUser, token });
   }
 
-  // Regular user login
-  if (!password || password.length < 6) {
-    return c.json({ error: 'Password must be at least 6 characters' }, 400);
-  }
-
-  const existingUser = users.find((u) => u.email.toLowerCase() === cleanEmail && u.role !== 'admin');
-  if (!existingUser) {
+  const row = await findUserByEmail(c.env, cleanEmail);
+  if (!row || row.user.role !== 'user' || !(await verifyPassword(password, row.passwordHash))) {
     return c.json({ error: 'Invalid email or password' }, 401);
   }
-
-  const storedPass = userPasswords.get(cleanEmail);
-  if (storedPass && storedPass !== password) {
-    return c.json({ error: 'Invalid email or password' }, 401);
-  }
-
-  return c.json({ user: existingUser, token: `fp-usr-${existingUser.id}` });
+  const token = await signSession(secret, { sub: row.user.id, role: 'user', email: row.user.email });
+  return c.json({ user: publicUser(row.user), token });
 });
 
-app.post('/api/auth/register', async (c) => {
-  const { name, email, phone, password } = await c.req.json();
-  if (!password || password.length < 6) {
-    return c.json({ error: 'Password must be at least 6 characters' }, 400);
-  }
-
+app.post('/auth/register', async (c) => {
+  if (!(await rateLimit(c, 'register'))) return c.json({ error: 'Too many attempts. Please wait a minute.' }, 429);
+  const { name, email, phone, password } = await readJson<Record<string, string>>(c);
   const cleanEmail = (email || '').toLowerCase().trim();
-  const existing = users.find((u) => u.email.toLowerCase() === cleanEmail);
-  if (existing) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) return c.json({ error: 'Please enter a valid email' }, 400);
+  if (!password || password.length < 8) return c.json({ error: 'Password must be at least 8 characters' }, 400);
+  if (cleanEmail === adminEmail(c.env)) return c.json({ error: 'An account with this email already exists' }, 400);
+  if (await findUserByEmail(c.env, cleanEmail)) {
     return c.json({ error: 'An account with this email already exists' }, 400);
   }
 
   const newUser: User = {
-    id: `usr-${Date.now()}`,
-    name: name || cleanEmail.split('@')[0] || 'Customer',
+    id: newId('usr-'),
+    name: (name || '').trim().slice(0, 80) || cleanEmail.split('@')[0] || 'Customer',
     email: cleanEmail,
-    phone: phone || '',
+    phone: (phone || '').trim().slice(0, 20),
     role: 'user',
     addresses: [],
     createdAt: new Date().toISOString()
   };
-  users.push(newUser);
-  userPasswords.set(cleanEmail, password);
-  return c.json({ user: newUser, token: `fp-usr-${newUser.id}` }, 201);
+  await insertUser(c.env, newUser, await hashPassword(password));
+  const token = await signSession(authSecret(c.env), { sub: newUser.id, role: 'user', email: newUser.email });
+  return c.json({ user: newUser, token }, 201);
+});
+
+app.get('/auth/me', requireUser, async (c) => {
+  const s = c.get('session')!;
+  if (s.role === 'admin') {
+    return c.json({
+      user: { id: s.sub, name: 'Mill Admin', email: s.email, role: 'admin', addresses: [], createdAt: '2026-01-01T00:00:00Z' }
+    });
+  }
+  const user = await getUser(c.env, s.sub);
+  if (!user) return c.json({ error: 'Account not found' }, 401);
+  return c.json({ user });
+});
+
+app.put('/auth/me/addresses', requireUser, async (c) => {
+  const s = c.get('session')!;
+  if (s.role !== 'user') return c.json({ ok: true });
+  const { addresses } = await readJson<{ addresses: User['addresses'] }>(c);
+  const user = await getUser(c.env, s.sub);
+  if (!user) return c.json({ error: 'Account not found' }, 401);
+  user.addresses = Array.isArray(addresses) ? addresses.slice(0, 10) : [];
+  await updateUserData(c.env, user);
+  return c.json({ user });
+});
+
+// ---------- catalog ----------
+
+app.get('/swatch-books', async (c) => c.json(await getSwatchBooks(c.env)));
+
+app.get('/products', async (c) => {
+  const { category, search, gsmMin, gsmMax, certified } = c.req.query();
+  let filtered = await listProducts(c.env);
+  if (category && category !== 'All') {
+    filtered = filtered.filter((p) => p.category.toLowerCase() === category.toLowerCase());
+  }
+  if (search) {
+    const q = search.toLowerCase();
+    filtered = filtered.filter((p) =>
+      [p.name, p.description, p.count, p.color].some((f) => (f || '').toLowerCase().includes(q))
+    );
+  }
+  if (gsmMin) filtered = filtered.filter((p) => p.gsm >= Number(gsmMin));
+  if (gsmMax) filtered = filtered.filter((p) => p.gsm <= Number(gsmMax));
+  if (certified === 'true') filtered = filtered.filter((p) => (p.certifications?.length ?? 0) > 0);
+  c.header('Cache-Control', 'public, max-age=60');
+  return c.json(filtered);
+});
+
+app.get('/products/:id', async (c) => {
+  const product = await getProduct(c.env, c.req.param('id'));
+  if (!product) return c.json({ error: 'Product not found' }, 404);
+  return c.json(product);
+});
+
+app.post('/products', requireAdmin, async (c) => {
+  const body = await externalizeDataUrls(c.env, await readJson<Partial<Product>>(c));
+  const newProduct = {
+    ...body,
+    id: newId('p-'),
+    in_stock: body.in_stock ?? true,
+    images:
+      body.images && body.images.length > 0
+        ? body.images
+        : ['https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=60&w=800'],
+    rating: body.rating ?? 5.0,
+    reviews_count: body.reviews_count ?? 0
+  } as Product;
+  await putProduct(c.env, newProduct);
+  return c.json(newProduct, 201);
+});
+
+app.put('/products/:id', requireAdmin, async (c) => {
+  const id = c.req.param('id');
+  const existing = await getProduct(c.env, id);
+  if (!existing) return c.json({ error: 'Product not found' }, 404);
+  const body = await externalizeDataUrls(c.env, await readJson<Partial<Product>>(c));
+  const updated = { ...existing, ...body, id } as Product;
+  await putProduct(c.env, updated);
+  return c.json(updated);
+});
+
+app.delete('/products/:id', requireAdmin, async (c) => {
+  const deleted = await deleteProduct(c.env, c.req.param('id'));
+  if (!deleted) return c.json({ error: 'Product not found' }, 404);
+  return c.json({ message: 'Product deleted', product: deleted });
+});
+
+app.get('/categories', async (c) => c.json(await listCategories(c.env)));
+
+app.post('/categories', requireAdmin, async (c) => {
+  const body = await readJson<Partial<Category>>(c);
+  if (!body.name) return c.json({ error: 'Category name is required' }, 400);
+  const newCategory = { ...body, id: newId('cat-'), itemCount: 0 } as Category;
+  await addCategory(c.env, newCategory);
+  return c.json(newCategory, 201);
+});
+
+// ---------- uploads ----------
+
+app.post('/upload-design', async (c) => {
+  if (!(await rateLimit(c, 'upload'))) return c.json({ error: 'Too many uploads. Please wait a minute.' }, 429);
+  const { fileName, fileData, fileType, fileSizeMb } = await readJson<Record<string, any>>(c);
+  if (!fileData || typeof fileData !== 'string') return c.json({ error: 'No file data provided' }, 400);
+  if (Number(fileSizeMb) > 25) return c.json({ error: 'Design artwork exceeds max allowed size of 25MB' }, 400);
+  try {
+    const url = await storeDataUrl(c.env, fileData);
+    return c.json({ success: true, url, fileName, fileType, fileSizeMb, uploadedAt: new Date().toISOString() });
+  } catch (e: any) {
+    return c.json({ error: e.message || 'Upload failed' }, 400);
+  }
+});
+
+app.get('/uploads/:key', async (c) => {
+  const key = c.req.param('key');
+  if (!/^[a-f0-9]{40}\.[a-z0-9]+$/.test(key)) return c.json({ error: 'Not found' }, 404);
+  const { value, metadata } = await c.env.UPLOADS.getWithMetadata<{ contentType?: string }>(`u/${key}`, 'stream');
+  if (!value) return c.json({ error: 'Not found' }, 404);
+  return new Response(value, {
+    headers: {
+      'Content-Type': metadata?.contentType || 'application/octet-stream',
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      // Uploaded files are user content: never let them run script on our origin.
+      'Content-Security-Policy': "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox",
+      'X-Content-Type-Options': 'nosniff'
+    }
+  });
+});
+
+// ---------- customizer settings ----------
+
+app.get('/customizer-settings', async (c) => c.json(await getCustomizerSettings(c.env)));
+
+app.put('/customizer-settings', requireAdmin, async (c) => {
+  const body = await externalizeDataUrls(c.env, await readJson<Partial<AdminCustomizerSettings>>(c));
+  const next = { ...(await getCustomizerSettings(c.env)), ...body };
+  await putSetting(c.env, 'customizer', next);
+  return c.json(next);
+});
+
+app.get('/preloaded-designs', async (c) => {
+  const settings = await getCustomizerSettings(c.env);
+  return c.json(settings.preloadedDesigns.filter((d) => d.active));
+});
+
+app.post('/preloaded-designs', requireAdmin, async (c) => {
+  const body = await externalizeDataUrls(c.env, await readJson<Partial<PreloadedDesign>>(c));
+  const design: PreloadedDesign = {
+    id: newId('design-'),
+    name: body.name || 'New Design Motif',
+    category: body.category || 'General',
+    imageUrl:
+      body.imageUrl || 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=60&w=800',
+    widthPx: body.widthPx || 3000,
+    heightPx: body.heightPx || 3000,
+    active: true
+  };
+  const settings = await getCustomizerSettings(c.env);
+  settings.preloadedDesigns.unshift(design);
+  await putSetting(c.env, 'customizer', settings);
+  return c.json(design, 201);
+});
+
+app.delete('/preloaded-designs/:id', requireAdmin, async (c) => {
+  const id = c.req.param('id');
+  const settings = await getCustomizerSettings(c.env);
+  settings.preloadedDesigns = settings.preloadedDesigns.filter((d) => d.id !== id);
+  await putSetting(c.env, 'customizer', settings);
+  return c.json({ success: true, id });
+});
+
+// ---------- payments / checkout ----------
+
+app.get('/payments/config', (c) =>
+  c.json({
+    razorpayEnabled: razorpayConfigured(c.env),
+    keyId: razorpayConfigured(c.env) ? c.env.RAZORPAY_KEY_ID : null,
+    currency: 'INR'
+  })
+);
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function validateOrderInput(body: Partial<Order>): string | null {
+  if (!Array.isArray(body.items) || body.items.length === 0) return 'Your cart is empty';
+  if (body.items.length > 100) return 'Too many items in one order';
+  const a = body.shippingAddress;
+  if (!a || !a.fullName || !a.phone || !a.street || !a.city || !a.pincode) {
+    return 'Please complete all required shipping address fields';
+  }
+  if (!/^\d{6}$/.test(String(a.pincode).trim())) return 'Please enter a valid 6-digit PIN code';
+  const nums = [body.subtotal, body.discount ?? 0, body.shippingFee ?? 0, body.tax ?? 0, body.totalAmount];
+  if (nums.some((n) => typeof n !== 'number' || !Number.isFinite(n) || n < 0)) return 'Invalid order amounts';
+  for (const item of body.items) {
+    if (typeof item.totalPrice !== 'number' || item.totalPrice < 0 || !Number.isFinite(item.totalPrice)) {
+      return 'Invalid item price';
+    }
+  }
+  const itemsTotal = body.items.reduce((s, i) => s + i.totalPrice, 0);
+  if (Math.abs(itemsTotal - (body.subtotal as number)) > 1) return 'Order subtotal does not match items';
+  const expectedTotal = (body.subtotal as number) - (body.discount ?? 0) + (body.shippingFee ?? 0) + (body.tax ?? 0);
+  if (Math.abs(expectedTotal - (body.totalAmount as number)) > 1) return 'Order total does not add up';
+  if ((body.totalAmount as number) < 1) return 'Order total must be at least ₹1';
+  return null;
+}
+
+/**
+ * Step 1 of checkout: store the order as Pending and open a Razorpay order
+ * for the same amount. The browser then opens Razorpay Checkout.
+ */
+app.post('/checkout/create', async (c) => {
+  if (!razorpayConfigured(c.env)) {
+    return c.json({ error: 'Online payment is not available yet. Please order on WhatsApp.' }, 503);
+  }
+  const raw = await readJson<Partial<Order>>(c);
+  const problem = validateOrderInput(raw);
+  if (problem) return c.json({ error: problem }, 400);
+
+  const session = c.get('session');
+  const body = await externalizeDataUrls(c.env, raw);
+  const orderId = newId('FP-');
+  const totalAmount = round2(body.totalAmount as number);
+  const amountPaise = Math.round(totalAmount * 100);
+
+  let rzp;
+  try {
+    rzp = await createRazorpayOrder(c.env, {
+      amountPaise,
+      receipt: orderId,
+      notes: { order_id: orderId, customer: String(body.customerName || '').slice(0, 60) }
+    });
+  } catch (e: any) {
+    console.error('Razorpay order create failed', e?.message);
+    return c.json({ error: 'Payment gateway is unavailable right now. Please try again in a minute.' }, 502);
+  }
+
+  const order: OrderRecord = {
+    id: orderId,
+    userId: session && session.role === 'user' ? session.sub : 'usr-guest',
+    customerName: String(body.customerName || body.shippingAddress!.fullName).slice(0, 120),
+    customerEmail: String(body.customerEmail || '').slice(0, 160),
+    customerPhone: String(body.customerPhone || body.shippingAddress!.phone).slice(0, 20),
+    shippingAddress: body.shippingAddress!,
+    items: body.items!,
+    subtotal: round2(body.subtotal as number),
+    discount: round2(body.discount ?? 0),
+    shippingFee: round2(body.shippingFee ?? 0),
+    tax: round2(body.tax ?? 0),
+    totalAmount,
+    paymentMethod: 'Razorpay',
+    paymentStatus: 'Pending',
+    orderStatus: 'Pending',
+    notes: body.notes ? String(body.notes).slice(0, 2000) : undefined,
+    createdAt: new Date().toISOString(),
+    razorpayOrderId: rzp.id
+  };
+  await insertOrder(c.env, order);
+
+  return c.json({
+    orderId,
+    razorpayOrderId: rzp.id,
+    amount: rzp.amount,
+    currency: rzp.currency,
+    keyId: c.env.RAZORPAY_KEY_ID,
+    prefill: { name: order.customerName, email: order.customerEmail, contact: order.customerPhone }
+  });
+});
+
+/** Step 2: the browser hands back Razorpay's signed result; we verify it. */
+app.post('/checkout/verify', async (c) => {
+  const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = await readJson<Record<string, string>>(c);
+  if (!orderId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    return c.json({ error: 'Missing payment details' }, 400);
+  }
+  const order = await getOrder(c.env, orderId);
+  if (!order || order.razorpayOrderId !== razorpay_order_id) return c.json({ error: 'Order not found' }, 404);
+
+  const valid = await verifyCheckoutSignature(c.env, razorpay_order_id, razorpay_payment_id, razorpay_signature);
+  if (!valid) {
+    console.warn('Razorpay signature mismatch', orderId);
+    return c.json({ error: 'Payment verification failed. If money was deducted, contact us on WhatsApp.' }, 400);
+  }
+
+  await markOrderPaid(c.env, order.id, razorpay_payment_id);
+  return c.json(await getOrder(c.env, order.id));
+});
+
+/** Backup path: Razorpay calls this even if the customer closes the tab. */
+app.post('/webhooks/razorpay', async (c) => {
+  const raw = await c.req.text();
+  const signature = c.req.header('X-Razorpay-Signature') || '';
+  if (!(await verifyWebhookSignature(c.env, raw, signature))) {
+    return c.json({ error: 'Invalid signature' }, 400);
+  }
+  const event = JSON.parse(raw);
+  const payment = event?.payload?.payment?.entity;
+  const rzpOrderId: string | undefined = event?.payload?.order?.entity?.id || payment?.order_id;
+  if ((event.event === 'payment.captured' || event.event === 'order.paid') && rzpOrderId && payment?.id) {
+    const order = await getOrderByRazorpayId(c.env, rzpOrderId);
+    if (order) {
+      // Double-check with Razorpay that the order is really paid in full.
+      const rzp = await fetchRazorpayOrder(c.env, rzpOrderId);
+      if (rzp.status === 'paid' || rzp.amount_paid >= rzp.amount) {
+        await markOrderPaid(c.env, order.id, payment.id);
+      }
+    }
+  }
+  return c.json({ ok: true });
+});
+
+// ---------- orders ----------
+
+app.get('/orders', requireUser, async (c) => {
+  const s = c.get('session')!;
+  const userId = c.req.query('userId');
+  if (s.role === 'admin') return c.json(await listOrders(c.env, userId || undefined));
+  if (userId && userId !== s.sub) return c.json({ error: 'Forbidden: You can only access your own orders' }, 403);
+  return c.json(await listOrders(c.env, s.sub));
+});
+
+app.get('/orders/:id', requireUser, async (c) => {
+  const order = await getOrder(c.env, c.req.param('id'));
+  const s = c.get('session')!;
+  if (!order || (s.role !== 'admin' && s.sub !== order.userId)) {
+    return c.json({ error: 'Order not found' }, 404);
+  }
+  return c.json(order);
+});
+
+app.put('/orders/:id/status', requireAdmin, async (c) => {
+  const { orderStatus, trackingNumber } = await readJson<{ orderStatus?: Order['orderStatus']; trackingNumber?: string }>(c);
+  const order = await getOrder(c.env, c.req.param('id'));
+  if (!order) return c.json({ error: 'Order not found' }, 404);
+  const allowed: Order['orderStatus'][] = ['Pending', 'Processing', 'Printing', 'Shipped', 'Delivered', 'Cancelled'];
+  if (orderStatus) {
+    if (!allowed.includes(orderStatus)) return c.json({ error: 'Invalid status' }, 400);
+    order.orderStatus = orderStatus;
+  }
+  if (trackingNumber !== undefined) order.trackingNumber = String(trackingNumber).slice(0, 80);
+  await saveOrder(c.env, order);
+  return c.json(order);
+});
+
+// ---------- inquiries (contact / bulk / training forms) ----------
+
+const INQUIRY_TYPES = ['contact', 'bulk', 'training'] as const;
+
+app.post('/inquiries', async (c) => {
+  if (!(await rateLimit(c, 'inquiry'))) return c.json({ error: 'Too many requests. Please wait a minute.' }, 429);
+  const body = await readJson<Record<string, any>>(c);
+  const type = INQUIRY_TYPES.includes(body.type) ? body.type : 'contact';
+  const name = String(body.name || '').trim().slice(0, 120);
+  const phone = String(body.phone || '').trim().slice(0, 30);
+  const email = String(body.email || '').trim().slice(0, 160);
+  const message = String(body.message || '').trim().slice(0, 4000);
+  if (!name || (!phone && !email)) return c.json({ error: 'Please add your name and a phone number or email.' }, 400);
+  const details: Record<string, string> = {};
+  if (body.details && typeof body.details === 'object') {
+    for (const [k, v] of Object.entries(body.details).slice(0, 20)) details[String(k).slice(0, 40)] = String(v).slice(0, 300);
+  }
+  const id = newId('INQ-');
+  await c.env.DB.prepare(
+    'INSERT INTO inquiries (id, type, name, phone, email, message, details) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  )
+    .bind(id, type, name, phone, email, message, JSON.stringify(details))
+    .run();
+  return c.json({ ok: true, id }, 201);
+});
+
+app.get('/inquiries', requireAdmin, async (c) => {
+  const { results } = await c.env.DB.prepare(
+    'SELECT id, type, name, phone, email, message, details, status, created_at FROM inquiries ORDER BY created_at DESC LIMIT 500'
+  ).all<any>();
+  return c.json(results.map((r) => ({ ...r, details: JSON.parse(r.details || '{}') })));
+});
+
+app.put('/inquiries/:id', requireAdmin, async (c) => {
+  const { status } = await readJson<{ status?: string }>(c);
+  if (!status || !['New', 'Contacted', 'Closed'].includes(status)) return c.json({ error: 'Invalid status' }, 400);
+  await c.env.DB.prepare('UPDATE inquiries SET status = ? WHERE id = ?').bind(status, c.req.param('id')).run();
+  return c.json({ ok: true });
+});
+
+// ---------- analytics ----------
+
+app.get('/analytics', requireAdmin, async (c) => {
+  const [orders, products, totalCustomers] = await Promise.all([
+    listOrders(c.env, undefined, 2000),
+    listProducts(c.env),
+    countCustomers(c.env)
+  ]);
+  const paid = orders.filter((o) => o.paymentStatus === 'Paid');
+  const totalRevenue = round2(paid.reduce((acc, o) => acc + o.totalAmount, 0));
+
+  const productCat = new Map(products.map((p) => [p.id, p.category]));
+  const catSales: Record<string, number> = {};
+  for (const o of paid) {
+    for (const item of o.items) {
+      const cat = productCat.get(item.productId) || 'Other';
+      catSales[cat] = (catSales[cat] || 0) + item.totalPrice;
+    }
+  }
+
+  // Last 6 calendar months of paid revenue (IST-agnostic, by UTC month).
+  const months: { key: string; month: string; revenue: number }[] = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    months.push({
+      key: d.toISOString().slice(0, 7),
+      month: d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' }),
+      revenue: 0
+    });
+  }
+  for (const o of paid) {
+    const m = months.find((x) => x.key === o.createdAt.slice(0, 7));
+    if (m) m.revenue += o.totalAmount;
+  }
+
+  return c.json({
+    totalRevenue,
+    totalOrders: orders.length,
+    totalCustomers,
+    totalProducts: products.length,
+    recentOrders: orders.slice(0, 5),
+    salesByCategory: Object.entries(catSales).map(([category, sales]) => ({ category, sales: round2(sales) })),
+    monthlyRevenue: months.map(({ month, revenue }) => ({ month, revenue: round2(revenue) }))
+  });
+});
+
+// ---------- image URL extractor (customizer "import from URL") ----------
+
+app.post('/extract-image-url', async (c) => {
+  const { url } = await readJson<{ url?: string }>(c);
+  if (!url || typeof url !== 'string') return c.json({ error: 'Please provide a valid image URL.' }, 400);
+
+  const trimmed = url.trim();
+  let extractedUrl = trimmed;
+  let title = 'Extracted Motif Artwork';
+
+  if (trimmed.includes('google.') && trimmed.includes('imgurl=')) {
+    try {
+      const imgUrlParam = new URL(trimmed).searchParams.get('imgurl');
+      if (imgUrlParam) extractedUrl = imgUrlParam;
+    } catch {
+      /* keep original */
+    }
+  }
+
+  let parsed: URL | null = null;
+  try {
+    parsed = new URL(extractedUrl);
+  } catch {
+    parsed = null;
+  }
+  if (!parsed || !/^https?:$/.test(parsed.protocol)) {
+    return c.json({ error: 'Please provide an http(s) image link.' }, 400);
+  }
+
+  const looksLikeImage = /\.(jpe?g|png|webp|gif|svg|tiff?)($|\?)/i.test(parsed.pathname + parsed.search);
+  if (!looksLikeImage) {
+    try {
+      const response = await fetch(parsed.toString(), {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; FabricPrintImageFetcher/1.0; +https://www.fabricprint.in)',
+          Accept: 'text/html,application/xhtml+xml,image/*;q=0.9,*/*;q=0.8'
+        },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(6000)
+      });
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.startsWith('image/')) {
+        extractedUrl = response.url;
+        await response.body?.cancel();
+      } else if (contentType.includes('html')) {
+        const html = (await response.text()).slice(0, 500_000);
+        const og =
+          html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
+          html.match(/<meta\s+content=["']([^"']+)["']\s+property=["']og:image["']/i) ||
+          html.match(/<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["']/i);
+        const img = html.match(/<img[^>]+src=["'](https?:\/\/[^"']+\.(?:png|jpg|jpeg|webp))["']/i);
+        if (og?.[1]) extractedUrl = new URL(og[1], response.url).toString();
+        else if (img?.[1]) extractedUrl = img[1];
+        const t = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+        if (t?.[1]) title = t[1].trim().slice(0, 50);
+      }
+    } catch {
+      /* fall back to the original URL */
+    }
+  }
+
+  const palettes = [
+    ['#1E3A8A', '#F59E0B', '#10B981', '#E11D48', '#F8FAFC'],
+    ['#0F766E', '#D97706', '#4F46E5', '#9333EA', '#FFFBEB'],
+    ['#9A3412', '#0284C7', '#16A34A', '#E11D48', '#FAFAF9'],
+    ['#312E81', '#BE185D', '#047857', '#CA8A04', '#F1F5F9']
+  ];
+  const palette = palettes[Math.floor(Math.random() * palettes.length)];
+  return c.json({
+    success: true,
+    originalUrl: trimmed,
+    extractedImageUrl: extractedUrl,
+    title,
+    width: 3200,
+    height: 3200,
+    format: 'PNG / High-Def Textile Raster',
+    fileSizeMb: 4.2,
+    palette,
+    pantoneMatches: [
+      { name: 'Royal Cobalt', hex: palette[0], code: 'PANTONE 19-4052 TCX' },
+      { name: 'Radiant Gold', hex: palette[1], code: 'PANTONE 14-0848 TCX' },
+      { name: 'Forest Emerald', hex: palette[2], code: 'PANTONE 17-5641 TCX' },
+      { name: 'Berry Magenta', hex: palette[3], code: 'PANTONE 18-2043 TCX' }
+    ],
+    extractedAt: new Date().toISOString()
+  });
 });
 
 // ==========================================
-// 12. CLOUDFLARE WORKER EXPORT WITH STATIC ASSET FALLBACK
+// Worker entry: API, SEO files, then the SPA shell with per-route meta.
 // ==========================================
-export default {
-  async fetch(request: Request, env: Env, ctx: any): Promise<Response> {
-    const url = new URL(request.url);
 
-    // If request is directed to /api, route through Hono
-    if (url.pathname.startsWith('/api')) {
-      return app.fetch(request, env, ctx);
-    }
-
-    // Static assets fallback via Cloudflare Workers assets binding
-    if (env.ASSETS && typeof env.ASSETS.fetch === 'function') {
-      return env.ASSETS.fetch(request);
-    }
-
-    return new Response('Not found', { status: 404 });
-  }
+const SECURITY_HEADERS: Record<string, string> = {
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'X-Frame-Options': 'SAMEORIGIN',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(self "https://checkout.razorpay.com" "https://api.razorpay.com")',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
 };
+
+function withSecurityHeaders(res: Response): Response {
+  const out = new Response(res.body, res);
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+    if (!out.headers.has(k)) out.headers.set(k, v);
+  }
+  return out;
+}
+
+async function serveShell(request: Request, env: Env, meta: RouteMeta): Promise<Response> {
+  const shellUrl = new URL('/', request.url);
+  // No conditional headers: the rewritten body differs per route.
+  const shell = await env.ASSETS.fetch(new Request(shellUrl, { method: 'GET' }));
+  if (!shell.ok) return shell;
+  return rewriteShell(shell, siteUrl(env), meta);
+}
+
+async function handleRequest(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  const url = new URL(request.url);
+  const { pathname } = url;
+
+  if (pathname === '/api' || pathname.startsWith('/api/')) {
+    return app.fetch(request, env, ctx);
+  }
+
+  // One canonical host for search engines: send *.workers.dev pages to the real domain.
+  if (url.hostname.endsWith('.workers.dev') && (request.method === 'GET' || request.method === 'HEAD')) {
+    return Response.redirect(`${siteUrl(env)}${pathname}${url.search}`, 301);
+  }
+
+  if (pathname === '/robots.txt') {
+    return new Response(renderRobots(siteUrl(env)), {
+      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' }
+    });
+  }
+
+  if (pathname === '/sitemap.xml') {
+    await ensureSeeded(env);
+    const products = await listProducts(env);
+    return new Response(renderSitemap(siteUrl(env), products), {
+      headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' }
+    });
+  }
+
+  // Anything that looks like a file goes straight to static assets.
+  if (/\.[a-z0-9]{2,5}$/i.test(pathname) || (request.method !== 'GET' && request.method !== 'HEAD')) {
+    const asset = await env.ASSETS.fetch(request);
+    // A missing file falls back to the SPA shell; report it as a real 404 instead.
+    if (!/\.html?$/i.test(pathname) && (asset.headers.get('Content-Type') || '').includes('text/html')) {
+      return new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    }
+    return asset;
+  }
+
+  const match = matchRoute(pathname);
+  if (match && 'meta' in match) return serveShell(request, env, match.meta);
+  if (match && 'productId' in match) {
+    await ensureSeeded(env);
+    const product = await getProduct(env, match.productId);
+    return serveShell(request, env, product ? productRouteMeta(siteUrl(env), product) : notFoundMeta(pathname));
+  }
+  return serveShell(request, env, notFoundMeta(pathname));
+}
+
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    return withSecurityHeaders(await handleRequest(request, env, ctx));
+  }
+} satisfies ExportedHandler<Env>;

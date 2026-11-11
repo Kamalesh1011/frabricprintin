@@ -15,6 +15,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { BUSINESS_INFO } from '../config/businessInfo';
 
 interface AuthPageProps {
   onNavigate: (tab: string) => void;
@@ -39,6 +40,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'ph
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState(false);
 
   // Register state
   const [regName, setRegName] = useState('');
@@ -181,7 +185,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'ph
     setPhoneError('');
     setLoginError('');
     try {
-      // In browser environment, prompt for simulated/live Google login
       const promptEmail = window.prompt(
         'Sign in with Google / Gmail:\nEnter your Gmail address (e.g. admin@fabricprint.in for Admin or your personal Gmail):',
         'customer@gmail.com'
@@ -231,7 +234,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'ph
           <div className="flex bg-[#F9F6ED] dark:bg-[#242624] rounded-full p-1 border border-[#ECECEC] dark:border-white/[0.08] mb-6 text-xs font-bold">
             <button
               type="button"
-              onClick={() => setActiveTab('phone')}
+              onClick={() => {
+                setActiveTab('phone');
+                setShowForgotPassword(false);
+              }}
               className={`flex-1 py-2 rounded-full transition flex items-center justify-center space-x-1.5 ${
                 activeTab === 'phone'
                   ? 'bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] shadow-sm'
@@ -244,7 +250,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'ph
 
             <button
               type="button"
-              onClick={() => setActiveTab('email')}
+              onClick={() => {
+                setActiveTab('email');
+                setShowForgotPassword(false);
+              }}
               className={`flex-1 py-2 rounded-full transition flex items-center justify-center space-x-1.5 ${
                 activeTab === 'email'
                   ? 'bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] shadow-sm'
@@ -257,7 +266,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'ph
 
             <button
               type="button"
-              onClick={() => setActiveTab('register')}
+              onClick={() => {
+                setActiveTab('register');
+                setShowForgotPassword(false);
+              }}
               className={`flex-1 py-2 rounded-full transition flex items-center justify-center space-x-1.5 ${
                 activeTab === 'register'
                   ? 'bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] shadow-sm'
@@ -592,7 +604,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'ph
               disabled={isLoading}
               className="w-full py-2.5 px-4 rounded-2xl bg-white dark:bg-[#252825] text-gray-800 dark:text-white font-bold text-xs flex items-center justify-center space-x-2.5 border border-black/15 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/5 transition shadow-xs active:scale-[0.99]"
             >
-              {/* Google G logo */}
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"

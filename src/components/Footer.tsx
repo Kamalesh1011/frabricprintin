@@ -13,6 +13,15 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, setSelectedCategor
     setActiveTab('fabrics');
   };
 
+  // Real <a href> links so search engines can crawl the site; plain clicks
+  // still navigate in-app without a page reload.
+  const isModified = (e: React.MouseEvent) => e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
+  const navTo = (tab: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (isModified(e)) return;
+    e.preventDefault();
+    setActiveTab(tab);
+  };
+
   return (
     <footer className="bg-[#FEFBF1] dark:bg-[#0F100F] text-[#0F100F] dark:text-gray-300 pt-16 pb-8 border-t border-[#ECECEC] dark:border-white/[0.08] font-sans transition-colors duration-300">
       
@@ -104,19 +113,21 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, setSelectedCategor
               <span>{BUSINESS_INFO.address.fullFormatted}</span>
             </p>
             <div className="pt-2 flex items-center space-x-3 text-xs">
-              <button
-                onClick={() => setActiveTab('about')}
+              <a
+                href="/about"
+                onClick={navTo('about')}
                 className="font-bold text-[#0F100F] dark:text-white hover:text-[#AC7900] transition"
               >
                 About Us
-              </button>
+              </a>
               <span className="text-gray-300 dark:text-gray-600">•</span>
-              <button
-                onClick={() => setActiveTab('contact')}
+              <a
+                href="/contact"
+                onClick={navTo('contact')}
                 className="font-bold text-[#0F100F] dark:text-white hover:text-[#AC7900] transition"
               >
                 Contact Mill
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -129,12 +140,13 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, setSelectedCategor
           <ul className="text-xs space-y-2 text-[#8A8883] dark:text-gray-400">
             {['Cotton', 'Silk', 'Linen', 'Rayon', 'Modal', 'Polyester'].map((cat) => (
               <li key={cat}>
-                <button
-                  onClick={() => handleCatClick(cat)}
+                <a
+                  href={`/fabrics?type=${encodeURIComponent(cat)}`}
+                  onClick={(e) => { if (isModified(e)) return; e.preventDefault(); handleCatClick(cat); }}
                   className="hover:text-[#AC7900] dark:hover:text-white transition"
                 >
                   {cat} Fabrics
-                </button>
+                </a>
               </li>
             ))}
           </ul>
@@ -147,64 +159,71 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, setSelectedCategor
           </h4>
           <ul className="text-xs space-y-2 text-[#8A8883] dark:text-gray-400">
             <li>
-              <button
-                onClick={() => setActiveTab('apparel-studio')}
+              <a
+                href="/apparel-studio"
+                onClick={navTo('apparel-studio')}
                 className="hover:text-[#E11D48] font-bold text-black dark:text-white transition flex items-center space-x-1.5"
               >
                 <Shirt className="w-3 h-3 text-[#E11D48]" />
                 <span>Apparel 3D Studio</span>
-              </button>
+              </a>
             </li>
             <li>
-              <button
-                onClick={() => setActiveTab('apparel')}
+              <a
+                href="/apparel"
+                onClick={navTo('apparel')}
                 className="hover:text-[#E11D48] transition"
               >
                 T-Shirts (180/240 GSM)
-              </button>
+              </a>
             </li>
             <li>
-              <button
-                onClick={() => setActiveTab('uniforms')}
+              <a
+                href="/uniforms"
+                onClick={navTo('uniforms')}
                 className="hover:text-[#AC7900] font-bold text-black dark:text-white transition flex items-center space-x-1.5"
               >
                 <GraduationCap className="w-3 h-3 text-[#AC7900]" />
                 <span>Uniforms & Institutions</span>
-              </button>
+              </a>
             </li>
             <li>
-              <button
-                onClick={() => setActiveTab('uniforms')}
+              <a
+                href="/uniforms"
+                onClick={navTo('uniforms')}
                 className="hover:text-[#AC7900] transition"
               >
                 School Checks & Tartan
-              </button>
+              </a>
             </li>
             <li>
-              <button
-                onClick={() => setActiveTab('uniforms')}
+              <a
+                href="/uniforms"
+                onClick={navTo('uniforms')}
                 className="hover:text-[#AC7900] transition"
               >
                 Hospital & Medical Scrubs
-              </button>
+              </a>
             </li>
             <li>
-              <button
-                onClick={() => setActiveTab('merch')}
+              <a
+                href="/merch"
+                onClick={navTo('merch')}
                 className="hover:text-[#AC7900] font-bold text-black dark:text-white transition flex items-center space-x-1.5"
               >
                 <Sparkles className="w-3 h-3 text-[#AC7900]" />
                 <span>Other Products (Caps, Bottles, Totes)</span>
-              </button>
+              </a>
             </li>
             <li>
-              <button
-                onClick={() => setActiveTab('training')}
+              <a
+                href="/training"
+                onClick={navTo('training')}
                 className="hover:text-[#AC7900] font-bold text-[#AC7900] dark:text-[#D4AF37] transition flex items-center space-x-1.5"
               >
                 <GraduationCap className="w-3 h-3 text-[#AC7900] dark:text-[#D4AF37]" />
                 <span>Printing &amp; Craft Training</span>
-              </button>
+              </a>
             </li>
           </ul>
         </div>
@@ -228,19 +247,21 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab, setSelectedCategor
               <span className="text-[10px] text-[#8A8883]">Test quality before bulk roll runs</span>
             </li>
             <li className="pt-1 flex items-center space-x-2 text-[11px]">
-              <button
-                onClick={() => setActiveTab('privacy')}
+              <a
+                href="/privacy"
+                onClick={navTo('privacy')}
                 className="hover:text-[#0F100F] dark:hover:text-white transition"
               >
                 Privacy Policy
-              </button>
+              </a>
               <span className="text-gray-400">•</span>
-              <button
-                onClick={() => setActiveTab('terms')}
+              <a
+                href="/terms"
+                onClick={navTo('terms')}
                 className="hover:text-[#0F100F] dark:hover:text-white transition"
               >
                 Terms
-              </button>
+              </a>
             </li>
           </ul>
         </div>

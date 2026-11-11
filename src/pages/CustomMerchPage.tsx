@@ -335,15 +335,15 @@ export const CustomMerchPage: React.FC<CustomMerchPageProps> = ({
             })}
           </div>
 
-          <div className="flex items-center space-x-3">
-            <div className="relative">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 min-w-0 sm:flex-none">
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search tote bags, caps, flags, shirts..."
-                className="pl-8 pr-3 py-1.5 rounded-full border border-black/10 dark:border-white/15 bg-white dark:bg-[#1A1C1A] text-xs font-medium focus:ring-2 focus:ring-[#AC7900] outline-none w-56 sm:w-72"
+                className="pl-8 pr-3 py-1.5 rounded-full border border-black/10 dark:border-white/15 bg-white dark:bg-[#1A1C1A] text-xs font-medium focus:ring-2 focus:ring-[#AC7900] outline-none w-full sm:w-72"
               />
             </div>
 

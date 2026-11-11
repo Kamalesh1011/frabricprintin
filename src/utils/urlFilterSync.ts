@@ -166,10 +166,10 @@ export function syncFiltersToUrl(filters: FabricFilters, currentTab = 'fabrics')
     }
 
     const queryString = params.toString();
-    const newHash = queryString ? `#${currentTab}?${queryString}` : `#${currentTab}`;
+    const newUrl = window.location.pathname + (queryString ? `?${queryString}` : '');
 
-    if (window.location.hash !== newHash) {
-      window.history.replaceState({ ...window.history.state, filters }, '', newHash);
+    if (window.location.pathname + window.location.search !== newUrl) {
+      window.history.replaceState({ ...window.history.state, filters }, '', newUrl);
     }
   } catch (err) {
     console.error('Failed to sync filters to URL:', err);

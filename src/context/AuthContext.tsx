@@ -10,7 +10,7 @@ interface AuthContextType {
   register: (name: string, phone: string, email: string, password: string) => Promise<User>;
   sendPhoneOtp: (phone: string) => Promise<{ success: boolean; message: string; testOtp?: string }>;
   verifyPhoneOtp: (phone: string, otp: string, name?: string) => Promise<{ user: User; isAdmin: boolean }>;
-  loginWithGoogle: (payload: { credential?: string; email?: string; name?: string; picture?: string }) => Promise<{ user: User; isAdmin: boolean }>;
+  loginWithGoogle: (payload: { credential?: string; email?: string; name?: string; picture?: string; googleId?: string }) => Promise<{ user: User; isAdmin: boolean }>;
   logout: () => void;
   saveAddress: (address: Omit<Address, 'id'>) => void;
 }
@@ -76,21 +76,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentUser, token]);
 
-  // Optional: Verify current session with server on boot
+  // Re-validate session with server on boot
   useEffect(() => {
-    if (token) {
-      fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data?.user) {
-            setCurrentUser(data.user);
-          }
-        })
-        .catch(() => {});
+    const savedToken = localStorage.getItem('fabricprint_token');
+    if (!savedToken) {
+      if (currentUser) setCurrentUser(null);
+      return;
     }
-  }, [token]);
+    let cancelled = false;
+    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${savedToken}` } })
+      .then(async (res) => {
+        if (cancelled) return;
+        if (res.status === 401) {
+          setToken(null);
+          setCurrentUser(null);
+          return;
+        }
+        if (res.ok) {
+          const data: any = await res.json();
+          if (data?.user) setCurrentUser(data.user);
+        }
+      })
+      .catch(() => {
+        /* offline fallback */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleAuthSuccess = (userToSet: User, userToken: string, isAdminUser: boolean) => {
     setCurrentUser(userToSet);
@@ -116,12 +129,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       body: JSON.stringify({ email: cleanEmail, password })
     });
 
-    const data = await res.json().catch(() => ({}));
+    const data: any = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(data.error || 'Invalid credentials. Please verify your email and password.');
     }
 
-    return handleAuthSuccess(data.user, data.token, !!data.isAdmin);
+    const isAdminUser: boolean = !!data.isAdmin || data.user?.role === 'admin';
+    return handleAuthSuccess(data.user, data.token, isAdminUser);
   };
 
   // 2. Email / Password Register
@@ -148,7 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     });
 
-    const data = await res.json().catch(() => ({}));
+    const data: any = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(data.error || 'Registration failed. Please try again.');
     }
@@ -170,7 +184,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       body: JSON.stringify({ phone: clean })
     });
 
-    const data = await res.json().catch(() => ({}));
+    const data: any = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(data.error || 'Failed to send OTP. Please check the mobile number.');
     }
@@ -192,28 +206,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       body: JSON.stringify({ phone: cleanPhone, otp: cleanOtp, name })
     });
 
-    const data = await res.json().catch(() => ({}));
+    const data: any = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(data.error || 'Incorrect or expired OTP. Please try again.');
     }
 
-    return handleAuthSuccess(data.user, data.token, !!data.isAdmin);
+    const isAdminUser: boolean = !!data.isAdmin || data.user?.role === 'admin';
+    return handleAuthSuccess(data.user, data.token, isAdminUser);
   };
 
   // 5. Google / Gmail OAuth Login
-  const loginWithGoogle = async (payload: { credential?: string; email?: string; name?: string; picture?: string }): Promise<{ user: User; isAdmin: boolean }> => {
+  const loginWithGoogle = async (payload: { credential?: string; email?: string; name?: string; picture?: string; googleId?: string }): Promise<{ user: User; isAdmin: boolean }> => {
     const res = await fetch('/api/auth/google', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
-    const data = await res.json().catch(() => ({}));
+    const data: any = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(data.error || 'Google authentication failed. Please try again.');
     }
 
-    return handleAuthSuccess(data.user, data.token, !!data.isAdmin);
+    const isAdminUser: boolean = !!data.isAdmin || data.user?.role === 'admin';
+    return handleAuthSuccess(data.user, data.token, isAdminUser);
   };
 
   const logout = () => {

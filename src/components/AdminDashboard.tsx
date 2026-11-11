@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   BarChart3,
+  Inbox,
   Package,
   Plus,
   Trash2,
@@ -36,6 +37,7 @@ import {
   updateCustomizerSettings,
   addPreloadedDesign,
   deletePreloadedDesign,
+  fetchInquiries,
   fetchMasterFabrics,
   createMasterFabric,
   updateMasterFabric,
@@ -78,6 +80,7 @@ import { MasterGsmTab } from './admin/MasterGsmTab';
 import { MasterSizeFormatsTab } from './admin/MasterSizeFormatsTab';
 import { MasterVariantsTab } from './admin/MasterVariantsTab';
 import { OrderManagementTab } from './admin/OrderManagementTab';
+import { InquiriesTab } from './admin/InquiriesTab';
 import { MediaLibraryModal } from './admin/MediaLibraryModal';
 
 interface AdminDashboardProps {
@@ -86,7 +89,8 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange, onViewProductInFrontend }) => {
-  const [activeAdminTab, setActiveAdminTab] = useState<'analytics' | 'products' | 'orders' | 'categories' | 'customizer'>('analytics');
+  const [activeAdminTab, setActiveAdminTab] = useState<'analytics' | 'products' | 'orders' | 'inquiries' | 'categories' | 'customizer'>('analytics');
+  const [newInquiryCount, setNewInquiryCount] = useState<number | null>(null);
   const [productsSubSection, setProductsSubSection] = useState<
     'all_products' | 'add_product' | 'categories' | 'fabrics' | 'gsm' | 'size_formats' | 'variants'
   >('all_products');
@@ -166,6 +170,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange
 
   useEffect(() => {
     reloadAdminData();
+    fetchInquiries().then((list) => setNewInquiryCount(list.filter((i) => i.status === 'New').length));
   }, []);
 
   const handleSaveProductFromWizard = async (payload: Partial<Product>) => {
@@ -187,8 +192,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange
   };
 
   const handleDeleteProduct = async (id: string) => {
-    await deleteProduct(id);
+    try {
+      await deleteProduct(id);
+    } catch (err: any) {
+      window.alert(err?.message || 'Could not delete product.');
+    }
     await reloadAdminData();
+  };
+
+  const runAdminAction = async (action: () => Promise<unknown>, failMsg: string): Promise<boolean> => {
+    try {
+      await action();
+      return true;
+    } catch (err: any) {
+      window.alert(err?.message || failMsg);
+      return false;
+    }
   };
 
   // Master Categories handlers
@@ -306,6 +325,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange
             { id: 'analytics', label: 'Analytics Dashboard', icon: BarChart3 },
             { id: 'products', label: `PRODUCTS (${products.length})`, icon: Package },
             { id: 'orders', label: `Order Queue (${orders.length})`, icon: Clock },
+            { id: 'inquiries', label: newInquiryCount ? `Inquiries (${newInquiryCount} new)` : 'Inquiries', icon: Inbox },
             { id: 'categories', label: 'Categories Master', icon: Layers },
             { id: 'customizer', label: 'Customizer & Artwork Controls', icon: Sliders }
           ].map((tab) => {
@@ -530,6 +550,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange
           />
         )}
 
+        {/* TAB 3b: CUSTOMER INQUIRIES */}
+        {activeAdminTab === 'inquiries' && <InquiriesTab onCountChange={setNewInquiryCount} />}
+
         {/* TAB 4: CATEGORIES */}
         {activeAdminTab === 'categories' && (
           <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
@@ -610,7 +633,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange
 
                   <button
                     onClick={async () => {
-                      await updateCustomizerSettings(customizerSettings);
+                      if (!(await runAdminAction(() => updateCustomizerSettings(customizerSettings), 'Could not save settings.'))) return;
                       setSettingsSavedAlert(true);
                       setTimeout(() => setSettingsSavedAlert(false), 3000);
                     }}
@@ -654,7 +677,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange
                             }
                           };
                           setCustomizerSettings(updated);
-                          await updateCustomizerSettings(updated);
+                          await runAdminAction(() => updateCustomizerSettings(updated), 'Could not save layout setting.');
                         }}
                         className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
                       />
@@ -679,14 +702,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange
                 onSubmit={async (e) => {
                   e.preventDefault();
                   if (!newDesignName || !newDesignUrl) return;
-                  const added = await addPreloadedDesign({
-                    name: newDesignName,
-                    category: newDesignCategory,
-                    imageUrl: newDesignUrl,
-                    widthPx: newDesignWidth,
-                    heightPx: newDesignHeight,
-                    active: true
-                  });
+                  let added: PreloadedDesign;
+                  try {
+                    added = await addPreloadedDesign({
+                      name: newDesignName,
+                      category: newDesignCategory,
+                      imageUrl: newDesignUrl,
+                      widthPx: newDesignWidth,
+                      heightPx: newDesignHeight,
+                      active: true
+                    });
+                  } catch (err: any) {
+                    window.alert(err?.message || 'Could not add design.');
+                    return;
+                  }
                   setCustomizerSettings({
                     ...customizerSettings,
                     preloadedDesigns: [added, ...customizerSettings.preloadedDesigns]
@@ -780,7 +809,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange
                       <button
                         onClick={async () => {
                           if (confirm(`Remove "${d.name}" from preloaded designs?`)) {
-                            await deletePreloadedDesign(d.id);
+                            if (!(await runAdminAction(() => deletePreloadedDesign(d.id), 'Could not remove design.'))) return;
                             setCustomizerSettings({
                               ...customizerSettings,
                               preloadedDesigns: customizerSettings.preloadedDesigns.filter(x => x.id !== d.id)
