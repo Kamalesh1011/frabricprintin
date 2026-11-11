@@ -11,21 +11,46 @@ const QUICK_OPTIONS = [
   'Pure Silk',
   'French Flax Linen',
   'Modal Satin',
-  'Uniforms / Scrubs',
-  'Sample Meter (1m)'
+  'Custom T-Shirts',
+  'Sports Jersey',
+  'Uniforms & Scrubs',
+  '1m Strike-Off Sample'
 ];
 
 export const EntryWhatsAppModal: React.FC<EntryWhatsAppModalProps> = ({
   phoneNumber = '918903120006',
   displayPhone = '+91 89031 20006',
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  // Opens automatically in front on page visit
+  const [isOpen, setIsOpen] = useState(true);
   const [requirement, setRequirement] = useState('');
   const [fileName, setFileName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Lock background scrolling while popup is open in front
   useEffect(() => {
-    // Listen for explicit user clicks to open quick order modal
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
+  // Handle Escape key to close
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  useEffect(() => {
+    // Listen for explicit user clicks to open quick order modal anywhere
     const handleOpen = () => setIsOpen(true);
     window.addEventListener('open-quick-order-modal', handleOpen);
     return () => window.removeEventListener('open-quick-order-modal', handleOpen);
@@ -46,20 +71,23 @@ export const EntryWhatsAppModal: React.FC<EntryWhatsAppModalProps> = ({
   if (!isOpen) return null;
 
   const buildWhatsappUrl = () => {
-    const req = requirement.trim() || 'Custom Fabric Printing';
-    const docNote = fileName ? `\nAttached Document: ${fileName}` : '';
+    const req = requirement.trim() || 'Custom Fabric & Apparel Printing';
+    const docNote = fileName ? `\nAttached Document / Design: ${fileName}` : '';
     const message = `Hi Fabric Print, I am visiting your website and have an inquiry:\n• Requirement: ${req}${docNote}\n\nPlease share price quote and assist me.`;
     return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
   };
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-300"
+      className="fixed inset-0 z-[9999] overflow-y-auto bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-300"
       onClick={handleClose}
       id="entry-whatsapp-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="entry-modal-title"
     >
       <div
-        className="relative w-full max-w-md bg-[#FEFBF1] dark:bg-[#151715] text-[#0F100F] dark:text-white rounded-[28px] p-5 sm:p-7 shadow-2xl border border-black/10 dark:border-white/10 overflow-hidden animate-in zoom-in-95 duration-300 max-h-[92vh] overflow-y-auto"
+        className="relative w-full max-w-md bg-[#FEFBF1] dark:bg-[#151715] text-[#0F100F] dark:text-white rounded-[28px] p-5 sm:p-7 shadow-2xl border border-black/15 dark:border-white/15 overflow-hidden animate-in zoom-in-95 duration-300 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Subtle decorative top glow */}
@@ -69,8 +97,9 @@ export const EntryWhatsAppModal: React.FC<EntryWhatsAppModalProps> = ({
         <button
           type="button"
           onClick={handleClose}
-          className="absolute top-3.5 right-3.5 p-2 text-gray-400 hover:text-black dark:hover:text-white rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition z-10"
-          aria-label="Close dialog"
+          className="absolute top-3.5 right-3.5 p-2 text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition z-10 flex items-center justify-center"
+          aria-label="Close dialog and view website"
+          title="Close and view website"
         >
           <X className="w-5 h-5" />
         </button>
@@ -82,7 +111,7 @@ export const EntryWhatsAppModal: React.FC<EntryWhatsAppModalProps> = ({
             <span>Live Textile Support Online</span>
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-black font-editorial tracking-tight text-[#0F100F] dark:text-white">
+          <h2 id="entry-modal-title" className="text-xl sm:text-2xl font-black font-editorial tracking-tight text-[#0F100F] dark:text-white">
             Order Easily on WhatsApp or Phone
           </h2>
 
@@ -113,7 +142,7 @@ export const EntryWhatsAppModal: React.FC<EntryWhatsAppModalProps> = ({
               type="text"
               value={requirement}
               onChange={(e) => setRequirement(e.target.value)}
-              placeholder="e.g. 15m Cotton Cambric with floral print..."
+              placeholder="e.g. 15m Cotton Cambric / 50 T-shirts with print..."
               className="w-full bg-[#FAF8F2] dark:bg-[#282B28] border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
@@ -194,13 +223,13 @@ export const EntryWhatsAppModal: React.FC<EntryWhatsAppModalProps> = ({
         </div>
 
         {/* Dismiss and continue to website */}
-        <div className="text-center pt-3">
+        <div className="text-center pt-3 border-t border-black/5 dark:border-white/10 mt-3">
           <button
             type="button"
             onClick={handleClose}
-            className="text-xs text-gray-500 hover:text-black dark:hover:text-white transition font-medium hover:underline inline-flex items-center space-x-1"
+            className="text-xs text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white transition font-medium hover:underline inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
           >
-            <span>Or browse website on my own</span>
+            <span>Close &amp; Browse Website</span>
             <span>→</span>
           </button>
         </div>

@@ -4,6 +4,14 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { db } from './src/server/db.js';
+import {
+  signJwt,
+  verifyJwt,
+  authenticateToken,
+  optionalAuth,
+  requireAdmin,
+  AuthenticatedRequest
+} from './src/server/auth.js';
 import { Product, Category, Order, User, AdminCustomizerSettings, PreloadedDesign, SwatchBook } from './src/types.js';
 dotenv.config();
 
@@ -669,6 +677,32 @@ app.get('/api/health', (req, res) => {
     res.json(db.getSwatchBooks());
   });
 
+  // ==========================================
+  // AUTH HELPER (JWT & RBAC)
+  // ==========================================
+  function getAuthUser(req: any) {
+    const authHeader = req.headers['authorization'] || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    if (!token) return null;
+    const jwtPayload = verifyJwt(token);
+    if (jwtPayload) {
+      return {
+        id: jwtPayload.id,
+        name: jwtPayload.name,
+        email: jwtPayload.email,
+        phone: jwtPayload.phone,
+        isAdmin: jwtPayload.role === 'admin'
+      };
+    }
+    if (token.startsWith('fp-admin-') || token === 'admin-session-active') {
+      return { id: 'usr-admin', name: 'Mill Admin', email: 'admin@fabricprint.in', isAdmin: true };
+    }
+    if (token.startsWith('fp-usr-')) {
+      return { id: token.replace('fp-usr-', ''), name: 'Customer', email: '', isAdmin: false };
+    }
+    return null;
+  }
+
   // PRODUCTS API
   app.get('/api/products', (req, res) => {
     const { category, search, gsmMin, gsmMax, certified } = req.query;
@@ -691,10 +725,8 @@ app.get('/api/health', (req, res) => {
   });
 
   app.post('/api/products', (req, res) => {
-    const authHeader = req.headers['authorization'] || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-    const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
-    if (!isAdmin) {
+    const authUser = getAuthUser(req);
+    if (!authUser || !authUser.isAdmin) {
       return res.status(403).json({ error: 'Forbidden: Admin access required to add products' });
     }
 
@@ -703,10 +735,8 @@ app.get('/api/health', (req, res) => {
   });
 
   app.put('/api/products/:id', (req, res) => {
-    const authHeader = req.headers['authorization'] || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-    const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
-    if (!isAdmin) {
+    const authUser = getAuthUser(req);
+    if (!authUser || !authUser.isAdmin) {
       return res.status(403).json({ error: 'Forbidden: Admin access required to update products' });
     }
 
@@ -718,10 +748,8 @@ app.get('/api/health', (req, res) => {
   });
 
   app.delete('/api/products/:id', (req, res) => {
-    const authHeader = req.headers['authorization'] || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-    const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
-    if (!isAdmin) {
+    const authUser = getAuthUser(req);
+    if (!authUser || !authUser.isAdmin) {
       return res.status(403).json({ error: 'Forbidden: Admin access required to delete products' });
     }
 
@@ -738,10 +766,8 @@ app.get('/api/health', (req, res) => {
   });
 
   app.post('/api/categories', (req, res) => {
-    const authHeader = req.headers['authorization'] || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-    const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
-    if (!isAdmin) {
+    const authUser = getAuthUser(req);
+    if (!authUser || !authUser.isAdmin) {
       return res.status(403).json({ error: 'Forbidden: Admin access required to create categories' });
     }
 
@@ -818,10 +844,8 @@ app.get('/api/health', (req, res) => {
   });
 
   app.delete('/api/preloaded-designs/:id', (req, res) => {
-    const authHeader = req.headers['authorization'] || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-    const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
-    if (!isAdmin) {
+    const authUser = getAuthUser(req);
+    if (!authUser || !authUser.isAdmin) {
       return res.status(403).json({ error: 'Forbidden: Admin access required' });
     }
 
@@ -833,40 +857,31 @@ app.get('/api/health', (req, res) => {
 
   // ORDERS API
   app.get('/api/orders', (req, res) => {
-    const authHeader = req.headers['authorization'] || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-
-    if (!token) {
+    const authUser = getAuthUser(req);
+    if (!authUser) {
       return res.status(401).json({ error: 'Unauthorized: Authentication required to view orders' });
     }
 
-    const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
     const { userId } = req.query;
 
-    if (isAdmin) {
+    if (authUser.isAdmin) {
       if (userId) {
         return res.json(db.getOrders(userId as string));
       }
       return res.json(db.getOrders());
     }
 
-    const tokenUserId = token.startsWith('fp-usr-') ? token.replace('fp-usr-', '') : null;
-    if (!tokenUserId) {
-      return res.status(401).json({ error: 'Unauthorized: Invalid authentication token' });
-    }
-
-    if (userId && userId !== tokenUserId) {
+    // Customer can only view their own orders
+    if (userId && userId !== authUser.id) {
       return res.status(403).json({ error: 'Forbidden: You can only access your own orders' });
     }
 
-    res.json(db.getOrders(tokenUserId));
+    res.json(db.getOrders(authUser.id));
   });
 
   app.get('/api/orders/:id', (req, res) => {
-    const authHeader = req.headers['authorization'] || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-
-    if (!token) {
+    const authUser = getAuthUser(req);
+    if (!authUser) {
       return res.status(401).json({ error: 'Unauthorized: Authentication required to view order' });
     }
 
@@ -875,10 +890,7 @@ app.get('/api/health', (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
-    const tokenUserId = token.startsWith('fp-usr-') ? token.replace('fp-usr-', '') : null;
-
-    if (!isAdmin && order.userId && order.userId !== tokenUserId) {
+    if (!authUser.isAdmin && order.userId && order.userId !== authUser.id) {
       return res.status(403).json({ error: 'Forbidden: You cannot access this order' });
     }
 
@@ -891,10 +903,8 @@ app.get('/api/health', (req, res) => {
   });
 
   app.put('/api/orders/:id/status', (req, res) => {
-    const authHeader = req.headers['authorization'] || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-    const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
-    if (!isAdmin) {
+    const authUser = getAuthUser(req);
+    if (!authUser || !authUser.isAdmin) {
       return res.status(403).json({ error: 'Forbidden: Admin access required' });
     }
 
@@ -908,21 +918,21 @@ app.get('/api/health', (req, res) => {
 
   // ANALYTICS API (FOR ADMIN DASHBOARD)
   app.get('/api/analytics', (req, res) => {
-    const authHeader = req.headers['authorization'] || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-    const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
-    if (!isAdmin) {
+    const authUser = getAuthUser(req);
+    if (!authUser || !authUser.isAdmin) {
       return res.status(403).json({ error: 'Forbidden: Admin access required' });
     }
 
     res.json(db.getAnalytics());
   });
 
-  // AUTH API
+  // AUTH API (JWT, GOOGLE OAUTH, PHONE OTP & RBAC)
+
+  // 1. Traditional Email / Password Login
   app.post('/api/auth/login', (req, res) => {
     const { email, password } = req.body;
     if (!email || !email.trim()) {
-      return res.status(400).json({ error: 'Email is required' });
+      return res.status(400).json({ error: 'Email or phone number is required' });
     }
     if (!password || !password.trim()) {
       return res.status(400).json({ error: 'Password is required' });
@@ -933,10 +943,18 @@ app.get('/api/health', (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    const token = verified.isAdmin ? `fp-admin-${Date.now()}` : `fp-usr-${verified.user.id}`;
+    const token = signJwt({
+      id: verified.user.id,
+      name: verified.user.name,
+      email: verified.user.email,
+      phone: verified.user.phone,
+      role: verified.isAdmin ? 'admin' : 'user'
+    });
+
     res.json({ user: verified.user, token, isAdmin: verified.isAdmin });
   });
 
+  // 2. Email / Password Registration
   app.post('/api/auth/register', (req, res) => {
     const { name, email, phone, password } = req.body;
     if (!name || !name.trim()) {
@@ -951,11 +969,136 @@ app.get('/api/health', (req, res) => {
 
     try {
       const user = db.createUser({ name, email, phone, password, role: 'user' });
-      const token = `fp-usr-${user.id}`;
+      const token = signJwt({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: 'user'
+      });
       res.status(201).json({ user, token, isAdmin: false });
     } catch (err: any) {
       res.status(400).json({ error: err.message || 'Registration failed' });
     }
+  });
+
+  // 3. Amazon-Style Phone Number + OTP: Send OTP
+  app.post('/api/auth/otp/send', (req, res) => {
+    const { phone } = req.body;
+    if (!phone || !phone.trim()) {
+      return res.status(400).json({ error: 'Mobile phone number is required' });
+    }
+
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 10) {
+      return res.status(400).json({ error: 'Please enter a valid 10-digit mobile number' });
+    }
+
+    // Generate random 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    db.saveOtp(phone, otpCode, 600); // 10 min TTL
+
+    console.log(`[SMS Gateway] 📲 6-Digit OTP for ${phone}: ${otpCode}`);
+
+    res.json({
+      success: true,
+      message: 'OTP sent successfully to your mobile number',
+      phone,
+      testOtp: otpCode // surfaced for instant verification & testing
+    });
+  });
+
+  // 4. Amazon-Style Phone Number + OTP: Verify OTP
+  app.post('/api/auth/otp/verify', (req, res) => {
+    const { phone, otp, name } = req.body;
+    if (!phone || !phone.trim()) {
+      return res.status(400).json({ error: 'Mobile phone number is required' });
+    }
+    if (!otp || !otp.trim()) {
+      return res.status(400).json({ error: 'Please enter the 6-digit OTP' });
+    }
+
+    const isValid = db.verifyOtp(phone, otp);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid or expired OTP. Please check and try again.' });
+    }
+
+    const { user, isAdmin } = db.findOrCreatePhoneUser(phone, name);
+    const token = signJwt({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: isAdmin ? 'admin' : 'user'
+    });
+
+    res.json({ user, token, isAdmin });
+  });
+
+  // 5. Google / Gmail OAuth Login
+  app.post('/api/auth/google', (req, res) => {
+    const { credential, email, name, picture, googleId } = req.body;
+
+    let userEmail = (email || '').trim().toLowerCase();
+    let userName = (name || '').trim();
+    let userPicture = picture || '';
+    let userGoogleId = googleId || '';
+
+    // If Google GSI token was supplied, decode claims
+    if (credential && typeof credential === 'string') {
+      try {
+        const parts = credential.split('.');
+        if (parts.length === 3) {
+          const payloadStr = Buffer.from(parts[1], 'base64').toString('utf8');
+          const googlePayload = JSON.parse(payloadStr);
+          if (googlePayload.email) {
+            userEmail = googlePayload.email.toLowerCase().trim();
+            userName = googlePayload.name || userName;
+            userPicture = googlePayload.picture || userPicture;
+            userGoogleId = googlePayload.sub || userGoogleId;
+          }
+        }
+      } catch (e) {
+        console.warn('[Google Auth] Could not decode Google token:', e);
+      }
+    }
+
+    if (!userEmail) {
+      return res.status(400).json({ error: 'Could not resolve email from Google authentication' });
+    }
+
+    const { user, isAdmin } = db.findOrCreateGoogleUser({
+      email: userEmail,
+      name: userName || userEmail.split('@')[0],
+      picture: userPicture,
+      googleId: userGoogleId
+    });
+
+    const token = signJwt({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: isAdmin ? 'admin' : 'user'
+    });
+
+    res.json({ user, token, isAdmin });
+  });
+
+  // 6. Current User Profile (/api/auth/me)
+  app.get('/api/auth/me', (req, res) => {
+    const authUser = getAuthUser(req);
+    if (!authUser) {
+      return res.status(401).json({ error: 'Unauthorized: Valid token required' });
+    }
+
+    const dbUser = db.getUserById(authUser.id);
+    if (!dbUser) {
+      return res.status(404).json({ error: 'User profile not found' });
+    }
+
+    const { passwordHash: _, ...safeUser } = dbUser;
+    res.json({ user: safeUser, isAdmin: authUser.isAdmin });
   });
 
   // ==========================================

@@ -6,7 +6,6 @@ import {
   Search,
   Menu,
   X,
-  Printer,
   Sparkles,
   ChevronDown,
   ChevronRight,
@@ -408,16 +407,6 @@ export const Header: React.FC<HeaderProps> = ({
               className={getNavButtonClass('fabrics')}
             >
               <span>Fabric</span>
-            </button>
-
-            {/* 2. Printing (Direct roll digital printing from 1m) */}
-            <button
-              onClick={() => setActiveTab('customizer')}
-              className={`${getNavButtonClass('customizer')} group`}
-              title="Custom Fabric Roll Printing from 1 Meter"
-            >
-              <Printer className="w-3.5 h-3.5 text-[#AC7900] dark:text-[#D4AF37] group-hover:scale-110 transition-transform" />
-              <span>Printing</span>
             </button>
 
             {/* 3. Tshirt */}
@@ -1284,29 +1273,6 @@ export const Header: React.FC<HeaderProps> = ({
                   </button>
                 </div>
               )}
-            </div>
-
-            {/* SECTION 2: PRINTING (CUSTOM FABRIC ROLLS FROM 1M) */}
-            <div className="border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden bg-white/60 dark:bg-white/5">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('customizer');
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full text-left py-3 px-3.5 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 transition"
-              >
-                <div className="flex items-center space-x-2">
-                  <Printer className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  <span className="font-bold text-gray-900 dark:text-white">Printing (Direct to Fabric)</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/15 text-amber-700 dark:text-amber-300">
-                    FROM 1M
-                  </span>
-                  <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-                </div>
-              </button>
             </div>
 
             {/* SECTION 3: TSHIRT & APPAREL (14 STYLES) ACCORDION */}

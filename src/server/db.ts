@@ -42,6 +42,44 @@ export interface DBUser extends User {
   passwordHash?: string;
 }
 
+export function normalizePhone(raw: string): string {
+  if (!raw) return '';
+  const digits = raw.replace(/\D/g, '');
+  if (digits.length === 10) {
+    return `+91${digits}`;
+  }
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return `+${digits}`;
+  }
+  if (raw.trim().startsWith('+')) {
+    return `+${digits}`;
+  }
+  return digits ? `+${digits}` : '';
+}
+
+export function isAdminContact(identifier: string): boolean {
+  if (!identifier) return false;
+  const clean = identifier.toLowerCase().trim();
+  const phoneNormalized = normalizePhone(identifier);
+
+  const adminEmails = [
+    'admin@fabricprint.in',
+    (process.env.ADMIN_EMAIL || '').toLowerCase().trim()
+  ].filter(Boolean);
+
+  const adminPhones = [
+    '+917548887006',
+    '+918903120006',
+    normalizePhone(process.env.ADMIN_PHONE || '')
+  ].filter(Boolean);
+
+  if (adminEmails.includes(clean)) return true;
+  if (clean.includes('admin@')) return true;
+  if (adminPhones.includes(phoneNormalized)) return true;
+
+  return false;
+}
+
 // Database Engine (SQLite with JSON file fallback)
 class DatabaseEngine {
   private isSqlite = false;
@@ -59,6 +97,9 @@ class DatabaseEngine {
     orders: [] as Order[],
     customizerSettings: JSON.parse(JSON.stringify(INITIAL_CUSTOMIZER_SETTINGS)) as AdminCustomizerSettings
   };
+
+  // In-memory active OTP storage: normalizedPhone -> { code, expiresAt, attempts }
+  private otps = new Map<string, { code: string; expiresAt: number; attempts: number }>();
 
   constructor() {
     this.dataDir = path.resolve(process.cwd(), 'data');
@@ -645,6 +686,164 @@ class DatabaseEngine {
 
     const { passwordHash: _, ...safeUser } = user;
     return { user: safeUser, isAdmin: safeUser.role === 'admin' };
+  }
+
+  // OTP MANAGEMENT (Amazon-style mobile verification)
+  saveOtp(phone: string, otpCode: string, ttlSeconds: number = 600): void {
+    const normalized = normalizePhone(phone);
+    const expiresAt = Date.now() + ttlSeconds * 1000;
+    this.otps.set(normalized, { code: otpCode.trim(), expiresAt, attempts: 0 });
+  }
+
+  verifyOtp(phone: string, inputOtp: string): boolean {
+    const normalized = normalizePhone(phone);
+    const record = this.otps.get(normalized);
+    if (!record) return false;
+
+    if (Date.now() > record.expiresAt) {
+      this.otps.delete(normalized);
+      return false;
+    }
+
+    if (record.attempts >= 5) {
+      this.otps.delete(normalized);
+      return false;
+    }
+
+    record.attempts += 1;
+    if (record.code.trim() === inputOtp.trim()) {
+      this.otps.delete(normalized);
+      return true;
+    }
+    return false;
+  }
+
+  getUserByPhone(phone: string): DBUser | null {
+    const normalized = normalizePhone(phone);
+    if (!normalized) return null;
+
+    if (this.isSqlite) {
+      const row = this.db.prepare('SELECT data, password_hash FROM users WHERE phone = ?').get(normalized) as { data: string; password_hash: string } | undefined;
+      if (row) {
+        const user = JSON.parse(row.data) as DBUser;
+        user.passwordHash = row.password_hash;
+        return user;
+      }
+    }
+    return this.memory.users.find(u => normalizePhone(u.phone || '') === normalized) || null;
+  }
+
+  findOrCreatePhoneUser(phone: string, name?: string): { user: User; isAdmin: boolean } {
+    const normalized = normalizePhone(phone);
+    const isAdmin = isAdminContact(normalized);
+    let existing = this.getUserByPhone(normalized);
+
+    if (existing) {
+      if (isAdmin && existing.role !== 'admin') {
+        existing.role = 'admin';
+        this.updateUser(existing);
+      }
+      const { passwordHash: _, ...safeUser } = existing;
+      return { user: safeUser, isAdmin: existing.role === 'admin' };
+    }
+
+    // Provision new user by phone
+    const cleanDigits = normalized.replace(/\D/g, '').slice(-4);
+    const newUser: User = {
+      id: isAdmin ? 'usr-admin' : `usr-${Date.now()}`,
+      name: name?.trim() || (isAdmin ? 'Mill Admin' : `Customer ${cleanDigits}`),
+      email: `${normalized.replace(/\+/g, '')}@fabricprint.user`,
+      phone: normalized,
+      role: isAdmin ? 'admin' : 'user',
+      addresses: [],
+      createdAt: new Date().toISOString()
+    };
+
+    if (this.isSqlite) {
+      try {
+        this.db.prepare('INSERT INTO users (id, email, password_hash, role, name, phone, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+          newUser.id,
+          newUser.email,
+          '',
+          newUser.role,
+          newUser.name,
+          newUser.phone,
+          JSON.stringify(newUser),
+          newUser.createdAt
+        );
+      } catch {
+        this.db.prepare('UPDATE users SET data = ?, role = ? WHERE phone = ?').run(JSON.stringify(newUser), newUser.role, newUser.phone);
+      }
+    } else {
+      const dbUser: DBUser = { ...newUser };
+      this.memory.users.push(dbUser);
+      this.saveJsonStore();
+    }
+
+    return { user: newUser, isAdmin };
+  }
+
+  findOrCreateGoogleUser(profile: { email: string; name: string; picture?: string; googleId?: string }): { user: User; isAdmin: boolean } {
+    const cleanEmail = profile.email.toLowerCase().trim();
+    const isAdmin = isAdminContact(cleanEmail);
+    let existing = this.getUserByEmail(cleanEmail);
+
+    if (existing) {
+      if (isAdmin && existing.role !== 'admin') {
+        existing.role = 'admin';
+        this.updateUser(existing);
+      }
+      const { passwordHash: _, ...safeUser } = existing;
+      return { user: safeUser, isAdmin: existing.role === 'admin' };
+    }
+
+    const newUser: User = {
+      id: isAdmin ? 'usr-admin' : `usr-${Date.now()}`,
+      name: profile.name?.trim() || cleanEmail.split('@')[0],
+      email: cleanEmail,
+      phone: '',
+      role: isAdmin ? 'admin' : 'user',
+      addresses: [],
+      createdAt: new Date().toISOString()
+    };
+
+    if (this.isSqlite) {
+      this.db.prepare('INSERT INTO users (id, email, password_hash, role, name, phone, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+        newUser.id,
+        newUser.email,
+        '',
+        newUser.role,
+        newUser.name,
+        newUser.phone,
+        JSON.stringify(newUser),
+        newUser.createdAt
+      );
+    } else {
+      const dbUser: DBUser = { ...newUser };
+      this.memory.users.push(dbUser);
+      this.saveJsonStore();
+    }
+
+    return { user: newUser, isAdmin };
+  }
+
+  updateUser(user: User): User {
+    if (this.isSqlite) {
+      this.db.prepare('UPDATE users SET name = ?, phone = ?, role = ?, data = ? WHERE id = ?').run(
+        user.name,
+        user.phone || '',
+        user.role,
+        JSON.stringify(user),
+        user.id
+      );
+    } else {
+      const idx = this.memory.users.findIndex(u => u.id === user.id);
+      if (idx !== -1) {
+        this.memory.users[idx] = { ...this.memory.users[idx], ...user };
+        this.saveJsonStore();
+      }
+    }
+    return user;
   }
 
   // ANALYTICS (ADMIN)

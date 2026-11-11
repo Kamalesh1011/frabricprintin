@@ -5,61 +5,102 @@ interface AuthContextType {
   currentUser: User | null;
   isAdmin: boolean;
   token: string | null;
+  isLoading: boolean;
   login: (email: string, password: string) => Promise<{ user: User; isAdmin: boolean }>;
   register: (name: string, phone: string, email: string, password: string) => Promise<User>;
+  sendPhoneOtp: (phone: string) => Promise<{ success: boolean; message: string; testOtp?: string }>;
+  verifyPhoneOtp: (phone: string, otp: string, name?: string) => Promise<{ user: User; isAdmin: boolean }>;
+  loginWithGoogle: (payload: { credential?: string; email?: string; name?: string; picture?: string }) => Promise<{ user: User; isAdmin: boolean }>;
   logout: () => void;
   saveAddress: (address: Omit<Address, 'id'>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function parseJwt(token: string): any {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const base64Url = parts[1];
+    let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4) {
+      base64 += '=';
+    }
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     try {
       const saved = localStorage.getItem('fabricprint_user');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Explicitly clear any legacy mock demo customer state ("Ananya Sharma" / "usr-1")
-        if (
-          parsed?.name === 'Ananya Sharma' ||
-          parsed?.email?.toLowerCase().includes('ananya') ||
-          parsed?.id === 'usr-1'
-        ) {
-          localStorage.removeItem('texprint_user');
-          localStorage.removeItem('texprint_token');
+      const savedToken = localStorage.getItem('fabricprint_token');
+      if (saved && savedToken) {
+        const decoded = parseJwt(savedToken);
+        if (decoded && decoded.exp && decoded.exp * 1000 < Date.now()) {
+          // Token expired
           localStorage.removeItem('fabricprint_user');
           localStorage.removeItem('fabricprint_token');
           return null;
         }
-        return parsed;
+        return JSON.parse(saved);
       }
     } catch {
-      // ignore parse error
+      // ignore
     }
-    // Clean any legacy texprint keys
-    localStorage.removeItem('texprint_user');
-    localStorage.removeItem('texprint_token');
-    return null; // Visitors are guests by default!
+    return null;
   });
 
   const [token, setToken] = useState<string | null>(() => {
-    const savedToken = localStorage.getItem('fabricprint_token');
-    if (!savedToken) return null;
-    return savedToken;
+    return localStorage.getItem('fabricprint_token');
   });
 
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Sync token and user in storage
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && token) {
       localStorage.setItem('fabricprint_user', JSON.stringify(currentUser));
-      localStorage.removeItem('texprint_user');
+      localStorage.setItem('fabricprint_token', token);
     } else {
       localStorage.removeItem('fabricprint_user');
-      localStorage.removeItem('texprint_user');
       localStorage.removeItem('fabricprint_token');
-      localStorage.removeItem('texprint_token');
     }
-  }, [currentUser]);
+  }, [currentUser, token]);
 
+  // Optional: Verify current session with server on boot
+  useEffect(() => {
+    if (token) {
+      fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.user) {
+            setCurrentUser(data.user);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [token]);
+
+  const handleAuthSuccess = (userToSet: User, userToken: string, isAdminUser: boolean) => {
+    setCurrentUser(userToSet);
+    setToken(userToken);
+    localStorage.setItem('fabricprint_token', userToken);
+    localStorage.setItem('fabricprint_user', JSON.stringify(userToSet));
+    return { user: userToSet, isAdmin: isAdminUser };
+  };
+
+  // 1. Traditional Email / Password Login
   const login = async (email: string, password: string): Promise<{ user: User; isAdmin: boolean }> => {
     const cleanEmail = (email || '').trim().toLowerCase();
     if (!cleanEmail) {
@@ -75,23 +116,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       body: JSON.stringify({ email: cleanEmail, password })
     });
 
-    const data: any = await res.json().catch(() => ({}));
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(data.error || 'Invalid credentials. Please verify your email and password.');
     }
 
-    const userToSet: User = data.user;
-    const userToken: string = data.token;
-    const isAdminUser: boolean = !!data.isAdmin;
-
-    setCurrentUser(userToSet);
-    setToken(userToken);
-    localStorage.setItem('fabricprint_token', userToken);
-    localStorage.setItem('fabricprint_user', JSON.stringify(userToSet));
-
-    return { user: userToSet, isAdmin: isAdminUser };
+    return handleAuthSuccess(data.user, data.token, !!data.isAdmin);
   };
 
+  // 2. Email / Password Register
   const register = async (name: string, phone: string, email: string, password: string): Promise<User> => {
     if (!name.trim()) {
       throw new Error('Please enter your full name');
@@ -115,20 +148,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     });
 
-    const data: any = await res.json().catch(() => ({}));
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       throw new Error(data.error || 'Registration failed. Please try again.');
     }
 
-    const newUser: User = data.user;
-    const userToken: string = data.token;
+    handleAuthSuccess(data.user, data.token, !!data.isAdmin);
+    return data.user;
+  };
 
-    setCurrentUser(newUser);
-    setToken(userToken);
-    localStorage.setItem('fabricprint_token', userToken);
-    localStorage.setItem('fabricprint_user', JSON.stringify(newUser));
+  // 3. Amazon-Style Phone + OTP: Send OTP
+  const sendPhoneOtp = async (phone: string): Promise<{ success: boolean; message: string; testOtp?: string }> => {
+    const clean = phone.trim();
+    if (!clean) {
+      throw new Error('Please enter your 10-digit mobile number');
+    }
 
-    return newUser;
+    const res = await fetch('/api/auth/otp/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: clean })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to send OTP. Please check the mobile number.');
+    }
+
+    return data;
+  };
+
+  // 4. Amazon-Style Phone + OTP: Verify OTP
+  const verifyPhoneOtp = async (phone: string, otp: string, name?: string): Promise<{ user: User; isAdmin: boolean }> => {
+    const cleanPhone = phone.trim();
+    const cleanOtp = otp.trim();
+
+    if (!cleanPhone) throw new Error('Mobile number is required');
+    if (!cleanOtp) throw new Error('Please enter the 6-digit OTP code');
+
+    const res = await fetch('/api/auth/otp/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: cleanPhone, otp: cleanOtp, name })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || 'Incorrect or expired OTP. Please try again.');
+    }
+
+    return handleAuthSuccess(data.user, data.token, !!data.isAdmin);
+  };
+
+  // 5. Google / Gmail OAuth Login
+  const loginWithGoogle = async (payload: { credential?: string; email?: string; name?: string; picture?: string }): Promise<{ user: User; isAdmin: boolean }> => {
+    const res = await fetch('/api/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || 'Google authentication failed. Please try again.');
+    }
+
+    return handleAuthSuccess(data.user, data.token, !!data.isAdmin);
   };
 
   const logout = () => {
@@ -136,8 +221,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null);
     localStorage.removeItem('fabricprint_user');
     localStorage.removeItem('fabricprint_token');
-    localStorage.removeItem('texprint_user');
-    localStorage.removeItem('texprint_token');
   };
 
   const saveAddress = (addressData: Omit<Address, 'id'>) => {
@@ -148,7 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     const updatedUser: User = {
       ...currentUser,
-      addresses: [...currentUser.addresses, newAddress]
+      addresses: [...(currentUser.addresses || []), newAddress]
     };
     setCurrentUser(updatedUser);
   };
@@ -159,8 +242,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         currentUser,
         isAdmin: currentUser?.role === 'admin',
         token,
+        isLoading,
         login,
         register,
+        sendPhoneOtp,
+        verifyPhoneOtp,
+        loginWithGoogle,
         logout,
         saveAddress
       }}
