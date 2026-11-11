@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Float } from '@react-three/drei';
 import * as THREE from 'three';
@@ -13,6 +13,13 @@ interface ThreeDGarmentViewerProps {
   side: 'front' | 'back';
   autoRotate?: boolean;
   modelType?: string;
+  offsetX?: number;
+  offsetY?: number;
+  customText?: string;
+  customTextColor?: string;
+  customTextFont?: string;
+  isEmbroidery?: boolean;
+  embroideryThreadColor?: string;
 }
 
 const PLACEMENTS: Record<string, { x: number; y: number; w: number; h: number }> = {
@@ -49,7 +56,30 @@ const PhotorealisticGarmentMesh: React.FC<{
   isFlippedH: boolean;
   side: 'front' | 'back';
   modelType?: string;
-}> = ({ colorHex, designUrl, rotation, scalePercent, artworkPlacement, isFlippedH, side, modelType }) => {
+  offsetX?: number;
+  offsetY?: number;
+  customText?: string;
+  customTextColor?: string;
+  customTextFont?: string;
+  isEmbroidery?: boolean;
+  embroideryThreadColor?: string;
+}> = ({
+  colorHex,
+  designUrl,
+  rotation,
+  scalePercent,
+  artworkPlacement,
+  isFlippedH,
+  side,
+  modelType,
+  offsetX = 0,
+  offsetY = 0,
+  customText,
+  customTextColor = '#FFFFFF',
+  customTextFont = 'sans-serif',
+  isEmbroidery,
+  embroideryThreadColor
+}) => {
   const groupRef = useRef<THREE.Group>(null);
   const frontMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const backMatRef = useRef<THREE.MeshStandardMaterial>(null);
@@ -63,10 +93,10 @@ const PhotorealisticGarmentMesh: React.FC<{
 
   const { front: frontSrc, back: backSrc } = useMemo(() => getGarmentImagePaths(modelType), [modelType]);
 
-  // Load Front & Back Textures
+  // Load Front & Back Base Garment Textures
   useEffect(() => {
     const loader = new THREE.TextureLoader();
-    
+
     loader.load(frontSrc, (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       if (frontMatRef.current) {
@@ -97,63 +127,106 @@ const PhotorealisticGarmentMesh: React.FC<{
     }
   }, [colorHex, isPureWhite]);
 
-  // Rotate group with side / rotation
+  // Rotate group with side / view angle
   useEffect(() => {
     if (groupRef.current) {
-      groupRef.current.rotation.y = THREE.MathUtils.degToRad(side === 'back' ? rotation + 180 : rotation);
+      groupRef.current.rotation.y = THREE.MathUtils.degToRad(side === 'back' ? 180 : 0);
     }
-  }, [rotation, side]);
+  }, [side]);
 
-  // Load Logo Graphic
+  // Real-Time Dynamic Composite Texture (Graphic Image + Custom Text Overlay)
   useEffect(() => {
     const mat = decalMatRef.current;
     if (!mat) return;
-    if (mat.map) {
-      mat.map.dispose();
-      mat.map = null;
-    }
-    if (!designUrl) {
+
+    if (!designUrl && !customText) {
       mat.opacity = 0;
       mat.needsUpdate = true;
       return;
     }
-    const loader = new THREE.TextureLoader();
-    loader.load(
-      designUrl,
-      (tex) => {
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.wrapS = THREE.ClampToEdgeWrapping;
-        tex.wrapT = THREE.ClampToEdgeWrapping;
-        if (mat.map) mat.map.dispose();
-        mat.map = tex;
-        mat.opacity = 1;
-        mat.needsUpdate = true;
-      },
-      undefined,
-      () => {
-        console.warn('Failed to load design texture');
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 1024;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, 1024, 1024);
+
+    const renderText = () => {
+      if (customText && customText.trim()) {
+        ctx.save();
+        ctx.font = `bold 64px ${customTextFont || 'sans-serif'}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = embroideryThreadColor || customTextColor || '#FFFFFF';
+        ctx.shadowColor = 'rgba(0,0,0,0.6)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetY = 4;
+        const textY = designUrl ? 880 : 512;
+        ctx.fillText(customText, 512, textY);
+        ctx.restore();
       }
-    );
+
+      const canvasTex = new THREE.CanvasTexture(canvas);
+      canvasTex.colorSpace = THREE.SRGBColorSpace;
+      canvasTex.needsUpdate = true;
+
+      if (mat.map) mat.map.dispose();
+      mat.map = canvasTex;
+      mat.opacity = 1;
+      mat.needsUpdate = true;
+    };
+
+    if (designUrl) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        // Draw artwork centered on canvas
+        const hRatio = customText ? 0.75 : 0.9;
+        const maxW = 1024 * 0.9;
+        const maxH = 1024 * hRatio;
+        const scale = Math.min(maxW / img.width, maxH / img.height);
+        const drawW = img.width * scale;
+        const drawH = img.height * scale;
+        const drawX = (1024 - drawW) / 2;
+        const drawY = customText ? (800 - drawH) / 2 + 30 : (1024 - drawH) / 2;
+
+        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        renderText();
+      };
+      img.onerror = () => {
+        renderText();
+      };
+      img.src = designUrl;
+    } else {
+      renderText();
+    }
+
     return () => {
       if (mat.map) {
         mat.map.dispose();
         mat.map = null;
       }
     };
-  }, [designUrl]);
+  }, [designUrl, customText, customTextColor, customTextFont, embroideryThreadColor]);
 
   const place = PLACEMENTS[artworkPlacement] || PLACEMENTS.chest_center;
 
+  // Frame loop: updates position, rotation, and scale in 3D coordinate space
   useFrame(() => {
     if (!decalMeshRef.current) return;
     const s = scalePercent / 100;
     const isBack = side === 'back' || artworkPlacement.includes('back');
-    decalMeshRef.current.position.set(
-      isFlippedH ? -place.x : place.x,
-      place.y,
-      isBack ? -0.04 : 0.04
-    );
+
+    // Convert 2D pixel offset into 3D unit coordinates
+    const posX = (isFlippedH ? -place.x : place.x) + (offsetX / 280);
+    const posY = place.y - (offsetY / 280);
+    const posZ = isBack ? -0.04 : 0.04;
+
+    decalMeshRef.current.position.set(posX, posY, posZ);
     decalMeshRef.current.rotation.y = isBack ? Math.PI : 0;
+    decalMeshRef.current.rotation.z = -THREE.MathUtils.degToRad(rotation);
     decalMeshRef.current.scale.set(isFlippedH ? -place.w * s : place.w * s, place.h * s, 1);
   });
 
@@ -185,14 +258,14 @@ const PhotorealisticGarmentMesh: React.FC<{
         />
       </mesh>
 
-      {/* Uploaded Artwork Graphic Decal */}
+      {/* Uploaded Artwork Graphic + Text Dynamic Decal */}
       <mesh ref={decalMeshRef} position={[place.x, place.y, 0.04]}>
         <planeGeometry args={[place.w, place.h]} />
         <meshStandardMaterial
           ref={decalMatRef}
           transparent
-          opacity={designUrl ? 1 : 0}
-          roughness={0.5}
+          opacity={designUrl || customText ? 1 : 0}
+          roughness={0.4}
           depthWrite={false}
           polygonOffset
           polygonOffsetFactor={-2}
@@ -212,21 +285,28 @@ export const ThreeDGarmentViewer: React.FC<ThreeDGarmentViewerProps> = ({
   side,
   autoRotate = false,
   modelType,
+  offsetX = 0,
+  offsetY = 0,
+  customText,
+  customTextColor,
+  customTextFont,
+  isEmbroidery,
+  embroideryThreadColor
 }) => {
   return (
     <div className="w-full h-full relative select-none">
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: [0, 0, 2.6], fov: 42 }}
-        style={{ width: '100%', height: '100%', touchAction: 'none' }}
-        gl={{ antialias: true, alpha: true }}
+        camera={{ position: [0, 0, 2.8], fov: 45 }}
+        gl={{ preserveDrawingBuffer: true, antialias: true }}
       >
         <ambientLight intensity={1.1} />
-        <directionalLight position={[2, 3, 3]} intensity={1.4} castShadow />
-        <directionalLight position={[-2, 2, -2]} intensity={0.8} />
+        <directionalLight position={[2, 3, 4]} intensity={1.4} castShadow />
+        <directionalLight position={[-2, -2, -2]} intensity={0.5} />
+        <directionalLight position={[0, 0, 3]} intensity={0.7} />
 
-        <Float speed={1.2} rotationIntensity={0.08} floatIntensity={0.15}>
+        <Float speed={autoRotate ? 1.5 : 0} rotationIntensity={autoRotate ? 0.2 : 0} floatIntensity={autoRotate ? 0.3 : 0}>
           <PhotorealisticGarmentMesh
             colorHex={color.hex}
             designUrl={designUrl}
@@ -236,26 +316,25 @@ export const ThreeDGarmentViewer: React.FC<ThreeDGarmentViewerProps> = ({
             isFlippedH={isFlippedH}
             side={side}
             modelType={modelType}
+            offsetX={offsetX}
+            offsetY={offsetY}
+            customText={customText}
+            customTextColor={customTextColor}
+            customTextFont={customTextFont}
+            isEmbroidery={isEmbroidery}
+            embroideryThreadColor={embroideryThreadColor}
           />
         </Float>
 
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.05, 0]} receiveShadow>
-          <planeGeometry args={[5, 5]} />
-          <shadowMaterial opacity={0.15} />
-        </mesh>
-
         <OrbitControls
           enablePan={false}
-          enableZoom
-          enableDamping
-          dampingFactor={0.08}
           minDistance={1.6}
-          maxDistance={4.5}
-          maxPolarAngle={Math.PI / 1.7}
-          minPolarAngle={Math.PI / 4}
+          maxDistance={4.2}
           autoRotate={autoRotate}
-          autoRotateSpeed={1.5}
-          target={[0, 0, 0]}
+          autoRotateSpeed={1.8}
+          dampingFactor={0.06}
+          maxPolarAngle={Math.PI / 1.8}
+          minPolarAngle={Math.PI / 2.8}
         />
       </Canvas>
     </div>

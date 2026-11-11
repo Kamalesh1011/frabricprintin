@@ -361,6 +361,12 @@ export const ApparelStudioShell: React.FC<ApparelStudioShellProps> = (props) => 
               side={activeSide}
               autoRotate={autoRotate}
               modelType={garment.modelType}
+              offsetX={offsetX}
+              offsetY={offsetY}
+              customText={customText}
+              customTextColor={customTextColor}
+              isEmbroidery={method === 'embroidery'}
+              embroideryThreadColor={threadCol}
             />
           ) : (
             <GarmentMockup
