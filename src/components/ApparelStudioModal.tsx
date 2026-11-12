@@ -33,7 +33,10 @@ import {
   Maximize,
   Grid,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  Type,
+  Trophy,
+  FileDown
 } from 'lucide-react';
 import {
   ApparelProduct,
@@ -52,6 +55,13 @@ import {
 } from '../data/apparelData';
 import { useCart } from '../context/CartContext';
 import { GarmentMockup, GarmentModelType } from './GarmentMockup';
+import {
+  ThreeDGarmentViewer,
+  FabricPBRType,
+  LightingPreset,
+  StudioViewSide
+} from './ThreeDGarmentViewer';
+import { QuotationModal, QuotationBreakdownItem } from './QuotationModal';
 import { ImageCropperModal } from './ImageCropperModal';
 import { StudioAutoFrameControls, AutoFramePreset } from './StudioAutoFrameControls';
 import { EMBROIDERY_THREADS } from './ApparelStudioShell';
@@ -177,8 +187,26 @@ export const ApparelStudioModal: React.FC<ApparelStudioModalProps> = ({
     { id: '2', name: 'VIRAT', number: '18', size: 'M' }
   ]);
 
-  // Tab mode in studio: 'design' | 'sizing' | 'jersey'
-  const [activeStudioTab, setActiveStudioTab] = useState<'design' | 'sizing' | 'jersey'>('design');
+  // 3D Configurator Advanced State (Module 2)
+  const [isLive3D, setIsLive3D] = useState<boolean>(true);
+  const [autoRotate, setAutoRotate] = useState<boolean>(false);
+  const [viewSide, setViewSide] = useState<StudioViewSide>('front');
+  const [fabricPbr, setFabricPbr] = useState<FabricPBRType>('cotton_jersey');
+  const [lightingPreset, setLightingPreset] = useState<LightingPreset>('studio');
+
+  // Typography Engine Advanced State (Module 1)
+  const [customTypographyText, setCustomTypographyText] = useState<string>('');
+  const [customTextColor, setCustomTextColor] = useState<string>('#FFFFFF');
+  const [customFont, setCustomFont] = useState<string>('Impact');
+  const [textArc, setTextArc] = useState<number>(0);
+  const [strokeWidth, setStrokeWidth] = useState<number>(0);
+  const [strokeColor, setStrokeColor] = useState<string>('#000000');
+
+  // Quotation Modal State (Module 4)
+  const [isQuotationModalOpen, setIsQuotationModalOpen] = useState<boolean>(false);
+
+  // Tab mode in studio: 'design' | 'typography' | 'pbr' | 'sizing' | 'jersey'
+  const [activeStudioTab, setActiveStudioTab] = useState<'design' | 'typography' | 'pbr' | 'sizing' | 'jersey'>('design');
 
   // Initialize state when product changes
   useEffect(() => {
@@ -280,6 +308,119 @@ export const ApparelStudioModal: React.FC<ApparelStudioModalProps> = ({
     setIsGraphicSelected(true);
   };
 
+  // Generative AI Artwork Generator (Module 5)
+  const handleGenerateAiArtwork = async (promptToUse?: string) => {
+    const textPrompt = (promptToUse || aiPrompt).trim();
+    if (!textPrompt) return;
+    setIsAiGenerating(true);
+    try {
+      const res = await fetch('/api/generate-design', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: textPrompt, style: 'streetwear' })
+      });
+      const data: any = await res.json();
+      if (data.imageUrl) {
+        setUploadedImage(data.imageUrl);
+        setOriginalSourceImage(data.imageUrl);
+        setImageFileName(`ai-design-${Date.now()}.png`);
+        setIsGraphicSelected(true);
+      }
+    } catch (err) {
+      console.error('Failed to generate AI design:', err);
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
+
+  // High-DPI 300 DPI Export (Module 1)
+  const exportHighDpiPng = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 2400;
+    canvas.height = 3000;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, 2400, 3000);
+
+    const renderTextToExport = () => {
+      if (customTypographyText && customTypographyText.trim()) {
+        ctx.save();
+        ctx.font = `bold 180px ${customFont || 'Impact, sans-serif'}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = printTechnique.includes('Embroidery') ? embroideryThreadColor : customTextColor;
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 15;
+
+        const textY = uploadedImage ? 2600 : 1500;
+
+        if (textArc && Math.abs(textArc) > 5) {
+          const radius = Math.max(500, 1500 - Math.abs(textArc) * 10);
+          const arcSign = textArc > 0 ? 1 : -1;
+          const arcCenterY = textY + (arcSign > 0 ? radius : -radius);
+          const chars = customTypographyText.split('');
+          const totalAngle = (chars.length * 85) / radius;
+          let currentAngle = -totalAngle / 2;
+
+          chars.forEach((char) => {
+            ctx.save();
+            ctx.translate(1200 + Math.sin(currentAngle) * radius, arcCenterY - Math.cos(currentAngle) * radius * arcSign);
+            ctx.rotate(currentAngle * arcSign);
+            if (strokeWidth && strokeWidth > 0) {
+              ctx.strokeStyle = strokeColor || '#000000';
+              ctx.lineWidth = strokeWidth * 6;
+              ctx.strokeText(char, 0, 0);
+            }
+            ctx.fillText(char, 0, 0);
+            ctx.restore();
+            currentAngle += totalAngle / chars.length;
+          });
+        } else {
+          if (strokeWidth && strokeWidth > 0) {
+            ctx.strokeStyle = strokeColor || '#000000';
+            ctx.lineWidth = strokeWidth * 6;
+            ctx.strokeText(customTypographyText, 1200, textY);
+          }
+          ctx.fillText(customTypographyText, 1200, textY);
+        }
+        ctx.restore();
+      }
+
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const link = document.createElement('a');
+        link.download = `${product.name.toLowerCase().replace(/\s+/g, '-')}-print-ready-300dpi.png`;
+        link.href = URL.createObjectURL(blob);
+        link.click();
+      }, 'image/png');
+    };
+
+    if (uploadedImage) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const hRatio = customTypographyText ? 0.75 : 0.9;
+        const maxW = 2400 * 0.9;
+        const maxH = 3000 * hRatio;
+        const scale = Math.min(maxW / img.width, maxH / img.height);
+        const drawW = img.width * scale;
+        const drawH = img.height * scale;
+        const drawX = (2400 - drawW) / 2;
+        const drawY = customTypographyText ? (2200 - drawH) / 2 + 100 : (3000 - drawH) / 2;
+
+        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        renderTextToExport();
+      };
+      img.onerror = () => {
+        renderTextToExport();
+      };
+      img.src = uploadedImage;
+    } else {
+      renderTextToExport();
+    }
+  };
+
   // Reset Graphic Position & Transforms
   const handleResetAlignment = () => {
     setOffsetX(0);
@@ -366,33 +507,41 @@ export const ApparelStudioModal: React.FC<ApparelStudioModalProps> = ({
     setSizeCounts(updated);
   };
 
-  // Pricing & Tiered Wholesale Discounts
+  // Pricing & Tiered Wholesale Discounts (Module 4 Formula)
   const basePricePerUnit = selectedFabricVariant ? selectedFabricVariant.price : product.basePrice;
   const printPlacementInfo = PRINT_PLACEMENT_CONFIG[printPlacement];
   const printSurcharge = totalQuantity > 30
     ? (printPlacementInfo?.surchargeTier2 ?? printPlacementInfo?.surcharge ?? 0)
     : (printPlacementInfo?.surcharge ?? 0);
-  const unitRawPrice = basePricePerUnit + printSurcharge;
+  const embroiderySurcharge = printTechnique.includes('Embroidery') ? 60 : 0;
+  const unitRawPrice = basePricePerUnit + printSurcharge + embroiderySurcharge;
 
   let discountPercent = 0;
-  let discountTierLabel = 'Standard Single Unit';
-  if (totalQuantity >= 100) {
-    discountPercent = 0.25;
-    discountTierLabel = '25% Off - Industrial Mill Tier';
+  let discountTierLabel = 'Retail Sampling (1–9)';
+  if (totalQuantity >= 200) {
+    discountPercent = 0.35;
+    discountTierLabel = 'Wholesale Partner Tier (35% OFF)';
   } else if (totalQuantity >= 50) {
-    discountPercent = 0.15;
-    discountTierLabel = '15% Off - Wholesale Bulk Tier';
-  } else if (totalQuantity >= 25) {
-    discountPercent = 0.10;
-    discountTierLabel = '10% Off - Studio Batch Tier';
+    discountPercent = 0.25;
+    discountTierLabel = 'Bulk Mill Tier (25% OFF)';
   } else if (totalQuantity >= 10) {
-    discountPercent = 0.05;
-    discountTierLabel = '5% Off - Small Batch Tier';
+    discountPercent = 0.15;
+    discountTierLabel = 'Team & Studio Tier (15% OFF)';
   }
 
-  const effectiveUnitDiscount = unitRawPrice * discountPercent;
-  const finalUnitPrice = Math.max(1, Math.round(unitRawPrice - effectiveUnitDiscount));
+  const effectiveUnitDiscount = Math.round(unitRawPrice * discountPercent);
+  const finalUnitPrice = Math.max(1, unitRawPrice - effectiveUnitDiscount);
   const subtotalPrice = finalUnitPrice * totalQuantity;
+  const totalSavings = effectiveUnitDiscount * totalQuantity;
+
+  // Quotation breakdown list
+  const quotationBreakdown: QuotationBreakdownItem[] = Object.entries(sizeCounts)
+    .filter(([_, q]) => q > 0)
+    .map(([sz, q]) => ({
+      size: sz,
+      quantity: q,
+      unitPrice: unitRawPrice
+    }));
 
   // Add to Cart handler
   const handleAddToCart = () => {
@@ -557,43 +706,68 @@ export const ApparelStudioModal: React.FC<ApparelStudioModalProps> = ({
           >
             
             {/* View Switcher & Toolbar */}
-            <div className="w-full flex items-center justify-between mb-3 z-10">
-              <div className="flex items-center space-x-1.5 p-1 bg-white dark:bg-[#1E201E] rounded-full border border-black/10 dark:border-white/10 shadow-sm text-xs font-bold">
+            <div className="w-full flex flex-wrap items-center justify-between gap-2 mb-3 z-10">
+              <div className="flex items-center bg-white dark:bg-[#1E201E] p-1 rounded-full border border-black/10 dark:border-white/10 shadow-sm text-xs font-bold">
                 <button
-                  onClick={() => setActiveSide('front')}
+                  onClick={() => setIsLive3D(true)}
                   className={`px-3 py-1 rounded-full transition ${
-                    activeSide === 'front'
-                      ? 'bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F]'
+                    isLive3D
+                      ? 'bg-amber-500 text-black font-black shadow-xs'
                       : 'text-slate-600 dark:text-slate-300'
                   }`}
                 >
-                  Front View
+                  3D View
                 </button>
                 <button
-                  onClick={() => setActiveSide('back')}
+                  onClick={() => setIsLive3D(false)}
                   className={`px-3 py-1 rounded-full transition ${
-                    activeSide === 'back'
-                      ? 'bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F]'
+                    !isLive3D
+                      ? 'bg-amber-500 text-black font-black shadow-xs'
                       : 'text-slate-600 dark:text-slate-300'
                   }`}
                 >
-                  Back View
+                  2D Flat
                 </button>
               </div>
 
-              {/* Safe Print Zone Toggle */}
-              <div className="flex items-center space-x-2">
+              {/* 4 Angle Switcher */}
+              <div className="flex items-center gap-1 text-[10px] font-bold">
+                {(['front', 'back', 'left_sleeve', 'right_sleeve'] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      setViewSide(s);
+                      if (s === 'front' || s === 'back') setActiveSide(s);
+                    }}
+                    className={`px-2.5 py-1 rounded-full border transition uppercase ${
+                      viewSide === s
+                        ? 'bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] border-transparent font-black shadow-xs'
+                        : 'border-black/10 dark:border-white/10 text-slate-500 bg-white/50 dark:bg-black/50'
+                    }`}
+                  >
+                    {s === 'left_sleeve' ? 'L-Sleeve' : s === 'right_sleeve' ? 'R-Sleeve' : s}
+                  </button>
+                ))}
+              </div>
+
+              {/* 360 Spin, Safe Guide & 300 DPI Export */}
+              <div className="flex items-center gap-1.5 ml-auto">
                 <button
-                  onClick={() => setShowPrintSafeZone(!showPrintSafeZone)}
-                  className={`p-1.5 rounded-xl border text-xs font-semibold flex items-center space-x-1.5 transition ${
-                    showPrintSafeZone
-                      ? 'bg-[#AC7900]/15 text-[#AC7900] border-[#AC7900]/40'
-                      : 'bg-white dark:bg-[#1E201E] text-slate-500 border-black/10 dark:border-white/10'
+                  onClick={() => setAutoRotate(!autoRotate)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition border border-black/10 dark:border-white/10 ${
+                    autoRotate ? 'bg-amber-500 text-black' : 'bg-white dark:bg-[#1E201E] text-slate-600 dark:text-slate-300'
                   }`}
-                  title="Toggle safe printable area guide"
                 >
-                  <Grid className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Guide</span>
+                  <span>360°</span>
+                </button>
+
+                <button
+                  onClick={exportHighDpiPng}
+                  disabled={!uploadedImage && !customTypographyText}
+                  className="p-1.5 rounded-full bg-white dark:bg-[#1E201E] border border-black/10 dark:border-white/10 text-amber-600 hover:scale-105 transition disabled:opacity-30"
+                  title="Download 300 DPI Print File"
+                >
+                  <Download className="w-4 h-4" />
                 </button>
 
                 <div className="flex items-center space-x-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
@@ -606,16 +780,45 @@ export const ApparelStudioModal: React.FC<ApparelStudioModalProps> = ({
             {/* MOCKUP CONTAINER WITH REALISTIC SHIRT & DYNAMIC INTERACTIVE GRAPHIC */}
             <div className="relative w-full max-w-sm aspect-[4/5] my-auto flex items-center justify-center select-none bg-gradient-to-b from-[#F7F7F8] via-[#ECECEF] to-[#E2E2E8] dark:from-[#222422] dark:via-[#1A1C1A] dark:to-[#121312] rounded-3xl p-4 shadow-xl border border-black/5 dark:border-white/5 overflow-hidden">
               
-              {/* Clean Vector Studio Mockup (with custom overlay handled in this container) */}
-              <div className="w-full h-full flex items-center justify-center pointer-events-none">
-                <GarmentMockup
-                  type={getGarmentModelType(product.id)}
-                  colorHex={activeColor.hex}
-                  side={activeSide}
-                  artworkUrl={null}
-                  hideArtworkOverlay={true}
-                />
-              </div>
+              {isLive3D ? (
+                /* 🌟 Real-Time 3D WebGL Configurator (Module 2) */
+                <div className="w-full h-full relative">
+                  <ThreeDGarmentViewer
+                    designUrl={uploadedImage}
+                    color={{ hex: activeColor.hex, name: activeColor.name }}
+                    rotation={rotation}
+                    scalePercent={scalePercent}
+                    artworkPlacement={printPlacement}
+                    isFlippedH={false}
+                    side={viewSide}
+                    autoRotate={autoRotate}
+                    modelType={getGarmentModelType(product.id)}
+                    offsetX={offsetX}
+                    offsetY={offsetY}
+                    customText={customTypographyText}
+                    customTextColor={printTechnique.includes('Embroidery') ? embroideryThreadColor : customTextColor}
+                    customTextFont={customFont}
+                    textArc={textArc}
+                    strokeWidth={strokeWidth}
+                    strokeColor={strokeColor}
+                    isEmbroidery={printTechnique.includes('Embroidery')}
+                    embroideryThreadColor={embroideryThreadColor}
+                    fabricPbr={fabricPbr}
+                    lightingPreset={lightingPreset}
+                  />
+                </div>
+              ) : (
+                /* 🎨 Clean Vector Studio Mockup (with custom overlay handled in this container) */
+                <div className="w-full h-full flex items-center justify-center pointer-events-none">
+                  <GarmentMockup
+                    type={getGarmentModelType(product.id)}
+                    colorHex={activeColor.hex}
+                    side={activeSide}
+                    artworkUrl={null}
+                    hideArtworkOverlay={true}
+                  />
+                </div>
+              )}
 
               {/* Safe Printable Zone Guide Dashed Rectangle */}
               {showPrintSafeZone && printPlacement !== 'none' && (
@@ -860,10 +1063,39 @@ export const ApparelStudioModal: React.FC<ApparelStudioModalProps> = ({
 
           </div>
 
-          {/* RIGHT 6 COLS: TABBED STUDIO CONTROLS (DESIGN / SIZING / JERSEY) */}
+          {/* RIGHT 6 COLS: TABBED STUDIO CONTROLS (DESIGN / TYPOGRAPHY / PBR / SIZING / JERSEY) */}
           <div className="lg:col-span-6 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto">
             
             <div>
+              {/* TOP STUDIO MODULE TABS SWITCHER (MODULES 1-5) */}
+              <div className="flex items-center gap-1.5 p-1 bg-black/5 dark:bg-white/5 rounded-2xl mb-6 overflow-x-auto">
+                {[
+                  { id: 'design' as const, label: 'Artwork & AI', icon: <Sparkles className="w-3.5 h-3.5" /> },
+                  { id: 'typography' as const, label: 'Typography', icon: <Type className="w-3.5 h-3.5" /> },
+                  { id: 'pbr' as const, label: '3D Materials', icon: <Layers className="w-3.5 h-3.5" /> },
+                  { id: 'sizing' as const, label: 'Bulk Matrix', icon: <Sliders className="w-3.5 h-3.5" />, badge: 'Save 35%' },
+                  { id: 'jersey' as const, label: 'Sports Jersey', icon: <Trophy className="w-3.5 h-3.5" /> }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveStudioTab(tab.id)}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
+                      activeStudioTab === tab.id
+                        ? 'bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                    {tab.badge && (
+                      <span className="text-[9px] bg-amber-500 text-black px-1.5 py-0.5 rounded-full font-black">
+                        {tab.badge}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
               {/* TAB 1: ARTWORK UPLOAD & PRINT PLACEMENT */}
               {activeStudioTab === 'design' && (
                 <div className="space-y-6 animate-in fade-in duration-150">
@@ -933,6 +1165,57 @@ export const ApparelStudioModal: React.FC<ApparelStudioModalProps> = ({
                   {/* ARTWORK UPLOADER (If print is chosen) */}
                   {printPlacement !== 'none' && (
                     <div className="space-y-4">
+                      {/* ✨ Generative AI Design Assistant (Module 5) */}
+                      <div className="p-4 rounded-3xl bg-gradient-to-r from-purple-950/20 via-indigo-950/20 to-black/5 dark:from-purple-950/60 dark:via-indigo-950/60 dark:to-black/80 border border-purple-500/30 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                            <Wand2 className="w-4 h-4 text-purple-500" />
+                            <span>Generative AI Design Assistant</span>
+                          </span>
+                          <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full">
+                            AI Vector 300 DPI
+                          </span>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <input
+                            value={aiPrompt}
+                            onChange={e => setAiPrompt(e.target.value)}
+                            placeholder="Describe your design (e.g. Cyberpunk neon wolf, Japanese wave art...)"
+                            className="flex-1 px-3.5 py-2.5 rounded-2xl bg-white dark:bg-black/60 border border-black/10 dark:border-white/15 text-xs text-black dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          />
+                          <button
+                            onClick={() => handleGenerateAiArtwork()}
+                            disabled={isAiGenerating || !aiPrompt.trim()}
+                            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-40 text-xs font-black text-white shrink-0 active:scale-95 transition shadow-md"
+                          >
+                            {isAiGenerating ? <RotateCcw className="w-4 h-4 animate-spin" /> : 'Generate'}
+                          </button>
+                        </div>
+
+                        {/* Quick Inspiration Chips */}
+                        <div className="flex gap-1.5 overflow-x-auto pb-1 text-[10px] font-bold">
+                          {[
+                            { label: '🌊 Japanese Wave', prompt: 'Great Wave off Kanagawa Japan minimalist' },
+                            { label: '🐺 Cyberpunk Wolf', prompt: 'Cyberpunk neon wolf streetwear 2077' },
+                            { label: '🛡️ Varsity Crest', prompt: 'Varsity athletic department gold shield crest' },
+                            { label: '🌸 Minimal Floral', prompt: 'Botanical rose floral line art minimal' },
+                            { label: '🐉 Dragon Fire', prompt: 'Dragon flame emblem bold streetwear' },
+                          ].map(chip => (
+                            <button
+                              key={chip.label}
+                              onClick={() => {
+                                setAiPrompt(chip.prompt);
+                                handleGenerateAiArtwork(chip.prompt);
+                              }}
+                              className="px-2.5 py-1 rounded-xl bg-white dark:bg-white/10 hover:bg-purple-100 dark:hover:bg-white/20 border border-purple-200 dark:border-white/10 text-purple-900 dark:text-purple-200 shrink-0 transition"
+                            >
+                              {chip.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
                           2. Upload Custom Artwork or Choose Sample
@@ -1307,26 +1590,219 @@ export const ApparelStudioModal: React.FC<ApparelStudioModalProps> = ({
                 </div>
               )}
 
-              {/* TAB 2: SIZE MATRIX & QUANTITY BREAKDOWN */}
+              {/* TAB 2: TYPOGRAPHY & LETTERING ENGINE (MODULE 1) */}
+              {activeStudioTab === 'typography' && (
+                <div className="space-y-6 animate-in fade-in duration-150">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Custom Typography & Lettering
+                    </label>
+                    <input
+                      value={customTypographyText}
+                      onChange={e => setCustomTypographyText(e.target.value)}
+                      placeholder="ENTER CUSTOM TEXT (e.g. TOKYO ATHLETICS)"
+                      className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-[#1E201E] border border-black/10 dark:border-white/10 text-sm font-black text-[#0F100F] dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+
+                  {/* Font Family Selector */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Font Typography Style
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {[
+                        { id: 'Impact', label: 'Varsity Bold', family: "Impact, 'Arial Black', sans-serif" },
+                        { id: 'Cinzel', label: 'Street Gothic', family: "'Cinzel', Georgia, serif" },
+                        { id: 'Inter', label: 'Modern Sans', family: "'Inter', system-ui, sans-serif" },
+                        { id: 'Playfair', label: 'Luxury Serif', family: "'Playfair Display', serif" },
+                        { id: 'SpaceGrotesk', label: 'Tech Mono', family: "'Space Grotesk', monospace" },
+                        { id: 'Brush', label: 'Signature Script', family: "'Brush Script MT', cursive" }
+                      ].map(f => (
+                        <button
+                          key={f.id}
+                          onClick={() => setCustomFont(f.id)}
+                          className={`p-3 rounded-2xl border text-left transition ${
+                            customFont === f.id
+                              ? 'border-[#0F100F] dark:border-white bg-[#0F100F]/5 dark:bg-white/10 ring-1 ring-black/20 dark:ring-white/20'
+                              : 'border-black/10 dark:border-white/10 hover:border-black/30'
+                          }`}
+                        >
+                          <span className="block text-sm font-bold" style={{ fontFamily: f.family }}>
+                            {f.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Curved Arc Radius Control */}
+                  <div>
+                    <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      <span>Curved Banner / Arc Curvature</span>
+                      <span className="text-[#AC7900] dark:text-[#D4AF37] font-mono">{textArc > 0 ? `+${textArc}` : textArc}</span>
+                    </div>
+                    <input
+                      type="range" min={-80} max={80} value={textArc}
+                      onChange={e => setTextArc(Number(e.target.value))}
+                      className="w-full accent-amber-500"
+                    />
+                  </div>
+
+                  {/* Outline Stroke Width */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Text Outline Stroke (Athletic Two-Tone)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {[0, 1, 2, 4].map(sw => (
+                        <button
+                          key={sw}
+                          onClick={() => setStrokeWidth(sw)}
+                          className={`px-3 py-1.5 rounded-xl border text-xs font-bold ${
+                            strokeWidth === sw
+                              ? 'bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] border-transparent'
+                              : 'border-black/10 dark:border-white/10 bg-white dark:bg-[#1E201E]'
+                          }`}
+                        >
+                          {sw === 0 ? 'No Outline' : `${sw}px Stroke`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Color Palette */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Text Colorway
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {['#FFFFFF', '#111827', '#D4AF37', '#DC2626', '#2563EB', '#16A34A', '#F97316', '#06B6D4'].map(c => (
+                        <button
+                          key={c}
+                          onClick={() => setCustomTextColor(c)}
+                          className={`w-8 h-8 rounded-full border-2 transition-transform flex items-center justify-center ${
+                            customTextColor === c ? 'border-black dark:border-white scale-110 shadow-md ring-2 ring-amber-500' : 'border-black/20 dark:border-white/20'
+                          }`}
+                          style={{ backgroundColor: c }}
+                        >
+                          {customTextColor === c && <Check className={`w-3.5 h-3.5 ${c === '#FFFFFF' ? 'text-black' : 'text-white'}`} />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: 3D PBR MATERIALS & LIGHTING (MODULE 2) */}
+              {activeStudioTab === 'pbr' && (
+                <div className="space-y-6 animate-in fade-in duration-150">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Physical PBR Fabric Weave & Texture
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {[
+                        { id: 'cotton_jersey' as const, label: 'Single Jersey Cotton', desc: '220 GSM • Soft Matte Finish', badge: 'Standard' },
+                        { id: 'french_terry' as const, label: 'French Terry Weave', desc: '320 GSM • Heavy Structured Loop', badge: 'Heavyweight' },
+                        { id: 'interlock_poly' as const, label: 'Interlock Polyester', desc: 'Micro-perforated Athletic Sheen', badge: 'Sports' },
+                        { id: 'linen_silk' as const, label: 'Linen & Silk Blend', desc: 'Lustrous Slub Fiber Reflection', badge: 'Luxury' }
+                      ].map(m => (
+                        <button
+                          key={m.id}
+                          onClick={() => setFabricPbr(m.id)}
+                          className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between ${
+                            fabricPbr === m.id
+                              ? 'border-[#0F100F] dark:border-white bg-[#0F100F]/5 dark:bg-white/10 shadow-sm ring-1 ring-black/20 dark:ring-white/20'
+                              : 'border-black/10 dark:border-white/10 hover:border-black/30'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-bold leading-snug">{m.label}</span>
+                            <span className="text-[9px] font-black uppercase text-[#AC7900] dark:text-[#D4AF37] bg-amber-500/10 px-2 py-0.5 rounded-full">
+                              {m.badge}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-500 font-medium">{m.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Studio Lighting Atmosphere
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: 'studio' as const, label: 'Spotlight', desc: 'Crisp Mill Light' },
+                        { id: 'daylight' as const, label: 'Daylight', desc: 'Natural Sun' },
+                        { id: 'neon' as const, label: 'Neon Tokyo', desc: 'Street Cyberpunk' }
+                      ].map(l => (
+                        <button
+                          key={l.id}
+                          onClick={() => setLightingPreset(l.id)}
+                          className={`p-3 rounded-2xl border text-center transition ${
+                            lightingPreset === l.id
+                              ? 'bg-[#0F100F] dark:bg-white text-white dark:text-[#0F100F] border-transparent shadow-sm'
+                              : 'border-black/10 dark:border-white/10 hover:border-black/30 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          <span className="block text-xs font-bold">{l.label}</span>
+                          <span className="block text-[10px] opacity-70 mt-0.5">{l.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: SIZE MATRIX & QUANTITY BREAKDOWN (MODULE 4) */}
               {activeStudioTab === 'sizing' && (
                 <div className="space-y-6 animate-in fade-in duration-150">
                   
                   {/* SIZING HEADER & QUICK FILL */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-bold">T-Shirt Sizing Matrix & Quantity</h3>
+                      <h3 className="text-sm font-bold">Bulk Sizing Matrix & Dynamic Pricing</h3>
                       <p className="text-xs text-slate-500">
-                        Minimum 5 pcs per order · Mix any sizes freely
+                        Select quantities per size · Automatic wholesale discounts applied
                       </p>
                     </div>
 
-                    <button
-                      onClick={() => setSizeChartOpen(true)}
-                      className="text-xs font-bold text-[#AC7900] dark:text-[#D4AF37] hover:underline flex items-center space-x-1"
-                    >
-                      <Info className="w-3.5 h-3.5" />
-                      <span>Size Chart (Inches/CM)</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setIsQuotationModalOpen(true)}
+                        className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black flex items-center gap-1 shadow-sm transition"
+                      >
+                        <FileDown className="w-3.5 h-3.5" />
+                        <span>Print Quote</span>
+                      </button>
+                      <button
+                        onClick={() => setSizeChartOpen(true)}
+                        className="text-xs font-bold text-[#AC7900] dark:text-[#D4AF37] hover:underline flex items-center space-x-1"
+                      >
+                        <Info className="w-3.5 h-3.5" />
+                        <span>Size Chart</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tiered Discount Summary Banner */}
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs flex items-center justify-between">
+                    <div>
+                      <span className="font-extrabold text-amber-800 dark:text-amber-300 block">
+                        ⚡ {discountTierLabel}
+                      </span>
+                      {totalSavings > 0 && (
+                        <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold block mt-0.5">
+                          You save ₹{totalSavings.toLocaleString('en-IN')} on this order!
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-sm font-black text-amber-700 dark:text-amber-400">
+                      ₹{finalUnitPrice} / unit
+                    </span>
                   </div>
 
                   {/* QUICK FILL BUTTONS */}
@@ -1579,23 +2055,32 @@ export const ApparelStudioModal: React.FC<ApparelStudioModalProps> = ({
               </div>
 
               {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <button
                   onClick={() =>
                     setActiveStudioTab(prev => (prev === 'design' ? 'sizing' : 'design'))
                   }
-                  className="px-4 py-3 rounded-full border border-black/15 dark:border-white/15 font-bold text-xs hover:bg-black/5 dark:hover:bg-white/5 transition"
+                  className="px-4 py-3 rounded-full border border-black/15 dark:border-white/15 font-bold text-xs hover:bg-black/5 dark:hover:bg-white/5 transition text-center"
                 >
                   {activeStudioTab === 'design' ? 'Next: Select Sizes →' : '← Back to Design'}
                 </button>
 
                 <button
+                  onClick={() => setIsQuotationModalOpen(true)}
+                  className="px-4 py-3 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs flex items-center justify-center space-x-1.5 transition shadow"
+                  title="Generate Official GST Wholesale Quotation Sheet"
+                >
+                  <FileDown className="w-4 h-4" />
+                  <span>Print Quotation</span>
+                </button>
+
+                <button
                   onClick={handleAddToCart}
                   disabled={totalQuantity === 0}
-                  className="px-6 py-3 rounded-full bg-[#E11D48] hover:bg-[#BE123C] text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-lg hover:shadow-red-500/20 transition disabled:opacity-40"
+                  className="px-5 py-3 rounded-full bg-[#E11D48] hover:bg-[#BE123C] text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-lg hover:shadow-red-500/20 transition disabled:opacity-40"
                 >
                   <ShoppingBag className="w-4 h-4" />
-                  <span>Add {totalQuantity} Pcs to Cart (₹{subtotalPrice.toLocaleString('en-IN')})</span>
+                  <span>Add {totalQuantity} Pcs (₹{subtotalPrice.toLocaleString('en-IN')})</span>
                 </button>
               </div>
 
@@ -1685,6 +2170,22 @@ export const ApparelStudioModal: React.FC<ApparelStudioModalProps> = ({
           </div>
         </div>
       )}
+
+      {/* Official Mill Quotation Modal */}
+      <QuotationModal
+        isOpen={isQuotationModalOpen}
+        onClose={() => setIsQuotationModalOpen(false)}
+        productName={product.name}
+        fabricGsm={`${product.fabric} • ${selectedFabricVariant ? selectedFabricVariant.gsm : product.gsm} GSM`}
+        colorName={selectedColor.name}
+        methodName={printTechnique}
+        placement={printPlacement}
+        artworkUrl={uploadedImage}
+        customText={customTypographyText}
+        breakdown={quotationBreakdown}
+        tierDiscountPercent={Math.round(discountPercent * 100)}
+        tierName={discountTierLabel}
+      />
 
     </div>
   );
