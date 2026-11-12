@@ -95,6 +95,7 @@ class DatabaseEngine {
     swatchBooks: [] as SwatchBook[],
     users: [] as DBUser[],
     orders: [] as Order[],
+    inquiries: [] as any[],
     customizerSettings: JSON.parse(JSON.stringify(INITIAL_CUSTOMIZER_SETTINGS)) as AdminCustomizerSettings
   };
 
@@ -183,6 +184,19 @@ class DatabaseEngine {
         key TEXT PRIMARY KEY,
         data TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS inquiries (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL DEFAULT '',
+        email TEXT NOT NULL DEFAULT '',
+        message TEXT NOT NULL DEFAULT '',
+        details TEXT NOT NULL DEFAULT '{}',
+        status TEXT NOT NULL DEFAULT 'New',
+        created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_inquiries_created ON inquiries (created_at);
     `);
   }
 
@@ -844,6 +858,90 @@ class DatabaseEngine {
       }
     }
     return user;
+  }
+
+  // INQUIRIES MANAGEMENT
+  getInquiries(): any[] {
+    if (this.isSqlite) {
+      try {
+        const rows = this.db.prepare('SELECT id, type, name, phone, email, message, details, status, created_at FROM inquiries ORDER BY created_at DESC LIMIT 500').all() as any[];
+        return rows.map(r => ({
+          ...r,
+          details: typeof r.details === 'string' ? JSON.parse(r.details || '{}') : (r.details || {})
+        }));
+      } catch (e) {
+        console.warn('Error reading inquiries from SQLite:', e);
+        return [];
+      }
+    }
+    return this.memory.inquiries.map(r => ({
+      ...r,
+      details: typeof r.details === 'string' ? JSON.parse(r.details || '{}') : (r.details || {})
+    }));
+  }
+
+  createInquiry(input: { type?: string; name: string; phone?: string; email?: string; message?: string; details?: any }): any {
+    const id = `INQ-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+    const detailsStr = typeof input.details === 'object' ? JSON.stringify(input.details) : String(input.details || '{}');
+    const inquiry = {
+      id,
+      type: input.type || 'contact',
+      name: input.name?.trim() || '',
+      phone: input.phone?.trim() || '',
+      email: input.email?.trim() || '',
+      message: input.message?.trim() || '',
+      details: detailsStr,
+      status: 'New',
+      created_at: new Date().toISOString()
+    };
+
+    if (this.isSqlite) {
+      try {
+        this.db.prepare(
+          'INSERT INTO inquiries (id, type, name, phone, email, message, details, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        ).run(
+          inquiry.id,
+          inquiry.type,
+          inquiry.name,
+          inquiry.phone,
+          inquiry.email,
+          inquiry.message,
+          inquiry.details,
+          inquiry.status,
+          inquiry.created_at
+        );
+      } catch (e) {
+        console.warn('Error inserting inquiry into SQLite:', e);
+      }
+    } else {
+      this.memory.inquiries.unshift(inquiry);
+      this.saveJsonStore();
+    }
+
+    return {
+      ...inquiry,
+      details: typeof inquiry.details === 'string' ? JSON.parse(inquiry.details) : inquiry.details
+    };
+  }
+
+  updateInquiryStatus(id: string, status: string): boolean {
+    if (this.isSqlite) {
+      try {
+        const info = this.db.prepare('UPDATE inquiries SET status = ? WHERE id = ?').run(status, id);
+        return info.changes > 0;
+      } catch (e) {
+        console.warn('Error updating inquiry in SQLite:', e);
+        return false;
+      }
+    } else {
+      const idx = this.memory.inquiries.findIndex(i => i.id === id);
+      if (idx !== -1) {
+        this.memory.inquiries[idx].status = status;
+        this.saveJsonStore();
+        return true;
+      }
+      return false;
+    }
   }
 
   // ANALYTICS (ADMIN)

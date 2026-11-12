@@ -1244,6 +1244,50 @@ app.get('/api/health', (req, res) => {
   });
 
   // ==========================================
+  // CUSTOMER INQUIRIES API (/api/inquiries)
+  // ==========================================
+  app.get('/api/inquiries', (req, res) => {
+    try {
+      const list = db.getInquiries();
+      res.json(list);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Could not fetch inquiries' });
+    }
+  });
+
+  app.post('/api/inquiries', (req, res) => {
+    try {
+      const { type, name, phone, email, message, details } = req.body;
+      if (!name || (!phone && !email)) {
+        return res.status(400).json({ error: 'Please add your name and a phone number or email.' });
+      }
+      const created = db.createInquiry({ type, name, phone, email, message, details });
+      res.status(201).json({ ok: true, id: created.id, inquiry: created });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Could not create inquiry' });
+    }
+  });
+
+  app.put('/api/inquiries/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      if (!status || !['New', 'Contacted', 'Closed'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+      }
+      const updated = db.updateInquiryStatus(id, status);
+      res.json({ ok: true, updated });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Could not update inquiry status' });
+    }
+  });
+
+  // Catch-all for undefined /api/* endpoints so they never leak past Express into Vite proxy
+  app.all('/api/*', (req, res) => {
+    res.status(404).json({ error: `API route not found: ${req.method} ${req.path}` });
+  });
+
+  // ==========================================
   // VITE / STATIC SERVING (FOR LOCAL / STANDALONE DEV)
   // ==========================================
   async function startServer() {
