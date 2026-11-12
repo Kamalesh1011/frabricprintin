@@ -102,7 +102,7 @@ export const AllProductsTable: React.FC<AllProductsTableProps> = ({
   return (
     <div className="space-y-4">
       {/* Search & Action Header */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-800 p-4 rounded-2xl border border-slate-700">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-900/90 p-4 rounded-2xl border border-slate-800 shadow-md">
         <div className="flex items-center space-x-3 flex-1">
           <div className="relative flex-1 max-w-xs">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -111,7 +111,7 @@ export const AllProductsTable: React.FC<AllProductsTableProps> = ({
               placeholder="Search products by title, category, weave..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+              className="w-full bg-slate-950 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
             />
           </div>
 
@@ -120,7 +120,7 @@ export const AllProductsTable: React.FC<AllProductsTableProps> = ({
             <select
               value={selectedCatFilter}
               onChange={(e) => setSelectedCatFilter(e.target.value)}
-              className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 font-semibold"
+              className="bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-300 font-semibold"
             >
               <option value="All">All Categories</option>
               <option value="Cotton">Cotton</option>
@@ -136,7 +136,7 @@ export const AllProductsTable: React.FC<AllProductsTableProps> = ({
 
         <button
           onClick={onAddNewClick}
-          className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center justify-center space-x-1.5 shadow-md"
+          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center justify-center space-x-1.5 shadow-md shadow-amber-500/20 active:scale-[0.98]"
         >
           <Plus className="w-4 h-4" />
           <span>Add New Product</span>
@@ -144,10 +144,10 @@ export const AllProductsTable: React.FC<AllProductsTableProps> = ({
       </div>
 
       {/* Table View */}
-      <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+      <div className="bg-slate-900/90 rounded-2xl border border-slate-800 shadow-md overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-900 text-slate-400 uppercase font-bold text-[10px] tracking-wider border-b border-slate-700">
+            <thead className="bg-slate-950 text-slate-400 uppercase font-bold text-[10px] tracking-wider border-b border-slate-800">
               <tr>
                 <th className="p-3.5">Image / Replace</th>
                 <th className="p-3.5">Product Title</th>
@@ -159,13 +159,13 @@ export const AllProductsTable: React.FC<AllProductsTableProps> = ({
                 <th className="p-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700">
+            <tbody className="divide-y divide-slate-800">
               {filteredProducts.map((prod) => {
                 const fab = fabrics.find((f) => f.id === prod.fabric_id);
                 const isEditingPrice = editingPriceProductId === prod.id;
 
                 return (
-                  <tr key={prod.id} className="hover:bg-slate-750 transition">
+                  <tr key={prod.id} className="hover:bg-slate-800/60 transition">
                     
                     {/* Image with Direct Replace Overlay */}
                     <td className="p-3.5">

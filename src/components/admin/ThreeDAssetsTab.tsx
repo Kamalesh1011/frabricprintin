@@ -338,7 +338,7 @@ export const ThreeDAssetsTab: React.FC = () => {
     <div className="space-y-6">
       
       {/* Header Banner */}
-      <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-slate-900/90 p-6 rounded-3xl border border-slate-800 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2.5 font-serif">
             <Box className="w-6 h-6 text-amber-400" />
@@ -362,7 +362,7 @@ export const ThreeDAssetsTab: React.FC = () => {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-slate-800 p-3.5 rounded-2xl border border-slate-700 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800 shadow-md flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="flex items-center space-x-2 flex-1">
           <input
             type="text"
@@ -399,7 +399,7 @@ export const ThreeDAssetsTab: React.FC = () => {
         {filteredAssets.map((asset) => (
           <div
             key={asset.id}
-            className="bg-slate-800 rounded-3xl border border-slate-700 overflow-hidden shadow-xl flex flex-col justify-between hover:border-slate-600 transition"
+            className="bg-slate-900/90 rounded-3xl border border-slate-800 overflow-hidden shadow-xl flex flex-col justify-between hover:border-slate-700 transition"
           >
             {/* Top Bar */}
             <div className="p-5 border-b border-slate-700 bg-slate-850 flex items-center justify-between">

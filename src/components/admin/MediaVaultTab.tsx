@@ -141,7 +141,7 @@ export const MediaVaultTab: React.FC = () => {
     <div className="space-y-6">
       
       {/* Header Banner */}
-      <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-slate-900/90 p-6 rounded-3xl border border-slate-800 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2.5 font-serif">
             <ImageIcon className="w-6 h-6 text-amber-400" />
@@ -167,7 +167,7 @@ export const MediaVaultTab: React.FC = () => {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-slate-800 p-3.5 rounded-2xl border border-slate-700 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800 shadow-md flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="flex items-center space-x-2 flex-1">
           <div className="relative flex-1 max-w-sm">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -215,7 +215,7 @@ export const MediaVaultTab: React.FC = () => {
         {filtered.map((asset) => (
           <div
             key={asset.id}
-            className="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group hover:border-amber-500/50 transition relative"
+            className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group hover:border-amber-500/50 transition relative"
           >
             {/* Image Preview Box */}
             <div className="aspect-square bg-slate-950 overflow-hidden relative flex items-center justify-center p-2">

@@ -190,7 +190,7 @@ export const PricingManagerTab: React.FC<PricingManagerTabProps> = ({
       )}
 
       {/* Main Header Banner */}
-      <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-slate-900/90 p-6 rounded-3xl border border-slate-800 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2.5 font-serif">
             <DollarSign className="w-6 h-6 text-amber-400" />
@@ -203,7 +203,7 @@ export const PricingManagerTab: React.FC<PricingManagerTabProps> = ({
       </div>
 
       {/* SECTION 1: WHOLESALE VOLUME DISCOUNT LADDER */}
-      <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 space-y-5">
+      <div className="bg-slate-900/90 p-6 rounded-3xl border border-slate-800 shadow-md space-y-5">
         <div className="flex items-center justify-between border-b border-slate-700 pb-3">
           <div className="flex items-center space-x-2">
             <Percent className="w-5 h-5 text-amber-400" />
@@ -308,7 +308,7 @@ export const PricingManagerTab: React.FC<PricingManagerTabProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Sub-Card A: Print Process Surcharges */}
-        <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 space-y-4">
+        <div className="bg-slate-900/90 p-6 rounded-3xl border border-slate-800 shadow-md space-y-4">
           <div className="flex items-center justify-between border-b border-slate-700 pb-3">
             <div className="flex items-center space-x-2">
               <Printer className="w-5 h-5 text-amber-400" />
@@ -353,7 +353,7 @@ export const PricingManagerTab: React.FC<PricingManagerTabProps> = ({
         </div>
 
         {/* Sub-Card B: Placement Surcharges */}
-        <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 space-y-4">
+        <div className="bg-slate-900/90 p-6 rounded-3xl border border-slate-800 shadow-md space-y-4">
           <div className="flex items-center justify-between border-b border-slate-700 pb-3">
             <div className="flex items-center space-x-2">
               <Layers className="w-5 h-5 text-amber-400" />
@@ -465,7 +465,7 @@ export const PricingManagerTab: React.FC<PricingManagerTabProps> = ({
       </div>
 
       {/* SECTION 4: REAL-TIME QUOTATION & MARGIN SIMULATOR */}
-      <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 space-y-4">
+      <div className="bg-slate-900/90 p-6 rounded-3xl border border-slate-800 shadow-md space-y-4">
         <div className="flex items-center space-x-2 border-b border-slate-700 pb-3">
           <Sparkles className="w-5 h-5 text-amber-400" />
           <h3 className="font-extrabold text-white text-base font-serif">
