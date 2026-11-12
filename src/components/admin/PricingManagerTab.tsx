@@ -597,3 +597,4 @@ export const PricingManagerTab: React.FC<PricingManagerTabProps> = ({
     </div>
   );
 };
+

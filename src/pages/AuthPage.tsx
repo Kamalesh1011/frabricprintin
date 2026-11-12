@@ -337,8 +337,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialTab = 'ph
                     </div>
                     <p className="text-[11px] text-gray-500 mt-1.5 flex items-center space-x-1">
                       <span>💡 Admin Phone:</span>
-                      <strong className="text-emerald-600 dark:text-emerald-400">7548887006</strong>
-                      <span>(Grants full admin rights)</span>
+                      <button
+                        type="button"
+                        onClick={() => setPhoneNumber('7548887006')}
+                        className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline"
+                      >
+                        7548887006
+                      </button>
+                      <span>(Click to fill, grants admin)</span>
                     </p>
                   </div>
 

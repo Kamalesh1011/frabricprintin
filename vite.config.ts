@@ -44,9 +44,13 @@ export default defineConfig(() => {
       },
     },
     server: {
-      // `npm run dev:api` serves the Worker (with local D1/KV) on :8787.
+      // Proxy API requests to backend Express server on port 3000
       proxy: {
-        '/api': 'http://localhost:8787'
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false
+        }
       },
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
