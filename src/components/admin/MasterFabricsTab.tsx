@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Shirt, X, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, Shirt, X, Image as ImageIcon, Camera } from 'lucide-react';
 import { MasterFabric, Category } from '../../types';
 import { MediaLibraryModal } from './MediaLibraryModal';
+import { ImageReplaceModal } from './ImageReplaceModal';
 
 interface MasterFabricsTabProps {
   fabrics: MasterFabric[];
@@ -21,6 +22,7 @@ export const MasterFabricsTab: React.FC<MasterFabricsTabProps> = ({
   const [showModal, setShowModal] = useState(false);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [editingFabric, setEditingFabric] = useState<MasterFabric | null>(null);
+  const [replaceImageFabric, setReplaceImageFabric] = useState<MasterFabric | null>(null);
 
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -100,11 +102,20 @@ export const MasterFabricsTab: React.FC<MasterFabricsTabProps> = ({
               {fabrics.map((fab) => (
                 <tr key={fab.id} className="hover:bg-slate-750 transition">
                   <td className="p-3.5">
-                    <img
-                      src={fab.defaultImage}
-                      alt={fab.name}
-                      className="w-12 h-10 rounded-lg object-cover border border-slate-700"
-                    />
+                    <div className="relative group w-12 h-10 rounded-lg overflow-hidden border border-slate-700 bg-slate-900 shrink-0 cursor-pointer">
+                      <img
+                        src={fab.defaultImage || '/mockups/tcftbw650_swatch.jpg'}
+                        alt={fab.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition"
+                      />
+                      <button
+                        onClick={() => setReplaceImageFabric(fab)}
+                        className="absolute inset-0 bg-slate-950/70 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-amber-400"
+                        title="Click to Replace Fabric Swatch Image"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </td>
                   <td className="p-3.5 font-bold text-white text-sm">{fab.name}</td>
                   <td className="p-3.5">
@@ -244,6 +255,20 @@ export const MasterFabricsTab: React.FC<MasterFabricsTabProps> = ({
           }
         }}
       />
+      {/* Direct Fabric Swatch Image Replace Modal */}
+      {replaceImageFabric && (
+        <ImageReplaceModal
+          isOpen={!!replaceImageFabric}
+          onClose={() => setReplaceImageFabric(null)}
+          currentImageUrl={replaceImageFabric.defaultImage}
+          title={`Replace Swatch: ${replaceImageFabric.name}`}
+          subtitle="Select a physical fabric weave macro or upload from your device."
+          onConfirmReplace={async (newUrl) => {
+            await onUpdateFabric(replaceImageFabric.id, { defaultImage: newUrl });
+          }}
+        />
+      )}
+
     </div>
   );
 };

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Layers, X, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, Layers, X, Image as ImageIcon, Camera } from 'lucide-react';
 import { Category } from '../../types';
 import { MediaLibraryModal } from './MediaLibraryModal';
+import { ImageReplaceModal } from './ImageReplaceModal';
 
 interface MasterCategoriesTabProps {
   categories: Category[];
@@ -19,6 +20,7 @@ export const MasterCategoriesTab: React.FC<MasterCategoriesTabProps> = ({
   const [showModal, setShowModal] = useState(false);
   const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [replaceImageCategory, setReplaceImageCategory] = useState<Category | null>(null);
 
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
@@ -98,11 +100,20 @@ export const MasterCategoriesTab: React.FC<MasterCategoriesTabProps> = ({
               {categories.map((cat) => (
                 <tr key={cat.id} className="hover:bg-slate-750 transition">
                   <td className="p-3.5">
-                    <img
-                      src={cat.image}
-                      alt={cat.name}
-                      className="w-12 h-10 rounded-lg object-cover border border-slate-700"
-                    />
+                    <div className="relative group w-12 h-10 rounded-lg overflow-hidden border border-slate-700 bg-slate-900 shrink-0 cursor-pointer">
+                      <img
+                        src={cat.image || '/mockups/tcftbw650_swatch.jpg'}
+                        alt={cat.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition"
+                      />
+                      <button
+                        onClick={() => setReplaceImageCategory(cat)}
+                        className="absolute inset-0 bg-slate-950/70 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-amber-400"
+                        title="Click to Replace Category Image"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </td>
                   <td className="p-3.5 font-bold text-white text-sm">{cat.name}</td>
                   <td className="p-3.5 font-mono text-amber-400">{cat.slug}</td>
@@ -252,6 +263,20 @@ export const MasterCategoriesTab: React.FC<MasterCategoriesTabProps> = ({
           }
         }}
       />
+      {/* Direct Category Image Replace Modal */}
+      {replaceImageCategory && (
+        <ImageReplaceModal
+          isOpen={!!replaceImageCategory}
+          onClose={() => setReplaceImageCategory(null)}
+          currentImageUrl={replaceImageCategory.image}
+          title={`Replace Image: ${replaceImageCategory.name}`}
+          subtitle="Select a textile texture, raw fabric swatch, or upload from your device."
+          onConfirmReplace={async (newUrl) => {
+            await onUpdateCategory(replaceImageCategory.id, { image: newUrl });
+          }}
+        />
+      )}
+
     </div>
   );
 };

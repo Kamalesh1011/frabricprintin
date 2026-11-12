@@ -22,7 +22,8 @@ import {
   Shirt,
   Weight,
   Ruler,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Box
 } from 'lucide-react';
 import {
   fetchAdminAnalytics,
@@ -82,6 +83,9 @@ import { MasterVariantsTab } from './admin/MasterVariantsTab';
 import { OrderManagementTab } from './admin/OrderManagementTab';
 import { InquiriesTab } from './admin/InquiriesTab';
 import { MediaLibraryModal } from './admin/MediaLibraryModal';
+import { ThreeDAssetsTab } from './admin/ThreeDAssetsTab';
+import { PricingManagerTab } from './admin/PricingManagerTab';
+import { MediaVaultTab } from './admin/MediaVaultTab';
 
 interface AdminDashboardProps {
   onProductsChange?: () => void;
@@ -89,7 +93,9 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange, onViewProductInFrontend }) => {
-  const [activeAdminTab, setActiveAdminTab] = useState<'analytics' | 'products' | 'orders' | 'inquiries' | 'categories' | 'customizer'>('analytics');
+  const [activeAdminTab, setActiveAdminTab] = useState<
+    'analytics' | 'products' | 'mockups_3d' | 'pricing' | 'orders' | 'inquiries' | 'categories' | 'vault' | 'customizer'
+  >('analytics');
   const [newInquiryCount, setNewInquiryCount] = useState<number | null>(null);
   const [productsSubSection, setProductsSubSection] = useState<
     'all_products' | 'add_product' | 'categories' | 'fabrics' | 'gsm' | 'size_formats' | 'variants'
@@ -197,6 +203,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange
     } catch (err: any) {
       window.alert(err?.message || 'Could not delete product.');
     }
+    await reloadAdminData();
+  };
+
+  const handleInlineUpdateProduct = async (id: string, updates: Partial<Product>) => {
+    try {
+      await updateProduct(id, updates);
+      await reloadAdminData();
+    } catch (err: any) {
+      window.alert(err?.message || 'Could not update product.');
+    }
+  };
+
+  const handleBatchAdjustPrices = async (percent: number, categoryFilter?: string) => {
+    const factor = 1 + percent / 100;
+    const targetProducts = categoryFilter
+      ? products.filter((p) => p.category.toLowerCase() === categoryFilter.toLowerCase())
+      : products;
+
+    await Promise.all(
+      targetProducts.map((p) =>
+        updateProduct(p.id, {
+          price_per_meter: Math.max(1, Math.round(p.price_per_meter * factor * 100) / 100)
+        })
+      )
+    );
     await reloadAdminData();
   };
 
@@ -323,11 +354,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange
         <div className="flex items-center space-x-2 border-b border-slate-800 pb-2 overflow-x-auto">
           {[
             { id: 'analytics', label: 'Analytics Dashboard', icon: BarChart3 },
-            { id: 'products', label: `PRODUCTS (${products.length})`, icon: Package },
+            { id: 'products', label: `Products (${products.length})`, icon: Package },
+            { id: 'mockups_3d', label: '3D Garments & Mockups', icon: Box, highlight: true },
+            { id: 'pricing', label: 'Pricing & Rate Cards', icon: DollarSign, highlight: true },
             { id: 'orders', label: `Order Queue (${orders.length})`, icon: Clock },
             { id: 'inquiries', label: newInquiryCount ? `Inquiries (${newInquiryCount} new)` : 'Inquiries', icon: Inbox },
             { id: 'categories', label: 'Categories Master', icon: Layers },
-            { id: 'customizer', label: 'Customizer & Artwork Controls', icon: Sliders }
+            { id: 'vault', label: 'Media Vault', icon: ImageIcon },
+            { id: 'customizer', label: 'Customizer Controls', icon: Sliders }
           ].map((tab) => {
             const Icon = tab.icon;
             const isTabActive = activeAdminTab === tab.id || (tab.id === 'categories' && activeAdminTab === 'products' && productsSubSection === 'categories');
@@ -345,6 +379,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange
                 className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition shrink-0 ${
                   isTabActive
                     ? 'bg-amber-500 text-slate-950 font-extrabold shadow-md'
+                    : (tab as any).highlight
+                    ? 'bg-slate-800 text-amber-300 hover:bg-slate-750 border border-amber-500/30'
                     : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800 border border-slate-700'
                 }`}
               >
@@ -468,6 +504,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange
                 }}
                 onEditProduct={handleEditProductInWizard}
                 onDeleteProduct={handleDeleteProduct}
+                onUpdateProduct={handleInlineUpdateProduct}
               />
             )}
 
@@ -539,6 +576,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange
           </div>
         )}
 
+        {/* TAB 2b: 3D GARMENTS & MOCKUP ASSETS */}
+        {activeAdminTab === 'mockups_3d' && (
+          <ThreeDAssetsTab />
+        )}
+
+        {/* TAB 2c: DYNAMIC PRICING & RATE CARDS */}
+        {activeAdminTab === 'pricing' && (
+          <PricingManagerTab
+            products={products}
+            onUpdateProductPrice={async (id, p, s) => {
+              await handleInlineUpdateProduct(id, {
+                price_per_meter: p,
+                print_surcharge_per_meter: s
+              });
+            }}
+            onBatchAdjustPrices={handleBatchAdjustPrices}
+          />
+        )}
+
         {/* TAB 3: ORDERS QUEUE & ORDER FULFILLMENT MANAGEMENT */}
         {activeAdminTab === 'orders' && (
           <OrderManagementTab
@@ -570,6 +626,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onProductsChange
               ))}
             </div>
           </div>
+        )}
+
+        {/* TAB 4b: MEDIA VAULT & ASSET REPLACEMENT */}
+        {activeAdminTab === 'vault' && (
+          <MediaVaultTab />
         )}
 
         {/* TAB 5: CUSTOMIZER & ARTWORK CONTROLS */}

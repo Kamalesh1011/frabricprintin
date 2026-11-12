@@ -19,43 +19,154 @@ interface MediaLibraryModalProps {
   title?: string;
 }
 
-// Built-in stock textile & fabric image library
+// Comprehensive built-in 3D garment mockups, textile swatches, and motif library
 const STOCK_MEDIA_LIBRARY = [
+  // 3D Garment Mockups
+  {
+    id: 'mockup-tshirt-front',
+    name: '3D Classic Crew T-Shirt (Front Studio)',
+    category: '3D Garments',
+    url: '/mockups/white_tshirt_front.png'
+  },
+  {
+    id: 'mockup-tshirt-back',
+    name: '3D Classic Crew T-Shirt (Back Studio)',
+    category: '3D Garments',
+    url: '/mockups/white_tshirt_back.png'
+  },
+  {
+    id: 'mockup-oversized-front',
+    name: '3D Oversized Streetwear Tee (Front)',
+    category: '3D Garments',
+    url: '/mockups/white_oversized_tee.png'
+  },
+  {
+    id: 'mockup-polo-front',
+    name: '3D Pique Collar Polo (Front Studio)',
+    category: '3D Garments',
+    url: '/mockups/white_polo_front.png'
+  },
+  {
+    id: 'mockup-hoodie-front',
+    name: '3D Heavyweight Fleece Hoodie (Front)',
+    category: '3D Garments',
+    url: '/mockups/white_hoodie_front.png'
+  },
+  {
+    id: 'mockup-jersey-blue',
+    name: 'Sports Jersey Pro Match Kit (Hero Blue)',
+    category: '3D Garments',
+    url: '/mockups/jersey_hero_blue.jpg'
+  },
+  {
+    id: 'mockup-jersey-back',
+    name: 'Sports Jersey Back Player View',
+    category: '3D Garments',
+    url: '/mockups/white_jersey_back.jpg'
+  },
+  {
+    id: 'mockup-jersey-speed',
+    name: 'Sports Jersey Speed Dynamic Front',
+    category: '3D Garments',
+    url: '/mockups/jersey_speed_front.jpg'
+  },
+  {
+    id: 'mockup-jersey-blackgold',
+    name: 'Sports Jersey Black Gold Edition',
+    category: '3D Garments',
+    url: '/mockups/jersey_blackgold_front.jpg'
+  },
+  {
+    id: 'mockup-corp-shirt',
+    name: 'Executive Corporate Formal Shirt',
+    category: '3D Garments',
+    url: '/mockups/white_corporate_shirt.jpg'
+  },
+  {
+    id: 'mockup-tote-bag',
+    name: 'Organic Cotton Canvas Tote Bag',
+    category: 'Merch',
+    url: '/mockups/white_tote_bag.jpg'
+  },
+  {
+    id: 'mockup-athletic-cap',
+    name: 'Classic 6-Panel Athletic Cap',
+    category: 'Merch',
+    url: '/mockups/white_athletic_cap.jpg'
+  },
+  // Fabric Swatches & Physical Textures
+  {
+    id: 'swatch-poplin-cotton',
+    name: 'Organic Cotton Poplin 130 GSM',
+    category: 'Cotton',
+    url: '/mockups/tcftbw650_swatch.jpg'
+  },
+  {
+    id: 'swatch-viscose-crepe',
+    name: 'Viscose Crepe Drape 110 GSM',
+    category: 'Viscose',
+    url: '/mockups/viscose_crepe_swatch.jpg'
+  },
+  {
+    id: 'swatch-mulberry-silk',
+    name: 'Pure Mulberry Silk Satin 60 GSM',
+    category: 'Silk',
+    url: '/mockups/mulberry_silk_swatch.jpg'
+  },
+  {
+    id: 'swatch-french-linen',
+    name: 'Pure French Flax Linen 160 GSM',
+    category: 'Linen',
+    url: '/mockups/french_linen_swatch.jpg'
+  },
+  {
+    id: 'swatch-modal-satin',
+    name: 'Lenzing Modal Satin 90 GSM',
+    category: 'Modal',
+    url: '/mockups/modal_satin_swatch.jpg'
+  },
+  {
+    id: 'swatch-cotton-slub',
+    name: 'Cotton Viscose Slub Texture 140 GSM',
+    category: 'Cotton',
+    url: '/mockups/cotton_viscose_slub_swatch.jpg'
+  },
+  {
+    id: 'swatch-bamboo-spandex',
+    name: 'Bamboo Spandex Jersey 190 GSM',
+    category: 'Rayon',
+    url: '/mockups/bamboo_spandex_swatch.jpg'
+  },
+  {
+    id: 'swatch-poly-georgette',
+    name: 'Poly Georgette Sheer 75 GSM',
+    category: 'Polyester',
+    url: '/mockups/poly_georgette_swatch.jpg'
+  },
+  {
+    id: 'swatch-silk-organza',
+    name: 'Glass Silk Organza 40 GSM',
+    category: 'Organza',
+    url: '/mockups/silk_organza_swatch.jpg'
+  },
+  {
+    id: 'swatch-tcs210',
+    name: 'Single Jersey Ring-Spun Combed Cotton 210 GSM',
+    category: 'Cotton',
+    url: '/mockups/tcs210_swatch.jpg'
+  },
+  {
+    id: 'swatch-tcs225',
+    name: 'Heavyweight Matte Cotton 225 GSM',
+    category: 'Cotton',
+    url: '/mockups/tcs225_swatch.jpg'
+  },
+  // Unsplash Textile Textures & Motifs
   {
     id: 'media-1',
     name: 'Cotton Mulmul Weave White',
     category: 'Cotton',
     url: 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&q=60&w=800'
-  },
-  {
-    id: 'media-2',
-    name: 'French Flax Linen Texture',
-    category: 'Linen',
-    url: 'https://images.unsplash.com/photo-1603251578711-3290ca1a0187?auto=format&fit=crop&q=60&w=800'
-  },
-  {
-    id: 'media-3',
-    name: 'Mulberry Silk Satin Sheen',
-    category: 'Silk',
-    url: 'https://images.unsplash.com/photo-1528458876861-544fd1761a91?auto=format&fit=crop&q=60&w=800'
-  },
-  {
-    id: 'media-4',
-    name: 'Viscose Rayon Fluid Drape',
-    category: 'Rayon',
-    url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&q=60&w=800'
-  },
-  {
-    id: 'media-5',
-    name: 'Lenzing Modal Satin Texture',
-    category: 'Modal',
-    url: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=60&w=800'
-  },
-  {
-    id: 'media-6',
-    name: 'Glass Organza Transparent Sheer',
-    category: 'Organza',
-    url: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&q=60&w=800'
   },
   {
     id: 'media-7',
@@ -68,18 +179,6 @@ const STOCK_MEDIA_LIBRARY = [
     name: 'Traditional Block Print Motif',
     category: 'Prints',
     url: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&q=60&w=800'
-  },
-  {
-    id: 'media-9',
-    name: 'Tropical Palm Leaf Fabric',
-    category: 'Prints',
-    url: 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&q=60&w=800'
-  },
-  {
-    id: 'media-10',
-    name: 'Organic Raw Unbleached Cotton',
-    category: 'Cotton',
-    url: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&q=60&w=800'
   }
 ];
 
@@ -247,6 +346,22 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({
 
                     {/* Badge Overlay */}
                     <div className="absolute inset-0 bg-slate-950/30 group-hover:bg-slate-950/10 transition" />
+
+                    {/* Delete Item Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm(`Remove "${item.name}" from media library?`)) {
+                          setCustomMediaList((prev) => prev.filter((m) => m.id !== item.id));
+                          setSelectedUrls((prev) => prev.filter((u) => u !== item.url));
+                        }
+                      }}
+                      className="absolute top-2 left-2 p-1.5 bg-red-600/90 hover:bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition z-10 shadow"
+                      title="Delete Image"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
 
                     {isSelected ? (
                       <div className="absolute top-2 right-2 bg-amber-500 text-slate-950 font-black text-xs w-6 h-6 rounded-full flex items-center justify-center shadow-md">

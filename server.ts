@@ -948,10 +948,8 @@ app.get('/api/health', (req, res) => {
   });
 
   app.put('/api/customizer-settings', (req, res) => {
-    const authHeader = req.headers['authorization'] || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-    const isAdmin = token.startsWith('fp-admin-') || token === 'admin-session-active';
-    if (!isAdmin) {
+    const authUser = getAuthUser(req);
+    if (!authUser || !authUser.isAdmin) {
       return res.status(403).json({ error: 'Forbidden: Admin access required' });
     }
 

@@ -1,6 +1,21 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Search, Filter, Package, Layers, AlertTriangle, X } from 'lucide-react';
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Search,
+  Filter,
+  Package,
+  Layers,
+  AlertTriangle,
+  X,
+  Camera,
+  Check,
+  RefreshCw,
+  DollarSign
+} from 'lucide-react';
 import { Product, MasterFabric, MasterGsmWeight } from '../../types';
+import { ImageReplaceModal } from './ImageReplaceModal';
 
 interface AllProductsTableProps {
   products: Product[];
@@ -9,6 +24,7 @@ interface AllProductsTableProps {
   onAddNewClick: () => void;
   onEditProduct: (product: Product) => void;
   onDeleteProduct: (id: string) => Promise<void>;
+  onUpdateProduct?: (id: string, updates: Partial<Product>) => Promise<void>;
 }
 
 export const AllProductsTable: React.FC<AllProductsTableProps> = ({
@@ -17,17 +33,29 @@ export const AllProductsTable: React.FC<AllProductsTableProps> = ({
   gsmWeights,
   onAddNewClick,
   onEditProduct,
-  onDeleteProduct
+  onDeleteProduct,
+  onUpdateProduct
 }) => {
   const [search, setSearch] = useState('');
   const [selectedCatFilter, setSelectedCatFilter] = useState('All');
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Quick Inline Edit Price State
+  const [editingPriceProductId, setEditingPriceProductId] = useState<string | null>(null);
+  const [tempPricePerMeter, setTempPricePerMeter] = useState<number>(0);
+  const [tempPrintSurcharge, setTempPrintSurcharge] = useState<number>(0);
+  const [isSavingPrice, setIsSavingPrice] = useState(false);
+
+  // Quick Replace Image Modal State
+  const [replaceImageProduct, setReplaceImageProduct] = useState<Product | null>(null);
+
   const filteredProducts = products.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
+    const matchesSearch =
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.category.toLowerCase().includes(search.toLowerCase());
-    const matchesCat = selectedCatFilter === 'All' || p.category.toLowerCase() === selectedCatFilter.toLowerCase();
+    const matchesCat =
+      selectedCatFilter === 'All' || p.category.toLowerCase() === selectedCatFilter.toLowerCase();
     return matchesSearch && matchesCat;
   });
 
@@ -42,6 +70,35 @@ export const AllProductsTable: React.FC<AllProductsTableProps> = ({
     }
   };
 
+  const handleStartQuickPriceEdit = (prod: Product) => {
+    setEditingPriceProductId(prod.id);
+    setTempPricePerMeter(prod.price_per_meter);
+    setTempPrintSurcharge(prod.print_surcharge_per_meter);
+  };
+
+  const handleSaveQuickPrice = async (prodId: string) => {
+    if (!onUpdateProduct) return;
+    setIsSavingPrice(true);
+    try {
+      await onUpdateProduct(prodId, {
+        price_per_meter: Number(tempPricePerMeter) || 0,
+        print_surcharge_per_meter: Number(tempPrintSurcharge) || 0
+      });
+      setEditingPriceProductId(null);
+    } finally {
+      setIsSavingPrice(false);
+    }
+  };
+
+  const handleConfirmImageReplace = async (newUrl: string) => {
+    if (!replaceImageProduct || !onUpdateProduct) return;
+    const existingImages = replaceImageProduct.images || [];
+    const updatedImages = [newUrl, ...existingImages.slice(1)];
+    await onUpdateProduct(replaceImageProduct.id, {
+      images: updatedImages
+    });
+  };
+
   return (
     <div className="space-y-4">
       {/* Search & Action Header */}
@@ -51,7 +108,7 @@ export const AllProductsTable: React.FC<AllProductsTableProps> = ({
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder="Search products by title, category, weave..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
@@ -71,7 +128,8 @@ export const AllProductsTable: React.FC<AllProductsTableProps> = ({
               <option value="Silk">Silk</option>
               <option value="Rayon">Rayon</option>
               <option value="Modal">Modal</option>
-              <option value="Organza">Organza</option>
+              <option value="Viscose">Viscose</option>
+              <option value="Polyester">Polyester</option>
             </select>
           </div>
         </div>
@@ -91,52 +149,132 @@ export const AllProductsTable: React.FC<AllProductsTableProps> = ({
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-900 text-slate-400 uppercase font-bold text-[10px] tracking-wider border-b border-slate-700">
               <tr>
-                <th className="p-3.5">Image</th>
+                <th className="p-3.5">Image / Replace</th>
                 <th className="p-3.5">Product Title</th>
                 <th className="p-3.5">Category</th>
                 <th className="p-3.5">Fabric Base</th>
                 <th className="p-3.5">GSM</th>
-                <th className="p-3.5">Base Price</th>
-                <th className="p-3.5">Print Surcharge</th>
+                <th className="p-3.5">Base Price (₹/m)</th>
+                <th className="p-3.5">Print Surcharge (₹/m)</th>
                 <th className="p-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700">
               {filteredProducts.map((prod) => {
-                const fab = fabrics.find(f => f.id === prod.fabric_id);
+                const fab = fabrics.find((f) => f.id === prod.fabric_id);
+                const isEditingPrice = editingPriceProductId === prod.id;
+
                 return (
                   <tr key={prod.id} className="hover:bg-slate-750 transition">
+                    
+                    {/* Image with Direct Replace Overlay */}
                     <td className="p-3.5">
-                      <img
-                        src={prod.images[0]}
-                        alt={prod.name}
-                        className="w-12 h-10 rounded-lg object-cover border border-slate-700"
-                      />
+                      <div className="relative group w-12 h-12 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shrink-0 cursor-pointer">
+                        <img
+                          src={prod.images[0] || '/mockups/white_tshirt_front.png'}
+                          alt={prod.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition"
+                        />
+                        <button
+                          onClick={() => setReplaceImageProduct(prod)}
+                          className="absolute inset-0 bg-slate-950/70 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-amber-400"
+                          title="Click to Replace Image"
+                        >
+                          <Camera className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
+
                     <td className="p-3.5">
                       <span className="font-bold text-white text-sm block">{prod.name}</span>
-                      <span className="text-[10px] text-slate-400">{prod.weave_type} • {prod.width}</span>
+                      <span className="text-[10px] text-slate-400">
+                        {prod.weave_type} • {prod.width}
+                      </span>
                     </td>
+
                     <td className="p-3.5">
                       <span className="bg-slate-900 text-amber-400 px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-700">
                         {prod.category}
                       </span>
                     </td>
+
                     <td className="p-3.5 text-slate-300 font-medium">
                       {fab ? fab.name : prod.composition || 'Custom Base'}
                     </td>
+
                     <td className="p-3.5 font-extrabold text-white font-mono">{prod.gsm} GSM</td>
-                    <td className="p-3.5 font-extrabold text-emerald-400 font-mono">
-                      ₹{prod.price_per_meter.toFixed(2)}/m
+
+                    {/* Inline Editable Base Price */}
+                    <td className="p-3.5">
+                      {isEditingPrice ? (
+                        <div className="flex items-center space-x-1">
+                          <span className="text-slate-400">₹</span>
+                          <input
+                            type="number"
+                            step="0.5"
+                            value={tempPricePerMeter}
+                            onChange={(e) => setTempPricePerMeter(Number(e.target.value))}
+                            className="w-16 bg-slate-950 border border-emerald-500 rounded p-1 text-xs text-emerald-400 font-mono font-bold"
+                            autoFocus
+                          />
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleStartQuickPriceEdit(prod)}
+                          className="font-extrabold text-emerald-400 font-mono group flex items-center space-x-1 hover:underline text-xs"
+                          title="Click to Edit Base Price"
+                        >
+                          <span>₹{prod.price_per_meter.toFixed(2)}/m</span>
+                          <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition text-slate-400" />
+                        </button>
+                      )}
                     </td>
-                    <td className="p-3.5 font-bold text-amber-400 font-mono">
-                      +₹{prod.print_surcharge_per_meter.toFixed(2)}/m
+
+                    {/* Inline Editable Print Surcharge */}
+                    <td className="p-3.5">
+                      {isEditingPrice ? (
+                        <div className="flex items-center space-x-1">
+                          <span className="text-slate-400">+₹</span>
+                          <input
+                            type="number"
+                            step="0.5"
+                            value={tempPrintSurcharge}
+                            onChange={(e) => setTempPrintSurcharge(Number(e.target.value))}
+                            className="w-16 bg-slate-950 border border-amber-500 rounded p-1 text-xs text-amber-400 font-mono font-bold"
+                          />
+                          <button
+                            onClick={() => handleSaveQuickPrice(prod.id)}
+                            disabled={isSavingPrice}
+                            className="p-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded transition shadow"
+                            title="Save Prices"
+                          >
+                            <Check className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => setEditingPriceProductId(null)}
+                            className="p-1 bg-slate-700 text-slate-300 rounded hover:bg-slate-600"
+                            title="Cancel"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleStartQuickPriceEdit(prod)}
+                          className="font-bold text-amber-400 font-mono group flex items-center space-x-1 hover:underline text-xs"
+                          title="Click to Edit Surcharge"
+                        >
+                          <span>+₹{prod.print_surcharge_per_meter.toFixed(2)}/m</span>
+                          <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition text-slate-400" />
+                        </button>
+                      )}
                     </td>
+
                     <td className="p-3.5 text-right space-x-2">
                       <button
                         onClick={() => onEditProduct(prod)}
                         className="p-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200 transition"
-                        title="Edit Product"
+                        title="Edit Full Product Wizard"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -148,6 +286,7 @@ export const AllProductsTable: React.FC<AllProductsTableProps> = ({
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </td>
+
                   </tr>
                 );
               })}
@@ -188,14 +327,18 @@ export const AllProductsTable: React.FC<AllProductsTableProps> = ({
               {/* Product Preview Card */}
               <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex items-center space-x-3">
                 <img
-                  src={productToDelete.images[0]}
+                  src={productToDelete.images[0] || '/mockups/white_tshirt_front.png'}
                   alt={productToDelete.name}
                   className="w-14 h-14 rounded-xl object-cover border border-slate-700 shrink-0"
                 />
                 <div className="min-w-0 flex-1">
                   <h4 className="font-bold text-white text-sm truncate">{productToDelete.name}</h4>
-                  <p className="text-amber-400 text-[11px] font-semibold">{productToDelete.category} • {productToDelete.gsm} GSM</p>
-                  <p className="text-slate-400 text-[10px]">₹{productToDelete.price_per_meter.toFixed(2)} / meter</p>
+                  <p className="text-amber-400 text-[11px] font-semibold">
+                    {productToDelete.category} • {productToDelete.gsm} GSM
+                  </p>
+                  <p className="text-slate-400 text-[10px]">
+                    ₹{productToDelete.price_per_meter.toFixed(2)} / meter
+                  </p>
                 </div>
               </div>
 
@@ -235,6 +378,27 @@ export const AllProductsTable: React.FC<AllProductsTableProps> = ({
           </div>
         </div>
       )}
+
+      {/* Direct Image Replace Modal for Product */}
+      {replaceImageProduct && (
+        <ImageReplaceModal
+          isOpen={!!replaceImageProduct}
+          onClose={() => setReplaceImageProduct(null)}
+          currentImageUrl={replaceImageProduct.images[0] || ''}
+          title={`Replace Image: ${replaceImageProduct.name}`}
+          subtitle="Select a 3D garment mockup, fabric weave texture, or upload a custom image from your device."
+          onConfirmReplace={handleConfirmImageReplace}
+          onDeleteImage={async () => {
+            if (onUpdateProduct) {
+              await onUpdateProduct(replaceImageProduct.id, {
+                images: ['/mockups/white_tshirt_front.png']
+              });
+            }
+          }}
+        />
+      )}
+
     </div>
   );
 };
+
